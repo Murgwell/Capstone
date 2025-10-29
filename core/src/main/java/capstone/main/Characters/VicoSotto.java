@@ -14,7 +14,7 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
     ArrayList<Bullet> bullets;
     private float shootTimer = 0f;
     // attackSpeed: number of shots per second (SPS)
-    private float baseAttackSpeed = 4f; // 10 shots per second
+    private float baseAttackSpeed = 30f; // 10 shots per second
     private float currentAttackSpeed = 1f / baseAttackSpeed; // delay in seconds
     float postDodgeDelay = 0.5f; // delay after dodge before shooting
     private float postDodgeTimer = postDodgeDelay;   // tracks time since dodge ended
@@ -40,7 +40,7 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
         Texture normalTexture = new Texture("character.png");
         Texture reversedTexture = new Texture("characterReversed.png");
 
-        directionManager = new DirectionManager(sprite, normalTexture, reversedTexture);
+        directionManager = new DirectionManager(sprite);
     }
 
 
@@ -66,7 +66,6 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
             float startX = sprite.getX() + sprite.getWidth()/2f;
             float startY = sprite.getY() + sprite.getHeight()/2f;
             bullets.add(new Bullet(bulletTexture, startX, startY, dir));
-
             shootTimer = 0f;
         }
     }
@@ -94,5 +93,9 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
     public void resetAttackSpeed() {
         baseAttackSpeed = 3f;
         currentAttackSpeed = 1f / baseAttackSpeed;
+    }
+
+    public DirectionManager getDirectionManager() {
+        return directionManager;
     }
 }

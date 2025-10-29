@@ -1,12 +1,14 @@
 package capstone.main.menus;
 
 import capstone.main.Characters.*;
+import capstone.main.Handlers.DirectionManager;
 import capstone.main.Handlers.MovementManager;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Corrupted;
 import capstone.main.Handlers.InputManager;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -82,13 +84,17 @@ public class mainMenu implements Screen {
         weaponSprite.setPosition(centerX, centerY);
     }
 
+
     @Override
     public void render(float delta) {
         inputManager.update();
-        updateWeaponAiming();
 
-        // Update player movement + dodge + sprint + boundary
-        player.update(delta, inputManager, movementManager);
+
+        // Update player movement + dodge + sprint + boundary + facing
+        player.update(delta, inputManager, movementManager, viewport);
+
+        // Update weapon aiming
+        updateWeaponAiming();
 
         // Handle ranged attacks if applicable
         if (player instanceof Ranged) {
@@ -101,33 +107,30 @@ public class mainMenu implements Screen {
         draw();
     }
 
+
     private void updateWeaponAiming() {
         float mouseX = Gdx.input.getX();
         float mouseY = Gdx.input.getY();
         Vector3 worldCoords = viewport.getCamera().unproject(new Vector3(mouseX, mouseY, 0));
 
-        // Character center
         float charX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
         float charY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
 
-        // Angle to aim
         float angleRad = (float) Math.atan2(worldCoords.y - charY, worldCoords.x - charX);
         weaponAimingRad = angleRad;
 
-        // Set origin of gun (e.g., slightly lower than center if you want hands)
+        // 🧱 Weapon rotation + position update only
         weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() * 0.25f);
-
-        // Apply rotation
         weaponSprite.setRotation((float) Math.toDegrees(angleRad));
 
-        // Apply gap offset in the aiming direction
-        float gap = 0.1f; // distance from character center
+        float gap = 0.1f;
         float weaponCenterX = charX + (float) Math.cos(angleRad) * gap;
         float weaponCenterY = charY + (float) Math.sin(angleRad) * gap;
 
-        // Position so origin is aligned with desired point
-        weaponSprite.setPosition(weaponCenterX - weaponSprite.getOriginX(),
-            weaponCenterY - weaponSprite.getOriginY());
+        weaponSprite.setPosition(
+            weaponCenterX - weaponSprite.getOriginX(),
+            weaponCenterY - weaponSprite.getOriginY()
+        );
     }
 
     private void updateCamera() {

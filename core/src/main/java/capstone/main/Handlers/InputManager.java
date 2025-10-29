@@ -29,4 +29,8 @@ public class InputManager {
     public boolean isAttacking() {
         return Gdx.input.isButtonPressed(Input.Buttons.LEFT);
     }
+
+    public boolean isSprinting() {
+        return shiftHeld && !movement.isZero(); // sprinting only if moving + shift held
+    }
 }
