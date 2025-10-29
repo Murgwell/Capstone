@@ -3,6 +3,7 @@ package capstone.main.Characters;
 import capstone.main.Handlers.DirectionManager;
 import capstone.main.Handlers.MovementManager;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import capstone.main.Sprites.Bullet;
 
@@ -36,15 +37,11 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
 
         this.bullets = bullets;
         this.bulletTexture = new Texture("bullet.png");
-
-        Texture normalTexture = new Texture("character.png");
-        Texture reversedTexture = new Texture("characterReversed.png");
-
         directionManager = new DirectionManager(sprite);
     }
 
 
-    public void handleAttack(float arrowRotationRad, float delta, MovementManager movementManager) {
+    public void handleAttack(float weaponRotationRad, float delta, MovementManager movementManager) {
         shootTimer += delta;
 
         // Block shooting while dodging
@@ -62,13 +59,28 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
 
         // Normal shooting cooldown
         if (shootTimer >= currentAttackSpeed) {
-            Vector2 dir = new Vector2((float)Math.cos(arrowRotationRad), (float)Math.sin(arrowRotationRad));
+            // --- Bullet dispersion setup ---
+            float maxDispersionDeg = 1.5f; // max 5 degrees of spread
+            float maxDispersionRad = maxDispersionDeg * MathUtils.degreesToRadians;
+
+            // random offset between -max and +max
+            float dispersion = MathUtils.random(-maxDispersionRad, maxDispersionRad);
+            float finalAngle = weaponRotationRad + dispersion;
+
+            // bullet direction vector
+            Vector2 dir = new Vector2((float)Math.cos(finalAngle), (float)Math.sin(finalAngle));
+
+            // spawn position (center of sprite)
             float startX = sprite.getX() + sprite.getWidth()/2f;
             float startY = sprite.getY() + sprite.getHeight()/2f;
+
             bullets.add(new Bullet(bulletTexture, startX, startY, dir));
+
+            // reset timer
             shootTimer = 0f;
         }
     }
+
 
     @Override
     public ArrayList<Bullet> getBullets() {

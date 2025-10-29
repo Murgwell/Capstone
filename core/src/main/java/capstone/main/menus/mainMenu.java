@@ -1,14 +1,12 @@
 package capstone.main.menus;
 
 import capstone.main.Characters.*;
-import capstone.main.Handlers.DirectionManager;
 import capstone.main.Handlers.MovementManager;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Corrupted;
 import capstone.main.Handlers.InputManager;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
@@ -134,17 +132,29 @@ public class mainMenu implements Screen {
     }
 
     private void updateCamera() {
-        float halfViewWidth = viewport.getWorldWidth()/2f;
-        float halfViewHeight = viewport.getWorldHeight()/2f;
+        float halfViewWidth = viewport.getWorldWidth() / 2f;
+        float halfViewHeight = viewport.getWorldHeight() / 2f;
 
-        float cameraX = MathUtils.clamp(player.getSprite().getX() + player.getSprite().getWidth()/2f,
-            halfViewWidth, worldWidth - halfViewWidth);
-        float cameraY = MathUtils.clamp(player.getSprite().getY() + player.getSprite().getHeight()/2f,
-            halfViewHeight, worldHeight - halfViewHeight);
+        // Base camera position: player center
+        float targetX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+        float targetY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
 
-        camera.position.set(cameraX, cameraY, 0);
+        // Optional: pan slightly toward mouse position
+        Vector3 mouseWorld = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+        float panFactor = 0.2f; // how much the camera moves toward the mouse
+        targetX += (mouseWorld.x - targetX) * panFactor;
+        targetY += (mouseWorld.y - targetY) * panFactor;
+
+        // Clamp camera within world bounds
+        float cameraX = MathUtils.clamp(targetX, halfViewWidth, worldWidth - halfViewWidth);
+        float cameraY = MathUtils.clamp(targetY, halfViewHeight, worldHeight - halfViewHeight);
+
+        // Smooth camera movement (optional)
+        float smooth = 0.1f; // lower = smoother
+        camera.position.lerp(new Vector3(cameraX, cameraY, 0), smooth);
         camera.update();
     }
+
 
     private void draw() {
         Gdx.gl.glClearColor(1,1,1,1);
