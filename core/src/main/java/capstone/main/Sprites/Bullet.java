@@ -1,0 +1,57 @@
+package capstone.main.Sprites;
+
+import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
+
+public class Bullet {
+    private Sprite sprite;
+    private Vector2 velocity;
+    private float speed = 40f;   // your fast bullet speed
+    private float lifetime = 3f;
+
+    // Stretch based on distance traveled
+    private float baseWidth = 0.025f;
+    private float baseHeight = 0.4f;
+    private float maxStretch = 5f; // max height multiplier
+    private float distanceTraveled = 0f;
+    private float stretchDistance = 1f; // distance to reach full stretch
+
+    public Bullet(Texture texture, float x, float y, Vector2 direction) {
+        sprite = new Sprite(texture);
+
+        // Bottom-center origin
+        sprite.setOrigin(baseWidth / 2f, 0f);
+        sprite.setSize(baseWidth, baseHeight);
+        sprite.setPosition(x - baseWidth / 2f, y - 0f);
+
+        velocity = new Vector2(direction).nor().scl(speed);
+
+        // Rotate to face travel direction
+        float angleDeg = (float) Math.toDegrees((float) Math.atan2(direction.y, direction.x));
+        sprite.setRotation(angleDeg - 90);
+    }
+
+    public boolean update(float delta) {
+        // Move bullet
+        float dx = velocity.x * delta;
+        float dy = velocity.y * delta;
+        sprite.translate(dx, dy);
+
+        // Track distance traveled
+        distanceTraveled += new Vector2(dx, dy).len();
+
+        // Stretch based on distance
+        float t = Math.min(distanceTraveled / stretchDistance, 1f);
+        float currentHeight = baseHeight * (1 + t * (maxStretch - 1));
+        sprite.setSize(baseWidth, currentHeight);
+
+        lifetime -= delta;
+        return lifetime > 0;
+    }
+
+    public void draw(SpriteBatch batch) {
+        sprite.draw(batch);
+    }
+}
