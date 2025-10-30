@@ -26,7 +26,7 @@ public abstract class AbstractPlayer {
         position.set(x, y);
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
-        boundaryManager = new BoundaryManager(20f, 12f, width, height); // World bounds
+        boundaryManager = new BoundaryManager(32f, 32f, width, height); // World bounds
 
         // Initialize direction manager
         directionManager = new DirectionManager(sprite);
@@ -56,8 +56,6 @@ public abstract class AbstractPlayer {
     public Sprite getSprite() {
         return sprite;
     }
-
-    private boolean lastFacingLeft = false;
 
     private void updateDirection(MovementManager movementManager, boolean aimingLeft, boolean isShooting) {
         Vector2 velocity = movementManager.getVelocity();
@@ -89,10 +87,8 @@ public abstract class AbstractPlayer {
         directionManager.setFacingLeft(aimingLeft);
     }
 
-
     public DirectionManager getDirectionManager() {
         return directionManager;
     }
-
 }
 

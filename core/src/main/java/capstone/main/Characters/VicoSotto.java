@@ -11,11 +11,13 @@ import java.util.ArrayList;
 
 public class VicoSotto extends AbstractPlayer implements Ranged {
 
+    private float health;
+    private float mana;
+    private float damage;
     Texture bulletTexture;
     ArrayList<Bullet> bullets;
-    private float shootTimer = 0f;
-    // attackSpeed: number of shots per second (SPS)
-    private float baseAttackSpeed = 30f; // 10 shots per second
+    private float shootTimer = 0f; //Do not change
+    private float baseAttackSpeed = 30f; // Attack Speed
     private float currentAttackSpeed = 1f / baseAttackSpeed; // delay in seconds
     float postDodgeDelay = 0.5f; // delay after dodge before shooting
     private float postDodgeTimer = postDodgeDelay;   // tracks time since dodge ended
@@ -73,7 +75,8 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
             float startX = sprite.getX() + sprite.getWidth()/2f;
             float startY = sprite.getY() + sprite.getHeight()/2f;
 
-            bullets.add(new Bullet(bulletTexture, startX, startY, dir));
+            float damage = 10 + (float)Math.random() * 5; // 5 <= damage < 8
+            bullets.add(new Bullet(bulletTexture, startX, startY, dir, damage));
 
             // reset timer
             shootTimer = 0f;

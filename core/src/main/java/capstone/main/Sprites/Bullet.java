@@ -3,22 +3,24 @@ package capstone.main.Sprites;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Bullet {
     Sprite sprite;
     Vector2 velocity;
-    float speed = 40f;   // your fast bullet speed
+    float damage;
+    float speed = 30f;   // your fast bullet speed
     float lifetime = 3f;
 
     // Stretch based on distance traveled
     float baseWidth = 0.025f;
     float baseHeight = 0.4f;
-    float maxStretch = 5f; // max height multiplier
+    float maxStretch = 2f; // max height multiplier
     float distanceTraveled = 0f;
-    float stretchDistance = 1f; // distance to reach full stretch
+    float stretchDistance = 0.5f; // distance to reach full stretch
 
-    public Bullet(Texture texture, float x, float y, Vector2 direction) {
+    public Bullet(Texture texture, float x, float y, Vector2 direction, float damage) {
         sprite = new Sprite(texture);
 
         // Bottom-center origin
@@ -27,6 +29,7 @@ public class Bullet {
         sprite.setPosition(x - baseWidth / 2f, y - 0f);
 
         velocity = new Vector2(direction).nor().scl(speed);
+        this.damage = damage;
 
         // Rotate to face travel direction
         float angleDeg = (float) Math.toDegrees((float) Math.atan2(direction.y, direction.x));
@@ -53,5 +56,10 @@ public class Bullet {
 
     public void draw(SpriteBatch batch) {
         sprite.draw(batch);
+    }
+    public float getDamage() { return damage; }
+
+    public Rectangle getBoundingBox() {
+        return sprite.getBoundingRectangle();
     }
 }
