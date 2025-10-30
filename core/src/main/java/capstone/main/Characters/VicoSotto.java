@@ -28,7 +28,6 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
             120,
             80,
             new Texture("character.png"),          // normal facing right
-            new Texture("characterReversed.png"),  // reversed facing left
             x,
             y,
             width,

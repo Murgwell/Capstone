@@ -20,7 +20,7 @@ public abstract class AbstractPlayer {
     protected Vector2 position = new Vector2();
     protected Sprite sprite;
 
-    public AbstractPlayer(float healthPoints, float manaPoints, Texture texture, Texture reversedTexture, float x, float y, float width, float height) {
+    public AbstractPlayer(float healthPoints, float manaPoints, Texture texture, float x, float y, float width, float height) {
         this.healthPoints = healthPoints;
         this.manaPoints = manaPoints;
         position.set(x, y);
