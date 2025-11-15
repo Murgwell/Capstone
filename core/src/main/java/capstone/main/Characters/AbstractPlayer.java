@@ -13,6 +13,8 @@ public abstract class AbstractPlayer {
 
     protected float healthPoints;
     protected float manaPoints;
+    protected float baseAttackSpeed;
+    protected float attackSpeedMultiplier = 1f;
     protected DirectionManager directionManager; // initialize in constructor
     protected BoundaryManager boundaryManager;
     protected Vector2 position = new Vector2();
@@ -20,6 +22,7 @@ public abstract class AbstractPlayer {
 
     protected float weaponAimingRad; // current aiming angle
 
+    protected float attackTimer = getAttackDelay();
     protected float postDodgeDelay = 0.5f;
     protected float postSprintDelay = 0.3f;
     protected float postDodgeTimer = postDodgeDelay;
@@ -28,11 +31,12 @@ public abstract class AbstractPlayer {
 
 
 
-    public AbstractPlayer(float healthPoints, float manaPoints, Texture texture,
+    public AbstractPlayer(float healthPoints, float manaPoints, float baseAttackSpeed, Texture texture,
                           float x, float y, float width, float height,
                           float worldWidth, float worldHeight) {
         this.healthPoints = healthPoints;
         this.manaPoints = manaPoints;
+        this.baseAttackSpeed = baseAttackSpeed;
         position.set(x, y);
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
@@ -96,10 +100,6 @@ public abstract class AbstractPlayer {
         directionManager.setFacingLeft(aimingLeft);
     }
 
-    public DirectionManager getDirectionManager() {
-        return directionManager;
-    }
-
     public void updateWeaponAiming(Viewport viewport) {
         Vector3 worldCoords = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
         float charX = sprite.getX() + sprite.getWidth() / 2f;
@@ -112,24 +112,40 @@ public abstract class AbstractPlayer {
         return weaponAimingRad;
     }
 
-    public void updatePostMovementTimers(float delta, MovementManager movementManager) {
-        // Reset timers if dodging or sprinting
-        if (movementManager.isDodging()) {
-            postDodgeTimer = 0f;
-        } else {
-            postDodgeTimer += delta;
-        }
-
-        if (movementManager.isSprinting()) {
-            postSprintTimer = 0f;
-        } else {
-            postSprintTimer += delta;
-        }
-    }
-
     public boolean canAttack() {
-        return postDodgeTimer >= postDodgeDelay && postSprintTimer >= postSprintDelay;
+        float cooldown = 1f / (baseAttackSpeed * attackSpeedMultiplier);
+        return postDodgeTimer >= postDodgeDelay &&
+            postSprintTimer >= postSprintDelay &&
+            attackTimer >= cooldown;
     }
 
+    public void updateAttackTimer(float delta) {
+        attackTimer += delta;
+    }
+    public void onAttackPerformed() {
+        attackTimer = 0f;
+    }
+
+    public float getAttackDelay() {
+        return 1f / baseAttackSpeed;
+    }
+
+    public void modifyAttackSpeed(float multiplier) {
+        attackSpeedMultiplier = multiplier;
+    }
+
+    public void resetAttackSpeed() {
+        attackSpeedMultiplier = 1f;
+    }
+
+    // --- Movement timers ---
+    public void updatePostMovementTimers(float delta, MovementManager movementManager) {
+        postDodgeTimer = movementManager.isDodging() ? 0f : postDodgeTimer + delta;
+        postSprintTimer = movementManager.isSprinting() ? 0f : postSprintTimer + delta;
+        updateAttackTimer(delta);
+    }
+
+    // --- Abstract attack method ---
+    public abstract void performAttack(float delta, float weaponRotationRad);
 }
 

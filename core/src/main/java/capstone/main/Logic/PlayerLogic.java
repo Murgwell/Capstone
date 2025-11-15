@@ -11,20 +11,29 @@ public class PlayerLogic {
     private final InputManager input;
     private final Viewport viewport;
     private final MovementManager movementManager;
+    private final BulletLogic bulletLogic;
 
-    public PlayerLogic(AbstractPlayer player, InputManager input, Viewport viewport, MovementManager movementManager) {
+    public PlayerLogic(AbstractPlayer player, InputManager input, Viewport viewport, MovementManager movementManager, BulletLogic bulletLogic) {
         this.player = player;
         this.input = input;
         this.viewport = viewport;
         this.movementManager = movementManager;
+        this.bulletLogic = bulletLogic;
     }
 
     public void update(float delta) {
-        player.update(delta, input, movementManager, viewport); // movementManager can be injected if needed
-        if (player instanceof Ranged && input.isAttacking()) {
-            Ranged r = (Ranged) player;
-            r.handleAttack(player.getWeaponAimingRad(), delta, movementManager);
-        }
+        player.update(delta, input, movementManager, viewport);
+        player.updatePostMovementTimers(delta, movementManager); // <-- always runs
 
+        if (player instanceof Ranged && input.isAttacking()) {
+            if (player.canAttack()) {
+                player.performAttack(delta, player.getWeaponAimingRad()); // generic call
+
+                // Only spawn bullets if the player actually has bullets
+                if (player instanceof Ranged) {
+                    bulletLogic.spawnBullet((Ranged) player, player.getWeaponAimingRad());
+                }
+            }
+        }
     }
 }

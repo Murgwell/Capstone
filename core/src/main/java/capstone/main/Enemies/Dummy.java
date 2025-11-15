@@ -23,7 +23,7 @@ public class Dummy extends AbstractEnemy {
 
         if (distance <= chaseRadius || isAggro) {
             // move toward player
-            float speed = 2f; // dummy speed
+            float speed = 1.5f; // dummy speed
             sprite.setX(sprite.getX() + dx / distance * speed * delta);
             sprite.setY(sprite.getY() + dy / distance * speed * delta);
 

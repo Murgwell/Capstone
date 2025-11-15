@@ -118,8 +118,8 @@ public class mainMenu implements Screen {
             Gdx.app.error("Shader", treeFadeShader.getLog());
         }
 
-        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager);
         bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont);
+        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
         damageLogic = new DamageLogic(damageNumbers);
 
