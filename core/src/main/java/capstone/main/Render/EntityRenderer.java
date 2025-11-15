@@ -65,7 +65,7 @@ public class EntityRenderer {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (AbstractEnemy enemy : enemies) {
-            if (!enemy.isDead() && enemy.getHealthBar() != null) {
+            if (!enemy.isDead() && enemy.showHealthBar && enemy.getHealthBar() != null) {
                 enemy.getHealthBar().draw(shapeRenderer);
             }
         }

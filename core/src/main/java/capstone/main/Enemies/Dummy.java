@@ -2,13 +2,14 @@ package capstone.main.Enemies;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Managers.DirectionManager;
-import capstone.main.UI.HealthBar;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 
 public class Dummy extends AbstractEnemy {
 
     private DirectionManager directionManager;
+    private float healthBarTimer = 0f;
+    private final float healthBarDisplayTime = 3f; // seconds
 
     public Dummy(float x, float y) {
         super(x, y, new Texture("enemyCharacter.png"), 0.5f, 0.5f, 100f); // adjust size
@@ -42,6 +43,14 @@ public class Dummy extends AbstractEnemy {
 
             // If player moves too far from aggro, reset
             if (isAggro && distance > aggroChaseDistance) isAggro = false;
+        }
+
+        if (showHealthBar) {
+            healthBarTimer += delta;
+            if (healthBarTimer >= healthBarDisplayTime) {
+                showHealthBar = false;
+                healthBarTimer = 0f;
+            }
         }
         healthBar.setHealth(health);
     }

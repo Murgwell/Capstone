@@ -14,6 +14,7 @@ public abstract class AbstractEnemy {
     protected float defaultChaseDistance = 3f;
     protected float aggroChaseDistance = 6f;
     protected boolean isAggro = false;
+    public boolean showHealthBar = false;
 
     protected float hitboxRadius;
 
@@ -36,6 +37,7 @@ public abstract class AbstractEnemy {
     public void takeHit(float damage) {
         health -= damage;
         isAggro = true;
+        showHealthBar = true;
         healthBar.setHealth(health); // keep health bar in sync
     }
 
