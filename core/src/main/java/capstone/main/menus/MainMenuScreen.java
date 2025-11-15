@@ -106,7 +106,7 @@ public class MainMenuScreen implements Screen {
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new World1(game));
+                game.setScreen(new Game(game));
             }
         });
 
@@ -214,6 +214,7 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void hide() {
+        Gdx.input.setInputProcessor(null);
     }
 
     @Override

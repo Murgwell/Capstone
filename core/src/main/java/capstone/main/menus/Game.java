@@ -25,7 +25,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 
 import java.util.ArrayList;
 
-public class mainMenu implements Screen {
+public class Game implements Screen {
 
     private final Corrupted game;
     private SpriteBatch spriteBatch;
@@ -61,7 +61,7 @@ public class mainMenu implements Screen {
     DamageLogic damageLogic;
     WeaponRenderer weaponRenderer;
 
-    public mainMenu(Corrupted game) {
+    public Game(Corrupted game) {
         this.game = game;
     }
 
