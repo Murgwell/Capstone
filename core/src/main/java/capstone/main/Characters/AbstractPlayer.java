@@ -1,6 +1,6 @@
 package capstone.main.Characters;
 
-import capstone.main.Handlers.*;
+import capstone.main.Managers.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
@@ -13,22 +13,31 @@ public abstract class AbstractPlayer {
 
     protected float healthPoints;
     protected float manaPoints;
-
-    protected MovementManager movementManager = new MovementManager();
     protected DirectionManager directionManager; // initialize in constructor
     protected BoundaryManager boundaryManager;
     protected Vector2 position = new Vector2();
     protected Sprite sprite;
 
-    public AbstractPlayer(float healthPoints, float manaPoints, Texture texture, float x, float y, float width, float height) {
+    protected float weaponAimingRad; // current aiming angle
+
+    protected float postDodgeDelay = 0.5f;
+    protected float postSprintDelay = 0.3f;
+    protected float postDodgeTimer = postDodgeDelay;
+    protected float postSprintTimer = postSprintDelay;
+
+
+
+
+    public AbstractPlayer(float healthPoints, float manaPoints, Texture texture,
+                          float x, float y, float width, float height,
+                          float worldWidth, float worldHeight) {
         this.healthPoints = healthPoints;
         this.manaPoints = manaPoints;
         position.set(x, y);
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
-        boundaryManager = new BoundaryManager(32f, 32f, width, height); // World bounds
 
-        // Initialize direction manager
+        boundaryManager = new BoundaryManager(worldWidth, worldHeight, width, height);
         directionManager = new DirectionManager(sprite);
     }
 
@@ -90,5 +99,37 @@ public abstract class AbstractPlayer {
     public DirectionManager getDirectionManager() {
         return directionManager;
     }
+
+    public void updateWeaponAiming(Viewport viewport) {
+        Vector3 worldCoords = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+        float charX = sprite.getX() + sprite.getWidth() / 2f;
+        float charY = sprite.getY() + sprite.getHeight() / 2f;
+
+        weaponAimingRad = (float) Math.atan2(worldCoords.y - charY, worldCoords.x - charX);
+    }
+
+    public float getWeaponAimingRad() {
+        return weaponAimingRad;
+    }
+
+    public void updatePostMovementTimers(float delta, MovementManager movementManager) {
+        // Reset timers if dodging or sprinting
+        if (movementManager.isDodging()) {
+            postDodgeTimer = 0f;
+        } else {
+            postDodgeTimer += delta;
+        }
+
+        if (movementManager.isSprinting()) {
+            postSprintTimer = 0f;
+        } else {
+            postSprintTimer += delta;
+        }
+    }
+
+    public boolean canAttack() {
+        return postDodgeTimer >= postDodgeDelay && postSprintTimer >= postSprintDelay;
+    }
+
 }
 

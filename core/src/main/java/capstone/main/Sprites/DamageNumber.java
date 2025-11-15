@@ -31,4 +31,10 @@ public class DamageNumber {
         font.setColor(1f, 0f, 0f, 1f); // red
         font.draw(batch, String.valueOf(Math.round(value)), x, y);
     }
+
+    public void updateAndDraw(SpriteBatch batch, float delta) {
+        update(delta);
+        draw(batch);
+    }
+
 }
