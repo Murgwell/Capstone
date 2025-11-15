@@ -1,8 +1,8 @@
 package capstone.main.lwjgl3;
 
+import capstone.main.Corrupted;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import capstone.main.Corrupted;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
