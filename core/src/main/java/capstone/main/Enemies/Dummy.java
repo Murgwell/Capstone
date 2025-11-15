@@ -2,17 +2,16 @@ package capstone.main.Enemies;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Managers.DirectionManager;
+import capstone.main.UI.HealthBar;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.MathUtils;
 
 public class Dummy extends AbstractEnemy {
 
     private DirectionManager directionManager;
-    public int bitmask;
 
     public Dummy(float x, float y) {
-        super(x, y, new Texture("character.png"), 1f, 1f); // adjust size
-        health = 100f; // example
+        super(x, y, new Texture("enemyCharacter.png"), 0.5f, 0.5f, 100f); // adjust size
         directionManager = new DirectionManager(sprite);
 
         // Randomly spawn facing left or right
@@ -44,5 +43,6 @@ public class Dummy extends AbstractEnemy {
             // If player moves too far from aggro, reset
             if (isAggro && distance > aggroChaseDistance) isAggro = false;
         }
+        healthBar.setHealth(health);
     }
 }

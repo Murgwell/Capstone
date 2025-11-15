@@ -10,20 +10,24 @@ import capstone.main.Characters.*;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Sprites.DamageNumber;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 
 public class EntityRenderer {
 
     private final SpriteBatch batch;
+    private final ShapeRenderer shapeRenderer;
     private final AbstractPlayer player;
     private final ArrayList<AbstractEnemy> enemies;
     private final ArrayList<DamageNumber> dmgNumbers;
 
     public EntityRenderer(SpriteBatch batch,
+                          ShapeRenderer shapeRenderer,
                           AbstractPlayer player,
                           ArrayList<AbstractEnemy> enemies,
                           ArrayList<DamageNumber> dmgNumbers) {
 
         this.batch = batch;
+        this.shapeRenderer = shapeRenderer;
         this.player = player;
         this.enemies = enemies;
         this.dmgNumbers = dmgNumbers;
@@ -45,7 +49,9 @@ public class EntityRenderer {
 
         // Enemies
         for (AbstractEnemy enemy : enemies) {
-            if (!enemy.isDead()) enemy.getSprite().draw(batch);
+            if (!enemy.isDead()){
+                enemy.getSprite().draw(batch);
+            }
         }
 
         // Damage numbers
@@ -55,6 +61,15 @@ public class EntityRenderer {
             if (!dn.isAlive) dmgNumbers.remove(i);
         }
         batch.end();
+        // Draw HealthBars with ShapeRenderer
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        for (AbstractEnemy enemy : enemies) {
+            if (!enemy.isDead() && enemy.getHealthBar() != null) {
+                enemy.getHealthBar().draw(shapeRenderer);
+            }
+        }
+        shapeRenderer.end();
     }
 }
 

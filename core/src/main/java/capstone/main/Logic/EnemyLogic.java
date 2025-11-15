@@ -21,5 +21,6 @@ public class EnemyLogic {
         for (AbstractEnemy e : enemies) {
             if (!e.isDead()) e.update(delta, player);
         }
+        EnemySpawner.resolveEnemyCollisions(enemies, delta);
     }
 }

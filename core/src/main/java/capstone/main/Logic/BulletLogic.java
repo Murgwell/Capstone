@@ -6,6 +6,7 @@ import capstone.main.Characters.Ranged;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
@@ -32,7 +33,11 @@ public class BulletLogic {
             b.update(delta);
 
             for (AbstractEnemy e : enemies) {
-                if (!e.isDead() && b.getBoundingBox().overlaps(e.getSprite().getBoundingRectangle())) {
+                if (!e.isDead() && Intersector.overlaps(new com.badlogic.gdx.math.Circle(
+                        b.getBoundingBox().x + b.getBoundingBox().width / 2f,
+                        b.getBoundingBox().y + b.getBoundingBox().height / 2f,
+                        Math.min(b.getBoundingBox().width, b.getBoundingBox().height) / 2f),
+                    e.getHitbox())) {
                     e.takeHit(b.getDamage());
                     damageNumbers.add(new DamageNumber(
                         e.getSprite().getX() + e.getSprite().getWidth()/2f,
@@ -48,7 +53,7 @@ public class BulletLogic {
     }
 
     public void spawnBullet(Ranged player, float weaponRotationRad) {
-        AbstractPlayer p = (AbstractPlayer) player; // cast to access sprite
+        AbstractPlayer p = (AbstractPlayer) player;
         ArrayList<Bullet> bullets = player.getBullets();
 
         float maxDispersionDeg = 1.5f;
@@ -56,10 +61,22 @@ public class BulletLogic {
         float dispersion = MathUtils.random(-maxDispersionRad, maxDispersionRad);
         float finalAngle = weaponRotationRad + dispersion;
 
+        // Shooting direction
         Vector2 dir = new Vector2(MathUtils.cos(finalAngle), MathUtils.sin(finalAngle));
+
+        // BACKWARD OFFSET
+        float backwardOffset = 0.5f;  // tweak this number
+        Vector2 offset = new Vector2(dir).scl(-backwardOffset);
+
+        // Player center
         float startX = p.getSprite().getX() + p.getSprite().getWidth() / 2f;
         float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f;
 
+        // Apply offset
+        startX += offset.x;
+        startY += offset.y;
+
         bullets.add(new Bullet(startX, startY, dir, 10 + (float)Math.random() * 5));
     }
+
 }

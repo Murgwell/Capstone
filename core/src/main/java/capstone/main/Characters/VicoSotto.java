@@ -28,7 +28,6 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
         onAttackPerformed();
     }
 
-
     @Override
     public ArrayList<Bullet> getBullets() {
         return bullets;

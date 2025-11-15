@@ -7,15 +7,14 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Bullet {
-    private static final Texture DEFAULT_TEXTURE = new Texture("bullet.png"); // default bullet texture
+    private static final Texture DEFAULT_TEXTURE = new Texture("bullet.png");
 
     Sprite sprite;
     Vector2 velocity;
     float damage;
-    float speed = 30f;   // bullet speed
+    float speed = 30f;
     float lifetime = 3f;
 
-    // Stretch based on distance traveled
     float baseWidth = 0.025f;
     float baseHeight = 0.4f;
     float maxStretch = 2f;
@@ -25,7 +24,6 @@ public class Bullet {
     /** Constructor using default bullet texture */
     public Bullet(float x, float y, Vector2 direction, float damage) {
         sprite = new Sprite(DEFAULT_TEXTURE);
-
         sprite.setOrigin(baseWidth / 2f, 0f);
         sprite.setSize(baseWidth, baseHeight);
         sprite.setPosition(x - baseWidth / 2f, y);

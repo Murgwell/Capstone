@@ -17,6 +17,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
@@ -54,6 +55,7 @@ public class Game implements Screen {
     WorldRenderer worldRenderer;
     EntityRenderer entityRenderer;
     TreeRenderer treeRenderer;
+    ShapeRenderer shapeRenderer;
 
     PlayerLogic playerLogic;
     BulletLogic bulletLogic;
@@ -75,11 +77,9 @@ public class Game implements Screen {
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
-        // Now safe to use
         player = new VicoSotto(5f, 3f, 1f, 1f, new ArrayList<>(), mapWidth, mapHeight);
         enemySpawner = new EnemySpawner(mapWidth, mapHeight);
 
-        // 3️⃣ Continue with player setup
         weaponTexture = new Texture("gun.png");
         weaponSprite = new Sprite(weaponTexture);
         weaponSprite.setSize(.2f, .2f);
@@ -92,13 +92,11 @@ public class Game implements Screen {
         damageFont = new BitmapFont();
         damageFont.getData().setScale(0.1f);
 
-        // 🔥 Pass dynamic map size
-        player = new VicoSotto(5f, 3f, 1f, 1f, new ArrayList<>(), mapWidth, mapHeight);
-
         enemySpawner = new EnemySpawner(mapWidth, mapHeight);
         enemySpawner.spawnInitial(5);
 
         spriteBatch = new SpriteBatch();
+        shapeRenderer = new ShapeRenderer();
         viewport = new ExtendViewport(10, 6);
         camera = (OrthographicCamera) viewport.getCamera();
 
@@ -118,7 +116,7 @@ public class Game implements Screen {
         damageLogic = new DamageLogic(damageNumbers);
 
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
-        entityRenderer = new EntityRenderer(spriteBatch, player, enemySpawner.getEnemies(), damageNumbers);
+        entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         treeRenderer = new TreeRenderer(spriteBatch, mapManager.getTiledMap(), player);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
     }
