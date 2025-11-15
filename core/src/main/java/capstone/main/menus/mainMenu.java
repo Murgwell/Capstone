@@ -1,20 +1,13 @@
 package capstone.main.menus;
 
+import capstone.main.Corrupted;
 import capstone.main.Characters.*;
 import capstone.main.Enemies.*;
-import capstone.main.Managers.MapManager;
-import capstone.main.Managers.MovementManager;
-import capstone.main.Logic.BulletLogic;
-import capstone.main.Logic.DamageLogic;
-import capstone.main.Logic.EnemyLogic;
-import capstone.main.Logic.PlayerLogic;
-import capstone.main.Render.EntityRenderer;
-import capstone.main.Render.TreeRenderer;
-import capstone.main.Render.WorldRenderer;
-import capstone.main.Corrupted;
-import capstone.main.Managers.InputManager;
+import capstone.main.Managers.*;
+import capstone.main.Logic.*;
+import capstone.main.Render.*;
+import capstone.main.Sprites.*;
 
-import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.GL20;
@@ -66,6 +59,7 @@ public class mainMenu implements Screen {
     BulletLogic bulletLogic;
     EnemyLogic enemyLogic;
     DamageLogic damageLogic;
+    WeaponRenderer weaponRenderer;
 
     public mainMenu(Corrupted game) {
         this.game = game;
@@ -126,6 +120,7 @@ public class mainMenu implements Screen {
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
         entityRenderer = new EntityRenderer(spriteBatch, player, enemySpawner.getEnemies(), damageNumbers);
         treeRenderer = new TreeRenderer(spriteBatch, mapManager.getTiledMap(), player);
+        weaponRenderer = new WeaponRenderer(player, weaponSprite);
     }
 
     @Override
@@ -189,6 +184,7 @@ public class mainMenu implements Screen {
         worldRenderer.renderGround(camera);
         entityRenderer.render(camera);
         treeRenderer.render(camera);
+        weaponRenderer.render(spriteBatch);
     }
 
     @Override

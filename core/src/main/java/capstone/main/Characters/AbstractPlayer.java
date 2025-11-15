@@ -19,7 +19,6 @@ public abstract class AbstractPlayer {
     protected BoundaryManager boundaryManager;
     protected Vector2 position = new Vector2();
     protected Sprite sprite;
-
     protected float weaponAimingRad; // current aiming angle
 
     protected float attackTimer = getAttackDelay();
@@ -27,9 +26,6 @@ public abstract class AbstractPlayer {
     protected float postSprintDelay = 0.3f;
     protected float postDodgeTimer = postDodgeDelay;
     protected float postSprintTimer = postSprintDelay;
-
-
-
 
     public AbstractPlayer(float healthPoints, float manaPoints, float baseAttackSpeed, Texture texture,
                           float x, float y, float width, float height,
@@ -63,41 +59,14 @@ public abstract class AbstractPlayer {
         position = boundaryManager.clamp(position);
         sprite.setPosition(position.x, position.y);
 
-        updateDirection(movementManager, aimingLeft, isShooting);
+        Vector2 velocity = movementManager.getVelocity();
+        boolean sprinting = movementManager.isSprinting();
+        boolean dodging = movementManager.isDodging();
+        directionManager.updateFacing(velocity, sprinting, dodging, isShooting, aimingLeft);
     }
 
     public Sprite getSprite() {
         return sprite;
-    }
-
-    private void updateDirection(MovementManager movementManager, boolean aimingLeft, boolean isShooting) {
-        Vector2 velocity = movementManager.getVelocity();
-        boolean sprinting = movementManager.isSprinting();
-        boolean dodging  = movementManager.isDodging();
-
-        float V_TH = 0.05f;
-
-        // ---- Priority 1: Sprinting / Dodging overrides everything ----
-        if (sprinting || dodging) {
-            if (velocity.x < -V_TH) directionManager.setFacingLeft(true);
-            else if (velocity.x > V_TH) directionManager.setFacingLeft(false);
-            return;
-        }
-
-        // ---- Priority 2: Shooting overrides walking ----
-        if (isShooting) {
-            directionManager.setFacingLeft(aimingLeft);
-            return;
-        }
-
-        // ---- Priority 3: Walking while aiming ----
-        if (Math.abs(velocity.x) > V_TH) {
-            directionManager.setFacingLeft(aimingLeft); // Aim overrides walking
-            return;
-        }
-
-        // ---- Priority 4: Idle ----
-        directionManager.setFacingLeft(aimingLeft);
     }
 
     public void updateWeaponAiming(Viewport viewport) {
