@@ -60,7 +60,6 @@ public class Game implements Screen {
     PlayerLogic playerLogic;
     BulletLogic bulletLogic;
     EnemyLogic enemyLogic;
-    DamageLogic damageLogic;
     WeaponRenderer weaponRenderer;
 
     public Game(Corrupted game) {
@@ -70,15 +69,14 @@ public class Game implements Screen {
     @Override
     public void show() {
         mapManager = new MapManager();
-        mapManager.load("World 1/World1_Stage1.tmx");
-        //mapManager.load("Maps/Worlds/World 1 - Stage 1.tmx");
+        //mapManager.load("World 1/World1_Stage1.tmx");
+        mapManager.load("Maps/Worlds/World 1 - Stage 1.tmx");
         mapRenderer = mapManager.getRenderer();
 
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
-        player = new VicoSotto(5f, 3f, 1f, 1f, new ArrayList<>(), mapWidth, mapHeight);
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight);
+        player = new VicoSotto(120,80, 5, 8,10,5f, 3f, 1f, 1f, new ArrayList<>(), mapWidth, mapHeight);
 
         weaponTexture = new Texture("gun.png");
         weaponSprite = new Sprite(weaponTexture);
@@ -113,7 +111,6 @@ public class Game implements Screen {
         bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont);
         playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
-        damageLogic = new DamageLogic(damageNumbers);
 
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
@@ -128,7 +125,6 @@ public class Game implements Screen {
         playerLogic.update(delta);
         bulletLogic.update(delta);
         enemyLogic.update(delta);
-        damageLogic.update(delta);
 
         updateCamera();
         updateWeaponAiming();

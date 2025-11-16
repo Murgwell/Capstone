@@ -76,7 +76,7 @@ public class BulletLogic {
         startX += offset.x;
         startY += offset.y;
 
-        bullets.add(new Bullet(startX, startY, dir, 10 + (float)Math.random() * 5));
+        bullets.add(new Bullet(startX, startY, dir, p, p.getDamage()));
     }
 
 }

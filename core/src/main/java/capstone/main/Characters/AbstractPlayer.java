@@ -5,6 +5,7 @@ import capstone.main.UI.HealthBar;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -13,8 +14,9 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public abstract class AbstractPlayer {
 
     protected float healthPoints;
-    protected HealthBar healthBar;
     protected float manaPoints;
+    protected float baseDamage;
+    protected float maxDamage;
     protected float baseAttackSpeed;
     protected float attackSpeedMultiplier = 1f;
     protected DirectionManager directionManager; // initialize in constructor
@@ -29,11 +31,13 @@ public abstract class AbstractPlayer {
     protected float postDodgeTimer = postDodgeDelay;
     protected float postSprintTimer = postSprintDelay;
 
-    public AbstractPlayer(float healthPoints, float manaPoints, float baseAttackSpeed, Texture texture,
+    public AbstractPlayer(float healthPoints, float manaPoints, float baseDamage, float maxDamage, float baseAttackSpeed,Texture texture,
                           float x, float y, float width, float height,
                           float worldWidth, float worldHeight) {
         this.healthPoints = healthPoints;
         this.manaPoints = manaPoints;
+        this.baseDamage = baseDamage;
+        this.maxDamage = maxDamage;
         this.baseAttackSpeed = baseAttackSpeed;
         position.set(x, y);
         sprite = new Sprite(texture);
@@ -118,5 +122,9 @@ public abstract class AbstractPlayer {
 
     // --- Abstract attack method ---
     public abstract void performAttack(float delta, float weaponRotationRad);
+
+    public float getDamage(){
+        return baseDamage + MathUtils.random(0f, maxDamage - baseDamage); // gives float between 0 and n inclusive;
+    }
 }
 

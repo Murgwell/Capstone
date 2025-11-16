@@ -1,5 +1,6 @@
 package capstone.main.Sprites;
 
+import capstone.main.Characters.AbstractPlayer;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -8,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 
 public class Bullet {
     private static final Texture DEFAULT_TEXTURE = new Texture("bullet.png");
+    private final AbstractPlayer owner;
 
     Sprite sprite;
     Vector2 velocity;
@@ -22,7 +24,8 @@ public class Bullet {
     float stretchDistance = 0.5f;
 
     /** Constructor using default bullet texture */
-    public Bullet(float x, float y, Vector2 direction, float damage) {
+    public Bullet(float x, float y, Vector2 direction, AbstractPlayer owner, float damage) {
+        this.owner = owner;
         sprite = new Sprite(DEFAULT_TEXTURE);
         sprite.setOrigin(baseWidth / 2f, 0f);
         sprite.setSize(baseWidth, baseHeight);
@@ -59,7 +62,7 @@ public class Bullet {
     }
 
     public float getDamage() {
-        return damage;
+        return owner.getDamage();
     }
 
     public Rectangle getBoundingBox() {
