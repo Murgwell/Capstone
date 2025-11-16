@@ -15,7 +15,7 @@ public class MovementManager {
     private float dodgeTimer = 0f;
 
     // Configurable movement parameters
-    public float baseSpeed = 2f;
+    public float baseSpeed = 4f;
     public float sprintMultiplier = 1.8f;
     public float acceleration = 20f;
     public float friction = 10f;

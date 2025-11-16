@@ -12,7 +12,7 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
     private float mana;
     private float damage;
     ArrayList<Bullet> bullets;
-    private static float AttackSpeed = 4f; // Attack Speed
+    private static float AttackSpeed = 100f; // Attack Speed
     DirectionManager directionManager;
 
 

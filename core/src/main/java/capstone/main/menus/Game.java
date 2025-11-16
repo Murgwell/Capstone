@@ -70,8 +70,8 @@ public class Game implements Screen {
     @Override
     public void show() {
         mapManager = new MapManager();
-        //...mapManager.load("World 1/World1_Stage2.tmx");
-        mapManager.load("Maps/Worlds/World 1 - Stage 1.tmx");
+        mapManager.load("World 1/World1_Stage1.tmx");
+        //mapManager.load("Maps/Worlds/World 1 - Stage 1.tmx");
         mapRenderer = mapManager.getRenderer();
 
         mapWidth = mapManager.getWorldWidth();

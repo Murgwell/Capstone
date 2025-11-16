@@ -38,7 +38,7 @@ public class EnemySpawner {
     }
 
     public static void resolveEnemyCollisions(ArrayList<AbstractEnemy> enemies, float delta) {
-        float repulsionDistance = 0.4f; // adjust based on enemy size
+        float repulsionDistance = 0.5f; // adjust based on enemy size
         float repulsionStrength = 2f;
 
         for (int i = 0; i < enemies.size(); i++) {
