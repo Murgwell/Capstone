@@ -70,17 +70,17 @@ public class Game implements Screen {
     public void show() {
         mapManager = new MapManager();
         //mapManager.load("World 1/World1_Stage1.tmx");
-        mapManager.load("Maps/Worlds/World 1 - Stage 1.tmx");
+        mapManager.load("Textures/World1.tmx");
         mapRenderer = mapManager.getRenderer();
 
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
-        player = new VicoSotto(120,80, 5, 8,10,5f, 3f, 1f, 1f, new ArrayList<>(), mapWidth, mapHeight);
+        player = new VicoSotto(120,80, 5, 8,4,9f, 9f, 2f, 2f, new ArrayList<>(), mapWidth, mapHeight);
 
         weaponTexture = new Texture("gun.png");
         weaponSprite = new Sprite(weaponTexture);
-        weaponSprite.setSize(.2f, .2f);
+        weaponSprite.setSize(.3f, .3f);
         weaponSprite.setOrigin(1f, -3f);
 
         inputManager = new InputManager();
@@ -95,7 +95,7 @@ public class Game implements Screen {
 
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        viewport = new ExtendViewport(10, 6);
+        viewport = new ExtendViewport(20, 12);
         camera = (OrthographicCamera) viewport.getCamera();
 
         // Shader setup
@@ -177,7 +177,7 @@ public class Game implements Screen {
 
         worldRenderer.renderGround(camera);
         entityRenderer.render(camera);
-        treeRenderer.render(camera);
+        //treeRenderer.render(camera);
         weaponRenderer.render(spriteBatch);
     }
 

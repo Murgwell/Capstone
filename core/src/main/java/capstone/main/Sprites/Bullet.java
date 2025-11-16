@@ -8,20 +8,21 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Bullet {
-    private static final Texture DEFAULT_TEXTURE = new Texture("bullet.png");
+    //private static final Texture DEFAULT_TEXTURE = new Texture("bullet.png");
+    private static final Texture DEFAULT_TEXTURE = new Texture("Textures/UI/Bullet Indicators/Pistol-Bullet.png");
     private final AbstractPlayer owner;
 
     Sprite sprite;
     Vector2 velocity;
     float damage;
-    float speed = 30f;
+    float speed = 50f;
     float lifetime = 3f;
 
-    float baseWidth = 0.025f;
-    float baseHeight = 0.4f;
-    float maxStretch = 2f;
+    float baseWidth = 0.05f;
+    float baseHeight = 0.3f;
+    float maxStretch = 5f;
     float distanceTraveled = 0f;
-    float stretchDistance = 0.5f;
+    float stretchDistance = 0.25f;
 
     /** Constructor using default bullet texture */
     public Bullet(float x, float y, Vector2 direction, AbstractPlayer owner, float damage) {
