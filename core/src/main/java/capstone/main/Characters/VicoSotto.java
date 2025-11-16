@@ -1,6 +1,5 @@
 package capstone.main.Characters;
 
-import capstone.main.Managers.DirectionManager;
 import com.badlogic.gdx.graphics.Texture;
 import capstone.main.Sprites.Bullet;
 
