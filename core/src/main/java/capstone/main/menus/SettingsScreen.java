@@ -6,17 +6,15 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.scenes.scene2d.Actor;
-import com.badlogic.gdx.scenes.scene2d.InputEvent;
-import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.scenes.scene2d.*;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.Label;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
-import com.badlogic.gdx.scenes.scene2d.ui.Table;
-import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 
 public class SettingsScreen implements Screen {
@@ -24,9 +22,14 @@ public class SettingsScreen implements Screen {
     private SpriteBatch batch;
     private Stage stage;
     private Skin skin;
-    private Texture background;
     private FitViewport viewport;
+    private OrthographicCamera camera;
     private Sound hoverSound;
+
+    private Texture background;
+    private Texture musicUpTex, musicDownTex;
+    private Texture fullscreenUpTex, fullscreenDownTex;
+    private Texture backUpTex, backDownTex;
 
     private boolean isMusicOn = true;
     private boolean isFullscreen = false;
@@ -38,113 +41,109 @@ public class SettingsScreen implements Screen {
     @Override
     public void show() {
         batch = new SpriteBatch();
-        background = new Texture("mainMenuBG.png");
-        skin = new Skin(Gdx.files.internal("uiskin.json"));
-        hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
-
-        viewport = new FitViewport(1280, 720);
+        camera = new OrthographicCamera();
+        viewport = new FitViewport(1280f, 720f, camera);
         stage = new Stage(viewport, batch);
         Gdx.input.setInputProcessor(stage);
 
-        // === Title ===
-        Label titleLabel = new Label("SETTINGS", skin, "default");
+        skin = new Skin(Gdx.files.internal("uiskin.json"));
+        hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
+        background = new Texture("mainMenuBG.png");
+
+        musicUpTex = new Texture("ui/Menu/music_button_normal.png");
+        musicDownTex = new Texture("ui/Menu/music_button_pressed.png");
+        fullscreenUpTex = new Texture("ui/Menu/fullscreen_button_normal.png");
+        fullscreenDownTex = new Texture("ui/Menu/fullscreen_button_pressed.png");
+        backUpTex = new Texture("ui/Menu/back_button_normal.png");
+        backDownTex = new Texture("ui/Menu/back_button_pressed.png");
+
+        Label titleLabel = new Label("SETTINGS", skin);
         titleLabel.setFontScale(3.5f);
         titleLabel.setColor(Color.WHITE);
 
-        // === Buttons ===
-        TextButton musicButton = new TextButton("Music: ON", skin);
-        TextButton fullscreenButton = new TextButton("Fullscreen: OFF", skin);
-        TextButton backButton = new TextButton("Back", skin);
+        Table layout = new Table();
+        layout.setFillParent(true);
+        layout.center();
 
-        styleButton(musicButton);
-        styleButton(fullscreenButton);
-        styleButton(backButton);
+        layout.add(titleLabel).padBottom(60f).row();
+        layout.add(createToggleButton(musicUpTex, musicDownTex, () -> {
+            isMusicOn = !isMusicOn;
+        })).pad(12).width(200).height(60).row();
 
-        addHoverEffect(musicButton);
-        addHoverEffect(fullscreenButton);
-        addHoverEffect(backButton);
+        layout.add(createToggleButton(fullscreenUpTex, fullscreenDownTex, () -> {
+            isFullscreen = !isFullscreen;
+            if (isFullscreen) Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+            else Gdx.graphics.setWindowedMode(1280, 720);
+        })).pad(12).width(200).height(60).row();
 
-        // === Music Toggle ===
-        musicButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                isMusicOn = !isMusicOn;
-                musicButton.setText("Music: " + (isMusicOn ? "ON" : "OFF"));
-            }
-        });
+        layout.add(createImageButton(backUpTex, backDownTex, () -> game.setScreen(new MainMenuScreen(game)))
+        ).pad(12).width(200).height(60).row();
 
-        // === Fullscreen Toggle ===
-        fullscreenButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                isFullscreen = !isFullscreen;
-                fullscreenButton.setText("Fullscreen: " + (isFullscreen ? "ON" : "OFF"));
-
-                if (isFullscreen) {
-                    Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
-                } else {
-                    Gdx.graphics.setWindowedMode(1280, 720);
-                }
-            }
-        });
-
-        // === Back Button ===
-        backButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
-            }
-        });
-
-        // === Layout ===
-        Table table = new Table();
-        table.setFillParent(true);
-        table.center();
-
-        table.add(titleLabel).padBottom(60f).row();
-        table.add(musicButton).pad(15f).width(300f).height(80f).row();
-        table.add(fullscreenButton).pad(15f).width(300f).height(80f).row();
-        table.add(backButton).padTop(40f).width(300f).height(80f);
-
-        stage.addActor(table);
+        stage.addActor(layout);
     }
 
-    private void styleButton(TextButton button) {
-        button.getLabel().setFontScale(1.3f);
-    }
+    private ImageButton createToggleButton(Texture upTex, Texture downTex, Runnable onToggle) {
+        TextureRegion up = new TextureRegion(upTex);
+        TextureRegion down = new TextureRegion(downTex);
 
-    private void addHoverEffect(final TextButton button) {
-        final Color originalColor = new Color(button.getColor());
-        final float originalScaleX = button.getScaleX();
-        final float originalScaleY = button.getScaleY();
+        ImageButton.ImageButtonStyle style = new ImageButton.ImageButtonStyle();
+        style.up = new TextureRegionDrawable(up);
+        style.down = new TextureRegionDrawable(down);
+
+        ImageButton button = new ImageButton(style);
+        button.setSize(300, 80);
 
         button.addListener(new ClickListener() {
             @Override
+            public void clicked(InputEvent event, float x, float y) {
+                onToggle.run();
+                hoverSound.play(0.4f);
+            }
+
+            @Override
             public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
-                button.addAction(Actions.parallel(
-                    Actions.scaleTo(1.1f, 1.1f, 0.1f),
-                    Actions.color(Color.LIGHT_GRAY, 0.1f)
-                ));
-                if (hoverSound != null) hoverSound.play(0.4f);
+                button.addAction(Actions.scaleTo(1.05f, 1.05f, 0.1f));
             }
 
             @Override
             public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
-                button.addAction(Actions.parallel(
-                    Actions.scaleTo(originalScaleX, originalScaleY, 0.1f),
-                    Actions.color(originalColor, 0.1f)
-                ));
+                button.addAction(Actions.scaleTo(1f, 1f, 0.1f));
+            }
+        });
+
+        return button;
+    }
+
+    private ImageButton createImageButton(Texture upTex, Texture downTex, Runnable onClick) {
+        TextureRegion up = new TextureRegion(upTex);
+        TextureRegion down = new TextureRegion(downTex);
+
+        ImageButton.ImageButtonStyle style = new ImageButton.ImageButtonStyle();
+        style.up = new TextureRegionDrawable(up);
+        style.down = new TextureRegionDrawable(down);
+
+        ImageButton button = new ImageButton(style);
+        button.setSize(300, 80);
+
+        button.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                onClick.run();
+                hoverSound.play(0.4f);
             }
 
             @Override
-            public void clicked(InputEvent event, float x, float y) {
-                button.addAction(Actions.sequence(
-                    Actions.scaleTo(0.95f, 0.95f, 0.05f),
-                    Actions.scaleTo(1.1f, 1.1f, 0.05f),
-                    Actions.scaleTo(originalScaleX, originalScaleY, 0.05f)
-                ));
+            public void enter(InputEvent event, float x, float y, int pointer, Actor fromActor) {
+                button.addAction(Actions.scaleTo(1.05f, 1.05f, 0.1f));
+            }
+
+            @Override
+            public void exit(InputEvent event, float x, float y, int pointer, Actor toActor) {
+                button.addAction(Actions.scaleTo(1f, 1f, 0.1f));
             }
         });
+
+        return button;
     }
 
     @Override
@@ -152,6 +151,7 @@ public class SettingsScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        batch.setProjectionMatrix(camera.combined);
         batch.begin();
         batch.draw(background, 0, 0, 1280, 720);
         batch.end();
@@ -160,20 +160,23 @@ public class SettingsScreen implements Screen {
         stage.draw();
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height, true);
-    }
-
+    @Override public void resize(int width, int height) { viewport.update(width, height, true); }
     @Override public void pause() {}
     @Override public void resume() {}
     @Override public void hide() {}
+
     @Override
     public void dispose() {
         stage.dispose();
         skin.dispose();
-        background.dispose();
         batch.dispose();
+        background.dispose();
         hoverSound.dispose();
+        musicUpTex.dispose();
+        musicDownTex.dispose();
+        fullscreenUpTex.dispose();
+        fullscreenDownTex.dispose();
+        backUpTex.dispose();
+        backDownTex.dispose();
     }
 }
