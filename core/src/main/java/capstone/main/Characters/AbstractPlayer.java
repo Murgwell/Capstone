@@ -7,22 +7,25 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
+import com.badlogic.gdx.physics.box2d.*;
+
 import com.badlogic.gdx.utils.viewport.Viewport;
 
-
 public abstract class AbstractPlayer {
-
+    private static final float PPM = 32f; // 32 pixels per meter
+    protected Body body;
     protected float healthPoints;
     protected float manaPoints;
     protected float baseDamage;
     protected float maxDamage;
     protected float baseAttackSpeed;
     protected float attackSpeedMultiplier = 1f;
-    protected DirectionManager directionManager; // initialize in constructor
+    protected float width;
+    protected float height;
+    protected DirectionManager directionManager;
     protected BoundaryManager boundaryManager;
-    protected Vector2 position = new Vector2();
     protected Sprite sprite;
-    protected float weaponAimingRad; // current aiming angle
+    protected float weaponAimingRad;
 
     protected float attackTimer = getAttackDelay();
     protected float postDodgeDelay = 0.5f;
@@ -30,61 +33,87 @@ public abstract class AbstractPlayer {
     protected float postDodgeTimer = postDodgeDelay;
     protected float postSprintTimer = postSprintDelay;
 
-    public AbstractPlayer(float healthPoints, float manaPoints, float baseDamage, float maxDamage, float baseAttackSpeed,Texture texture,
-                          float x, float y, float width, float height,
-                          float worldWidth, float worldHeight) {
+    public AbstractPlayer(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
+                          float baseAttackSpeed, Texture texture, float x, float y,
+                          float width, float height, float worldWidth, float worldHeight,
+                          World physicsWorld) {
         this.healthPoints = healthPoints;
         this.manaPoints = manaPoints;
         this.baseDamage = baseDamage;
         this.maxDamage = maxDamage;
         this.baseAttackSpeed = baseAttackSpeed;
-        position.set(x, y);
+        this.width = width;
+        this.height = height;
+
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
 
-        boundaryManager = new BoundaryManager(worldWidth, worldHeight, width, height);
+        boundaryManager = new BoundaryManager(worldWidth, worldHeight, physicsWorld);
         directionManager = new DirectionManager(sprite);
+
+        // --- Create Box2D body ---
+        BodyDef bodyDef = new BodyDef();
+        bodyDef.type = BodyDef.BodyType.DynamicBody;
+        bodyDef.position.set(x + width/2f, y + height/2f);
+        bodyDef.fixedRotation = true; // top-down, no rotation
+        body = physicsWorld.createBody(bodyDef);
+
+        PolygonShape shape = new PolygonShape();
+        shape.setAsBox(getCollisionWidth() / 2f, getCollisionHeight() / 2f);
+        body.createFixture(shape, 1f);
+        shape.dispose();
     }
 
-    public void update(float delta,
-                       InputManager input,
-                       MovementManager movementManager,
-                       Viewport viewport) {
-
-        // --- compute mouse aiming ---
-        float mouseX = Gdx.input.getX();
-        float mouseY = Gdx.input.getY();
-        Vector3 worldMouse = viewport.getCamera().unproject(new Vector3(mouseX, mouseY, 0));
-        float charCenterX = sprite.getX() + sprite.getWidth() / 2f;
-
-        boolean aimingLeft = worldMouse.x < charCenterX;
+    public void update(float delta, InputManager input, MovementManager movementManager, Viewport viewport) {
+        // --- Compute mouse aiming ---
+        Vector3 worldMouse = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
+        boolean aimingLeft = worldMouse.x < body.getPosition().x;
         boolean isShooting = input.isAttacking();
 
-        position = movementManager.update(position, input, delta);
-        position = boundaryManager.clamp(position);
-        sprite.setPosition(position.x, position.y);
+        Vector2 inputDir = input.getMovement();
+        boolean shiftHeld = input.isShiftHeld();
 
-        Vector2 velocity = movementManager.getVelocity();
-        boolean sprinting = movementManager.isSprinting();
-        boolean dodging = movementManager.isDodging();
-        directionManager.updateFacing(velocity, sprinting, dodging, isShooting, aimingLeft);
+        // --- Apply movement ---
+        movementManager.update(inputDir, delta, shiftHeld);
+
+        // --- Clamp position so we don't go past walls ---
+        Vector2 clamped = boundaryManager.clamp(
+            body.getPosition(),
+            width / 2f,
+            height / 2f
+        );
+        body.setTransform(clamped, 0);
+
+        // --- Update sprite position ---
+        sprite.setPosition(
+            body.getPosition().x - width / 2f,
+            body.getPosition().y - height / 2f
+        );
+
+        // --- Update facing ---
+        directionManager.updateFacing(
+            movementManager.getVelocity(),
+            movementManager.isSprinting(),
+            movementManager.isDodging(),
+            isShooting,
+            aimingLeft
+        );
     }
+
 
     public Sprite getSprite() {
         return sprite;
+
     }
 
-    public void updateWeaponAiming(Viewport viewport) {
+    public void updateWeaponAimingRad(Viewport viewport) {
         Vector3 worldCoords = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
-        float charX = sprite.getX() + sprite.getWidth() / 2f;
-        float charY = sprite.getY() + sprite.getHeight() / 2f;
-
-        weaponAimingRad = (float) Math.atan2(worldCoords.y - charY, worldCoords.x - charX);
+        float charX = body.getPosition().x;
+        float charY = body.getPosition().y;
+        weaponAimingRad = (float)Math.atan2(worldCoords.y - charY, worldCoords.x - charX);
     }
 
-    public float getWeaponAimingRad() {
-        return weaponAimingRad;
-    }
+    public float getWeaponAimingRad() { return weaponAimingRad; }
 
     public boolean canAttack() {
         float cooldown = 1f / (baseAttackSpeed * attackSpeedMultiplier);
@@ -93,37 +122,45 @@ public abstract class AbstractPlayer {
             attackTimer >= cooldown;
     }
 
-    public void updateAttackTimer(float delta) {
-        attackTimer += delta;
-    }
-    public void onAttackPerformed() {
-        attackTimer = 0f;
-    }
+    public void updateAttackTimer(float delta) { attackTimer += delta; }
+    public void onAttackPerformed() { attackTimer = 0f; }
+    public float getAttackDelay() { return 1f / baseAttackSpeed; }
+    public void modifyAttackSpeed(float multiplier) { attackSpeedMultiplier = multiplier; }
+    public void resetAttackSpeed() { attackSpeedMultiplier = 1f; }
 
-    public float getAttackDelay() {
-        return 1f / baseAttackSpeed;
-    }
-
-    public void modifyAttackSpeed(float multiplier) {
-        attackSpeedMultiplier = multiplier;
-    }
-
-    public void resetAttackSpeed() {
-        attackSpeedMultiplier = 1f;
-    }
-
-    // --- Movement timers ---
     public void updatePostMovementTimers(float delta, MovementManager movementManager) {
         postDodgeTimer = movementManager.isDodging() ? 0f : postDodgeTimer + delta;
         postSprintTimer = movementManager.isSprinting() ? 0f : postSprintTimer + delta;
         updateAttackTimer(delta);
     }
 
-    // --- Abstract attack method ---
     public abstract void performAttack(float delta, float weaponRotationRad);
 
-    public float getDamage(){
-        return baseDamage + MathUtils.random(0f, maxDamage - baseDamage); // gives float between 0 and n inclusive;
+    public float getDamage() {
+        return baseDamage + MathUtils.random(0f, maxDamage - baseDamage);
+    }
+
+    public float getHeight() { return height; }
+    public float getWidth() { return width; }
+
+    // --- Collision settings ---
+
+    public float getCollisionWidth() {
+        float w = width - getCollisionInsetLeft() - getCollisionInsetRight();
+        return Math.max(0.01f, w / PPM); // ensure minimal width
+    }
+
+    public float getCollisionHeight() {
+        float h = height * 0.2f;
+        return Math.max(0.01f, h / PPM); // ensure minimal height
+    }
+    public float getCollisionInsetLeft() { return 0.5f; }
+    public float getCollisionInsetRight() { return 0.5f; }
+    public float getCollisionOffsetY() { return 0f; }
+
+    public Vector2 getPosition() { return body.getPosition(); }
+
+    public Body getBody(){
+        return body;
     }
 }
-

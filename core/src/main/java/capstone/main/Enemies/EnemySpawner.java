@@ -1,18 +1,22 @@
 package capstone.main.Enemies;
 
+import capstone.main.Managers.PhysicsManager;
+
 import java.util.ArrayList;
 
 public class EnemySpawner {
+    private PhysicsManager physics;
     private ArrayList<AbstractEnemy> enemies;
     private float spawnTimer = 0f;
     private final float spawnInterval = 1f;
     private final float worldWidth;
     private final float worldHeight;
 
-    public EnemySpawner(float worldWidth, float worldHeight) {
+    public EnemySpawner(float worldWidth, float worldHeight, PhysicsManager physics) {
         enemies = new ArrayList<>();
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
+        this.physics = physics;
     }
 
     public void spawnInitial(int count) {
@@ -30,7 +34,7 @@ public class EnemySpawner {
     private void spawnDummy() {
         float x = (float) Math.random() * worldWidth;
         float y = (float) Math.random() * worldHeight;
-        enemies.add(new Dummy(x, y));
+        enemies.add(new Dummy(x, y, physics));
     }
 
     public ArrayList<AbstractEnemy> getEnemies() {

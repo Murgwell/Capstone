@@ -40,6 +40,7 @@ public class Game implements Screen {
     private InputManager inputManager;
     private MovementManager movementManager;
     private EnemySpawner enemySpawner;
+    private PhysicsManager physicsManager;
 
     float mapWidth;
     float mapHeight;
@@ -68,15 +69,21 @@ public class Game implements Screen {
 
     @Override
     public void show() {
-        mapManager = new MapManager();
-        //mapManager.load("World 1/World1_Stage1.tmx");
+        // --- Physics world ---
+        physicsManager = new PhysicsManager(); // contains Box2D world
+        mapManager = new MapManager(physicsManager);
         mapManager.load("Textures/World1.tmx");
         mapRenderer = mapManager.getRenderer();
 
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
-        player = new VicoSotto(120,80, 5, 8,4,9f, 9f, 2f, 2f, new ArrayList<>(), mapWidth, mapHeight);
+        // Pass physicsManager.getWorld() to player
+        player = new VicoSotto(
+            120, 80, 5, 8, 4, 9f, 9f, 1f, 1f, new ArrayList<>(),
+            mapWidth, mapHeight,
+            physicsManager.getWorld()
+        );
 
         weaponTexture = new Texture("gun.png");
         weaponSprite = new Sprite(weaponTexture);
@@ -84,13 +91,13 @@ public class Game implements Screen {
         weaponSprite.setOrigin(1f, -3f);
 
         inputManager = new InputManager();
-        movementManager = new MovementManager();
+        movementManager = new MovementManager(player); // already uses Box2D body
 
         damageNumbers = new ArrayList<>();
         damageFont = new BitmapFont();
         damageFont.getData().setScale(0.1f);
 
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight);
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, physicsManager);
         enemySpawner.spawnInitial(5);
 
         spriteBatch = new SpriteBatch();
@@ -108,7 +115,7 @@ public class Game implements Screen {
             Gdx.app.error("Shader", treeFadeShader.getLog());
         }
 
-        bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont);
+        bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
         playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
 
@@ -122,6 +129,8 @@ public class Game implements Screen {
     public void render(float delta) {
         inputManager.update();
 
+        physicsManager.step(delta);
+
         playerLogic.update(delta);
         bulletLogic.update(delta);
         enemyLogic.update(delta);
@@ -131,23 +140,35 @@ public class Game implements Screen {
         draw();
     }
 
-
     private void updateWeaponAiming() {
-        player.updateWeaponAiming(viewport);
+        // Update player's aiming angle internally
+        player.updateWeaponAimingRad(viewport);
         float weaponRad = player.getWeaponAimingRad();
 
-        weaponSprite.setOrigin(weaponSprite.getWidth()/2f, weaponSprite.getHeight()*0.25f);
-        weaponSprite.setRotation((float)Math.toDegrees(weaponRad));
+        // Player center
+        float playerCenterX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+        float playerCenterY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
 
-        float gap = 0.1f;
-        float weaponCenterX = player.getSprite().getX() + player.getSprite().getWidth()/2f
-            + (float)Math.cos(weaponRad) * gap;
-        float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight()/2f
-            + (float)Math.sin(weaponRad) * gap;
+        // Determine if looking left
+        boolean lookingLeft = Math.cos(weaponRad) < 0;
 
-        weaponSprite.setPosition(weaponCenterX - weaponSprite.getOriginX(),
-            weaponCenterY - weaponSprite.getOriginY());
+        // Set origin at pivot
+        weaponSprite.setOrigin(weaponSprite.getWidth()/2f, weaponSprite.getHeight()/2f);
 
+        // Flip horizontally if looking left
+        weaponSprite.setFlip(lookingLeft, false);
+
+        // Convert rotation to degrees
+        float angleDeg = (float)Math.toDegrees(weaponRad);
+
+        // If flipped, invert rotation around Y axis
+        if (lookingLeft) angleDeg += 180f;
+
+        weaponSprite.setRotation(angleDeg);
+
+        // Position the weapon at player center (you can add small gap if desired)
+        weaponSprite.setPosition(playerCenterX - weaponSprite.getOriginX(),
+            playerCenterY - weaponSprite.getOriginY());
     }
 
     private void updateCamera() {
@@ -170,7 +191,7 @@ public class Game implements Screen {
     }
 
     private void draw() {
-        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         viewport.apply();

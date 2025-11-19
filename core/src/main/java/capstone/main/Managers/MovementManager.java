@@ -1,113 +1,109 @@
 package capstone.main.Managers;
 
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.physics.box2d.Body;
+import capstone.main.Characters.AbstractPlayer;
 
 public class MovementManager {
 
-    Vector2 velocity = new Vector2();
-    Vector2 lastMoveDirection = new Vector2();
+    private final Body playerBody;
+
+    private boolean sprinting = false;
+    private boolean dodging = false;
+    private Vector2 dodgeDir = new Vector2();
+    private float dodgeTimer = 0f;
+    private float dodgeCooldown = 0f;
 
     private boolean shiftHeld = false;
     private float shiftHoldTime = 0f;
-    private boolean sprinting = false;
-    private boolean dodging = false;
-    Vector2 dodgeDirection = new Vector2();
-    private float dodgeTimer = 0f;
 
-    // Configurable movement parameters
-    public float baseSpeed = 4f;
+    public float baseSpeed = 5f;
     public float sprintMultiplier = 1.8f;
-    public float acceleration = 20f;
-    public float friction = 10f;
-    public float dodgeSpeed = 10f;
+    public float dodgeSpeed = baseSpeed * 2f;
     public float dodgeDuration = 0.15f;
-    public float dodgeCooldown = 0f;
     public float dodgeCooldownTime = 1f;
     public float dodgeThreshold = 0.2f;
 
-    public Vector2 update(Vector2 position, InputManager input, float delta) {
-        Vector2 inputDir = input.getMovement();
+    private final Vector2 lastMoveDir = new Vector2();
+    private final Vector2 velocity = new Vector2();
 
-        // Save last move direction
-        if (!dodging && !inputDir.isZero()) lastMoveDirection.set(inputDir.cpy());
+    public MovementManager(AbstractPlayer player) {
+        this.playerBody = player.getBody();
 
-        // Handle shift/dodge input
-        boolean shiftNow = input.isShiftHeld();
-        if (shiftNow) {
-            if (!shiftHeld) {
-                // Shift just pressed
-                shiftHeld = true;
-                shiftHoldTime = 0f;
-            } else {
-                // Shift held
-                shiftHoldTime += delta;
-            }
-        } else {
-            // Shift released
-            if (shiftHeld && shiftHoldTime <= dodgeThreshold && dodgeCooldown <= 0f) {
-                // Quick tap: trigger dodge
-                triggerDodge();
-            }
-            shiftHeld = false;
-            shiftHoldTime = 0f;
-        }
+        // Optional: smooth stopping / slide
+        playerBody.setLinearDamping(5f); // tweak 0..10 for more/less slide
+    }
 
-        // Sprinting state (persistent while holding shift past threshold)
+    /**
+     * Call every frame.
+     * @param inputDir Vector2 from input (-1..1)
+     * @param delta delta time
+     * @param shiftNow whether shift is held
+     * @return current position
+     */
+    public Vector2 update(Vector2 inputDir, float delta, boolean shiftNow) {
+        handleShift(inputDir, shiftNow, delta);
+
         sprinting = shiftHeld && shiftHoldTime > dodgeThreshold && !dodging;
-        float maxSpeed = baseSpeed * (sprinting ? sprintMultiplier : 1f);
+        float speed = baseSpeed * (sprinting ? sprintMultiplier : 1f);
 
-        // Dodge movement
+        // --- Dodge logic ---
         if (dodging) {
             dodgeTimer += delta;
             if (dodgeTimer < dodgeDuration) {
-                position.x += dodgeDirection.x * dodgeSpeed * delta;
-                position.y += dodgeDirection.y * dodgeSpeed * delta;
-                return position; // ignore normal movement
+                // direct linear velocity for dash
+                playerBody.setLinearVelocity(dodgeDir.x * dodgeSpeed, dodgeDir.y * dodgeSpeed);
+                return playerBody.getPosition();
             } else {
                 dodging = false;
                 dodgeTimer = 0f;
             }
         }
 
-        // Normal movement
+        // --- Force-based movement for natural friction ---
         if (!inputDir.isZero()) {
-            Vector2 desiredVelocity = new Vector2(inputDir).scl(maxSpeed);
-            velocity.lerp(desiredVelocity, acceleration * delta);
+            lastMoveDir.set(inputDir.cpy());
+            Vector2 desiredVel = new Vector2(inputDir).scl(speed);
+
+            Vector2 velChange = desiredVel.cpy().sub(playerBody.getLinearVelocity());
+            // Calculate force to apply: F = m * Δv / Δt
+            Vector2 force = velChange.scl(playerBody.getMass() / delta);
+            playerBody.applyForceToCenter(force, true);
+
+            velocity.set(playerBody.getLinearVelocity());
         } else {
-            float speed = velocity.len();
-            if (speed > 0) {
-                float decel = friction * delta;
-                speed = Math.max(speed - decel, 0);
-                velocity.setLength(speed);
-            }
+            velocity.set(playerBody.getLinearVelocity()); // naturally slows due to linear damping
         }
 
-        position.x += velocity.x * delta;
-        position.y += velocity.y * delta;
-
-        // Reduce dodge cooldown and post-sprint shooting timer
+        // --- Dodge cooldown ---
         if (dodgeCooldown > 0f) dodgeCooldown -= delta;
 
-        return position;
+        return playerBody.getPosition();
     }
 
+
+    private void handleShift(Vector2 inputDir, boolean shiftNow, float delta) {
+        if (shiftNow) {
+            if (!shiftHeld) shiftHoldTime = 0f;
+            shiftHoldTime += delta;
+        } else {
+            if (shiftHeld && shiftHoldTime <= dodgeThreshold && dodgeCooldown <= 0f && !inputDir.isZero()) {
+                triggerDodge();
+            }
+            shiftHoldTime = 0f;
+        }
+        shiftHeld = shiftNow;
+    }
 
     private void triggerDodge() {
         dodging = true;
         dodgeTimer = 0f;
         dodgeCooldown = dodgeCooldownTime;
-        dodgeDirection.set(lastMoveDirection.isZero() ? new Vector2(1, 0) : lastMoveDirection.cpy());
+        dodgeDir.set(lastMoveDir.isZero() ? new Vector2(1,0) : lastMoveDir.cpy());
     }
 
-    public boolean isDodging() {
-        return dodging;
-    }
+    public Vector2 getVelocity() { return velocity; }
 
-    public boolean isSprinting() {
-        return sprinting;
-    }
-
-    public Vector2 getVelocity() {
-        return velocity.cpy(); // return a copy to avoid external modification
-    }
+    public boolean isDodging() { return dodging; }
+    public boolean isSprinting() { return sprinting; }
 }

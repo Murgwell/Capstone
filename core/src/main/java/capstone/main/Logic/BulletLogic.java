@@ -1,12 +1,12 @@
 package capstone.main.Logic;
 
 import capstone.main.Characters.AbstractPlayer;
+import capstone.main.Managers.PhysicsManager;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Characters.Ranged;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 
@@ -17,13 +17,16 @@ public class BulletLogic {
     private final ArrayList<AbstractEnemy> enemies;
     private final ArrayList<DamageNumber> damageNumbers;
     private final BitmapFont damageFont;
+    private final PhysicsManager physicsManager; // add this
 
     public BulletLogic(Ranged player, ArrayList<AbstractEnemy> enemies,
-                       ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont) {
+                       ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
+                       PhysicsManager physicsManager) {
         this.player = player;
         this.enemies = enemies;
         this.damageNumbers = damageNumbers;
         this.damageFont = damageFont;
+        this.physicsManager = physicsManager; // store reference
     }
 
     public void update(float delta) {
@@ -32,25 +35,17 @@ public class BulletLogic {
             Bullet b = bullets.get(i);
             b.update(delta);
 
-            for (AbstractEnemy e : enemies) {
-                if (!e.isDead() && Intersector.overlaps(new com.badlogic.gdx.math.Circle(
-                        b.getBoundingBox().x + b.getBoundingBox().width / 2f,
-                        b.getBoundingBox().y + b.getBoundingBox().height / 2f,
-                        Math.min(b.getBoundingBox().width, b.getBoundingBox().height) / 2f),
-                    e.getHitbox())) {
-                    e.takeHit(b.getDamage());
-                    damageNumbers.add(new DamageNumber(
-                        e.getSprite().getX() + e.getSprite().getWidth()/2f,
-                        e.getSprite().getY() + e.getSprite().getHeight(),
-                        b.getDamage(),
-                        damageFont
-                    ));
-                    bullets.remove(i);
-                    break;
+            // Remove bullets that expired naturally or via collision
+            if (b.getLifetime() <= 0) {
+                // Also destroy the Box2D body if you created one
+                if (b.getBody() != null) {
+                    b.getBody().getWorld().destroyBody(b.getBody());
                 }
+                bullets.remove(i);
             }
         }
     }
+
 
     public void spawnBullet(Ranged player, float weaponRotationRad) {
         AbstractPlayer p = (AbstractPlayer) player;
@@ -76,7 +71,7 @@ public class BulletLogic {
         startX += offset.x;
         startY += offset.y;
 
-        bullets.add(new Bullet(startX, startY, dir, p, p.getDamage()));
+        bullets.add(new Bullet(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
     }
 
 }
