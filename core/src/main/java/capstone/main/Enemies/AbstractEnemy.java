@@ -2,6 +2,7 @@ package capstone.main.Enemies;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.CollisionBits;
+import capstone.main.Managers.ScreenShake;
 import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
@@ -13,6 +14,7 @@ import com.badlogic.gdx.physics.box2d.*;
 
 public abstract class AbstractEnemy {
 
+    ScreenShake screenShake;
     protected boolean pendingRemoval = false;
     protected Sprite sprite;
     protected Body body;
@@ -32,13 +34,14 @@ public abstract class AbstractEnemy {
     protected Sprite whiteOverlaySprite;
     protected DirectionManager directionManager;
 
-    public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, PhysicsManager physics) {
+    public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, ScreenShake screenShake, PhysicsManager physics) {
         this.sprite = new Sprite(texture);
         this.sprite.setPosition(x, y);
         this.sprite.setSize(width, height);
 
         this.maxHealth = maxHealth;
         this.health = maxHealth;
+        this.screenShake = screenShake;
 
         this.hitboxRadius = Math.min(width, height) / 2f;
 
@@ -120,6 +123,8 @@ public abstract class AbstractEnemy {
 
         // Trigger hit flash
         hitFlashTimer = hitFlashDuration;
+
+        screenShake.shake(0.25f, 0.05f); //
 
         Gdx.app.log("HitFlash", "Enemy hit! Health=" + health + ", flashTimer=" + hitFlashTimer);
 

@@ -18,7 +18,6 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -57,11 +56,13 @@ public class Game implements Screen {
     EntityRenderer entityRenderer;
     TreeRenderer treeRenderer;
     ShapeRenderer shapeRenderer;
+    WeaponRenderer weaponRenderer;
+    CameraManager cameraManager;
+    ScreenShake screenShake;
 
     PlayerLogic playerLogic;
     BulletLogic bulletLogic;
     EnemyLogic enemyLogic;
-    WeaponRenderer weaponRenderer;
 
     public Game(Corrupted game) {
         this.game = game;
@@ -78,9 +79,14 @@ public class Game implements Screen {
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
+        viewport = new ExtendViewport(  20, 12);
+        camera = (OrthographicCamera) viewport.getCamera();
+        screenShake = new ScreenShake();
+        cameraManager = new CameraManager(camera, screenShake, mapWidth, mapHeight);
+
         // Pass physicsManager.getWorld() to player
         player = new VicoSotto(
-            120, 80, 5, 8, 4, 9f, 9f, 1f, 1f, new ArrayList<>(),
+            120, 80, 5, 8, 10, 9f, 9f, 1f, 1f, new ArrayList<>(),
             mapWidth, mapHeight,
             physicsManager.getWorld()
         );
@@ -97,13 +103,12 @@ public class Game implements Screen {
         damageFont = new BitmapFont();
         damageFont.getData().setScale(0.1f);
 
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight, physicsManager);
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
         enemySpawner.spawnInitial(5);
 
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        viewport = new ExtendViewport(20, 12);
-        camera = (OrthographicCamera) viewport.getCamera();
+
 
         // Shader setup
         ShaderProgram.pedantic = false;
@@ -135,6 +140,7 @@ public class Game implements Screen {
         bulletLogic.update(delta);
         enemyLogic.update(delta);
 
+        screenShake.update(delta);
         updateCamera();
         updateWeaponAiming();
         draw();
@@ -172,22 +178,11 @@ public class Game implements Screen {
     }
 
     private void updateCamera() {
-        float halfViewWidth = viewport.getWorldWidth()/2f;
-        float halfViewHeight = viewport.getWorldHeight()/2f;
-
+        Vector3 mouseWorld = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
         float targetX = player.getSprite().getX() + player.getSprite().getWidth()/2f;
         float targetY = player.getSprite().getY() + player.getSprite().getHeight()/2f;
 
-        Vector3 mouseWorld = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0));
-        float panFactor = 0.2f;
-        targetX += (mouseWorld.x - targetX) * panFactor;
-        targetY += (mouseWorld.y - targetY) * panFactor;
-
-        float cameraX = MathUtils.clamp(targetX, halfViewWidth, mapWidth - halfViewWidth);
-        float cameraY = MathUtils.clamp(targetY, halfViewHeight, mapHeight - halfViewHeight);
-
-        camera.position.lerp(new Vector3(cameraX, cameraY, 0), 0.1f);
-        camera.update();
+        cameraManager.update(Gdx.graphics.getDeltaTime(), targetX, targetY, mouseWorld);
     }
 
     private void draw() {
