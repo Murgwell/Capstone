@@ -3,6 +3,7 @@ package capstone.main.Render;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import java.util.ArrayList;
@@ -35,6 +36,10 @@ public class EntityRenderer {
     }
 
     public void render(OrthographicCamera camera) {
+        float delta = Gdx.graphics.getDeltaTime();
+
+        // ensure GL_BLEND enabled
+        Gdx.gl.glEnable(GL20.GL_BLEND);
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
@@ -48,35 +53,50 @@ public class EntityRenderer {
             }
         }
 
-        // Enemies
+        // Enemies: draw normal sprite first
         for (AbstractEnemy enemy : enemies) {
-            if (!enemy.isDead()){
+            if (!enemy.isDead()) {
                 enemy.getSprite().draw(batch);
             }
         }
 
-        // Damage numbers
+        // Damage numbers (they draw via batch too)
         for (int i = dmgNumbers.size() - 1; i >= 0; i--) {
             DamageNumber dn = dmgNumbers.get(i);
-            dn.updateAndDraw(batch, Gdx.graphics.getDeltaTime());
+            dn.updateAndDraw(batch, delta);
             if (!dn.isAlive) dmgNumbers.remove(i);
+        }
+
+        for (AbstractEnemy enemy : enemies) {
+            enemy.getSprite().draw(batch);
+
+            float flashAlpha = enemy.getHitFlashAlpha();
+            if (flashAlpha > 0f) {
+                enemy.updateWhiteOverlay(); // sync position & flip
+                Sprite overlay = enemy.getWhiteOverlaySprite();
+                overlay.setColor(1f, 1f, 1f, flashAlpha);
+                overlay.draw(batch);
+                overlay.setColor(1f, 1f, 1f, 1f); // reset
+            }
         }
         batch.end();
 
-        Gdx.gl.glEnable(GL20.GL_BLEND);
+        // Healthbars with ShapeRenderer (keep as you had)
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        // Draw HealthBars with ShapeRenderer
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for (AbstractEnemy enemy : enemies) {
             if (!enemy.isDead() && enemy.getHealthBar() != null) {
-                enemy.getHealthBar().update(Gdx.graphics.getDeltaTime());
+                enemy.getHealthBar().update(delta);
                 enemy.getHealthBar().draw(shapeRenderer);
             }
         }
         shapeRenderer.end();
+
+        // optional: disable blend (safe)
         Gdx.gl.glDisable(GL20.GL_BLEND);
     }
+
 }
 
 

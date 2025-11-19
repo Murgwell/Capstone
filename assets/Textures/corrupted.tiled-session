@@ -1,0 +1,207 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "World1_Boss.tmx",
+    "expandedProjectPaths": [
+        ".",
+        "tilesets",
+        "tileset"
+    ],
+    "fileStates": {
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Lava.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 923.6666666666666,
+                "y": 321
+            }
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Lava.tmx#Dimensional_Portal": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Lava.tmx#LavaTile_spritesheet": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx": {
+            "scale": 1.5,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1089,
+                "y": 133
+            }
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx#Outdoor_Decor": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx#SnowSpruce_tree_1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx#Snow_Decor": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx#Snow_Tiles1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Snow.tmx#Well": {
+            "scaleInDock": 1
+        },
+        "Intro.tmx": {
+            "scale": 0.25,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 2190,
+                "y": 1086
+            }
+        },
+        "World1.tmx": {
+            "expandedObjectLayers": [
+                10
+            ],
+            "scale": 0.33,
+            "selectedLayer": 6,
+            "viewCenter": {
+                "x": 4165.151515151515,
+                "y": 1140.9090909090908
+            }
+        },
+        "World1_Boss.tmx": {
+            "scale": 0.25,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 954,
+                "y": 378
+            }
+        },
+        "World2.tmx": {
+            "scale": 0.125,
+            "selectedLayer": 2,
+            "viewCenter": {
+                "x": 1812,
+                "y": 1116
+            }
+        },
+        "World3.tmx": {
+            "scale": 0.25,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 4990,
+                "y": 1218
+            }
+        },
+        "props.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 0.5
+        },
+        "tileset/hills.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "tileset/terrain.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 0.33,
+            "scaleInEditor": 1
+        },
+        "tilesets/basement.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "tilesets/bridges and fences.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1.497
+        },
+        "tilesets/buildings.tsx": {
+            "scaleInDock": 0.33,
+            "scaleInEditor": 0.5
+        },
+        "tilesets/castle.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1.5
+        },
+        "tilesets/castle_decoratives.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "tilesets/castle_outside.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 0.75
+        },
+        "tilesets/floor.tsx": {
+            "scaleInDock": 0.75,
+            "scaleInEditor": 1
+        },
+        "tilesets/furnitures.tsx": {
+            "scaleInDock": 0.33,
+            "scaleInEditor": 1
+        },
+        "tilesets/props.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 0.25,
+            "scaleInEditor": 1
+        },
+        "tilesets/roofs.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "tilesets/terrain.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "tilesets/trees.tsx": {
+            "scaleInDock": 0.5,
+            "scaleInEditor": 1
+        },
+        "tilesets/water.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "trees.tsx": {
+            "dynamicWrapping": true,
+            "scaleInDock": 0.33,
+            "scaleInEditor": 0.5
+        }
+    },
+    "last.externalTilesetPath": "C:/Users/Ceddi/Desktop/assets/tilesets",
+    "last.imagePath": "C:/Users/Ceddi/Desktop/assets/buildings",
+    "map.height": 64,
+    "map.lastUsedFormat": "tmx",
+    "map.width": 64,
+    "openFiles": [
+        "Intro.tmx",
+        "World1.tmx",
+        "World2.tmx",
+        "tilesets/basement.tsx",
+        "tilesets/bridges and fences.tsx",
+        "tilesets/buildings.tsx",
+        "tilesets/floor.tsx",
+        "tilesets/furnitures.tsx",
+        "tilesets/props.tsx",
+        "tilesets/roofs.tsx",
+        "tilesets/terrain.tsx",
+        "tilesets/trees.tsx",
+        "tilesets/water.tsx",
+        "World3.tmx",
+        "tilesets/castle.tsx",
+        "tilesets/castle_decoratives.tsx",
+        "tilesets/castle_outside.tsx",
+        "World1_Boss.tmx"
+    ],
+    "project": "corrupted.tiled-project",
+    "recentFiles": [
+        "Intro.tmx",
+        "World1.tmx",
+        "World2.tmx",
+        "tilesets/basement.tsx",
+        "tilesets/bridges and fences.tsx",
+        "tilesets/buildings.tsx",
+        "tilesets/floor.tsx",
+        "tilesets/furnitures.tsx",
+        "tilesets/props.tsx",
+        "tilesets/roofs.tsx",
+        "tilesets/terrain.tsx",
+        "tilesets/trees.tsx"
+    ],
+    "tileset.lastUsedFormat": "tsx"
+}
