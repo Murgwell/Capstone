@@ -146,4 +146,13 @@ public class MapManager {
     public TiledMap getTiledMap() { return tiledMap; }
     public float getWorldWidth() { return worldWidth; }
     public float getWorldHeight() { return worldHeight; }
+
+    public void dispose() {
+        try {
+            if (renderer != null) renderer.dispose();
+            if (tiledMap != null) tiledMap.dispose();
+        } catch (Exception e) {
+            Gdx.app.error("MapManager", "Error disposing map resources: " + e.getMessage());
+        }
+    }
 }

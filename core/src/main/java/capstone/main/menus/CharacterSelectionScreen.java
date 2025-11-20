@@ -1,6 +1,7 @@
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
+import capstone.main.Managers.MusicManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -25,17 +26,26 @@ public class CharacterSelectionScreen implements Screen {
 
     private Texture confirmNormalTexture;
     private Texture confirmPressedTexture;
-    private Texture[] frameNormal;
-    private Texture[] frameSelected;
-    private Texture[] portraits;
+    private Texture leftArrowTexture;
+    private Texture rightArrowTexture;
+
+    // Character sprite sheets
+    private Texture[] characterSpriteSheets;
+    private String[] characterNames;
+    
+    // Frame extraction parameters
+    private static final int PREVIEW_FRAME_X = 0; // X index of preview frame (0 = first frame from left)
+    private static final int PREVIEW_FRAME_Y = 0; // Y index of preview frame (0 = top row)
 
     private Texture bgTexture;
     private Image bgImage;
     private OrthographicCamera camera;
     private Viewport viewport;
 
-    private Image[] characterFrames;
-    private int selectedCharacter = -1;
+    private Image characterPreview;
+    private Label characterNameLabel;
+    private int currentCharacterIndex = 0; // Start with first character (Vico Sotto)
+    private static final int NUM_CHARACTERS = 3;
 
     public CharacterSelectionScreen(Corrupted game) {
         this.game = game;
@@ -50,6 +60,10 @@ public class CharacterSelectionScreen implements Screen {
 
         skin = new Skin(Gdx.files.internal("uiskin.json"));
 
+        // Ensure background music is playing (continues from previous screen)
+        MusicManager musicManager = MusicManager.getInstance();
+        musicManager.ensurePlaying();
+
         // Background
         bgTexture = new Texture("character_screen_bg.png");
         bgImage = new Image(bgTexture);
@@ -57,142 +71,171 @@ public class CharacterSelectionScreen implements Screen {
         bgImage.setScaling(Scaling.stretch);
         stage.addActor(bgImage);
 
-        // Load frames and portraits
-        frameNormal = new Texture[3];
-        frameSelected = new Texture[3];
-        portraits = new Texture[3];
+        // Load character sprite sheets
+        characterSpriteSheets = new Texture[NUM_CHARACTERS];
+        characterNames = new String[NUM_CHARACTERS];
+        
+        characterSpriteSheets[0] = new Texture("Textures/Characters/Vico_Sotto_Idle_Run_Animation.png");
+        characterNames[0] = "Vico Sotto";
+        
+        characterSpriteSheets[1] = new Texture("Textures/Characters/Manny_Pacquiao_Idle_Run_Animation.png");
+        characterNames[1] = "Manny Pacquiao";
+        
+        characterSpriteSheets[2] = new Texture("Textures/Characters/Quiboloy_Idle_Run_Anim.png");
+        characterNames[2] = "Quiboloy";
 
-        frameNormal[0] = new Texture("ui/Characters/sotto_frame_normal.png");
-        frameSelected[0] = new Texture("ui/Characters/sotto_frame_pressed.png");
-        portraits[0] = new Texture("character.png");
+        // Load arrow button textures (simple arrows with no pressed animations)
+        leftArrowTexture = new Texture("ui/Menu/left_arrow.png");
+        rightArrowTexture = new Texture("ui/Menu/right_arrow.png");
 
-        frameNormal[1] = new Texture("ui/Characters/pacquiao_frame_normal.png");
-        frameSelected[1] = new Texture("ui/Characters/pacquiao_frame_pressed.png");
-        portraits[1] = new Texture("character.png");
+        // Load confirm button textures
+        confirmNormalTexture = new Texture("ui/Menu/confirm_button_normal.png");
+        confirmPressedTexture = new Texture("ui/Menu/confirm_button_pressed.png");
 
-        frameNormal[2] = new Texture("ui/Characters/quiboloy_frame_normal.png");
-        frameSelected[2] = new Texture("ui/Characters/quiboloy_frame_pressed.png");
-        portraits[2] = new Texture("character.png");
-
-        characterFrames = new Image[3];
-
+        // Create root table
         Table root = new Table();
         root.setFillParent(true);
         stage.addActor(root);
 
-        // Title row
+        // Title
         Label title = new Label("SELECT CHARACTER", skin);
-        title.setFontScale(2.5f);
+        title.setFontScale(3.0f);
         title.setColor(Color.WHITE);
-        root.add(title).colspan(3).center().padBottom(40f);
+        root.add(title).colspan(3).center().padBottom(-80f).padTop(80f);
         root.row();
 
-        // Character row: each fills 1/3 of screen width, full height
-        root.add(createCharacter(0)).expand().fill();
-        root.add(createCharacter(1)).expand().fill();
-        root.add(createCharacter(2)).expand().fill();
-        root.row().padTop(30f);
+        // Character preview area with navigation
+        Table characterArea = new Table();
+        
+        // Left arrow button
+        ImageButton leftArrowButton = createArrowButton(leftArrowTexture);
+        leftArrowButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                navigateCharacter(-1);
+            }
+        });
+        characterArea.add(leftArrowButton).width(80).height(80).padRight(40f);
 
-        // Load the confirm button textures
-        confirmNormalTexture = new Texture("ui/Menu/confirm_button_normal.png");
-        confirmPressedTexture = new Texture("ui/Menu/confirm_button_pressed.png");
+        // Character preview (center) - extract a single frame from sprite sheet
+        TextureRegion previewFrame = extractFrame(characterSpriteSheets[currentCharacterIndex], 
+                                                   PREVIEW_FRAME_X, PREVIEW_FRAME_Y);
+        characterPreview = new Image(new TextureRegionDrawable(previewFrame));
+        characterPreview.setScaling(Scaling.fit);
+        characterNameLabel = new Label(characterNames[currentCharacterIndex], skin);
+        characterNameLabel.setFontScale(2.0f);
+        characterNameLabel.setColor(Color.WHITE);
 
-        // Optionally scale down the textures (50% downscale, for example)
-        int targetWidth = 200; // Set your desired button width
-        int targetHeight = 60; // Set your desired button height (adjust based on aspect ratio)
+        Table previewTable = new Table();
+        previewTable.add(characterPreview).size(400, 400).row();
+        previewTable.add(characterNameLabel).padTop(20f);
+        characterArea.add(previewTable).expand().center();
 
-        confirmNormalTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        confirmPressedTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        // Right arrow button
+        ImageButton rightArrowButton = createArrowButton(rightArrowTexture);
+        rightArrowButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                navigateCharacter(1);
+            }
+        });
+        characterArea.add(rightArrowButton).width(80).height(80).padLeft(40f);
 
-        // Scale down the texture
-        TextureRegion normalRegion = new TextureRegion(confirmNormalTexture);
-        TextureRegion pressedRegion = new TextureRegion(confirmPressedTexture);
+        root.add(characterArea).colspan(3).expand().center();
+        root.row().padTop(40f);
 
-        // Now create the button with the scaled texture
-        ImageButton.ImageButtonStyle confirmButtonStyle = new ImageButton.ImageButtonStyle();
-        confirmButtonStyle.up = new TextureRegionDrawable(normalRegion);
-        confirmButtonStyle.down = new TextureRegionDrawable(pressedRegion);
-
-        ImageButton confirmButton = new ImageButton(confirmButtonStyle);
-
-        // Add padding or use setSize to control the final size
-        confirmButton.setSize(targetWidth, targetHeight);
-
-        // Add the button to the layout
-        Table table = new Table();
-        table.add(confirmButton).width(targetWidth).height(targetHeight).center();
-
+        // Confirm button
+        ImageButton confirmButton = createConfirmButton();
         confirmButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                if (selectedCharacter != -1) {
-                    System.out.println("Selected character: " +
-                    selectedCharacter);
-                    game.setScreen(new Game(game));
-                }
+                System.out.println("Selected character: " + currentCharacterIndex + " - " + characterNames[currentCharacterIndex]);
+                // Stop music when entering game (Game.java doesn't have music)
+                MusicManager.getInstance().stop();
+                game.setScreen(new Game(game));
             }
         });
 
-        root.add(table).colspan(3).center().padTop(20f).padBottom(20f);
-
-
+        root.add(confirmButton).colspan(3).width(250).height(70).padTop(30f).padBottom(100f);
     }
 
-    private Stack createCharacter(final int index) {
-        TextureRegionDrawable normalDrawable =
-            new TextureRegionDrawable(new TextureRegion(frameNormal[index]));
-        TextureRegionDrawable selectedDrawable =
-            new TextureRegionDrawable(new TextureRegion(frameSelected[index]));
+    private ImageButton createArrowButton(Texture arrowTexture) {
+        TextureRegion arrowRegion = new TextureRegion(arrowTexture);
 
-        // Frame image (fills cell)
-        Image frame = new Image(normalDrawable);
-        frame.setScaling(Scaling.stretch);
-        characterFrames[index] = frame;
+        ImageButton.ImageButtonStyle arrowStyle = new ImageButton.ImageButtonStyle();
+        arrowStyle.up = new TextureRegionDrawable(arrowRegion);
+        arrowStyle.down = new TextureRegionDrawable(arrowRegion); // Same texture for pressed state (no animation)
 
-        // Portrait image (fills frame area)
-        Image portrait = new Image(portraits[index]);
-        portrait.setScaling(Scaling.fit);
-        portrait.setFillParent(true);
-
-        // Invisible button overlay
-        TextButton invisibleButton = new TextButton("", skin);
-        invisibleButton.setColor(1, 1, 1, 0.01f);
-        invisibleButton.setFillParent(true);
-
-        Stack stack = new Stack();
-        stack.add(frame);
-        stack.add(portrait);
-        stack.add(invisibleButton);
-
-        invisibleButton.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                // Store the selected character index
-                selectedCharacter = index;
-                System.out.println("Character selected: " + selectedCharacter);
-                // Update the frame selection UI to reflect the selected character
-                updateFrameSelection();
-            }
-        });
-
-        return stack;
+        return new ImageButton(arrowStyle);
     }
 
-    private void updateFrameSelection() {
-        for (int i = 0; i < characterFrames.length; i++) {
-            if (i == selectedCharacter) {
-                characterFrames[i].setDrawable(
-                    new TextureRegionDrawable(new TextureRegion(frameSelected[i])));
-            } else {
-                characterFrames[i].setDrawable(
-                    new TextureRegionDrawable(new TextureRegion(frameNormal[i])));
-            }
+    private ImageButton createConfirmButton() {
+        TextureRegion normalRegion = new TextureRegion(confirmNormalTexture);
+        TextureRegion pressedRegion = new TextureRegion(confirmPressedTexture);
+
+        ImageButton.ImageButtonStyle confirmStyle = new ImageButton.ImageButtonStyle();
+        confirmStyle.up = new TextureRegionDrawable(normalRegion);
+        confirmStyle.down = new TextureRegionDrawable(pressedRegion);
+
+        return new ImageButton(confirmStyle);
+    }
+
+    /**
+     * Extracts a single frame from a sprite sheet
+     * Assumes sprite sheets are 2 rows x 13 columns (26 frames total)
+     * @param spriteSheet The sprite sheet texture
+     * @param frameX The X index of the frame (0 = first frame from left, 0-12)
+     * @param frameY The Y index of the frame (0 = top row, 0-1)
+     * @return TextureRegion containing the extracted frame
+     */
+    private TextureRegion extractFrame(Texture spriteSheet, int frameX, int frameY) {
+        int sheetWidth = spriteSheet.getWidth();
+        int sheetHeight = spriteSheet.getHeight();
+        
+        // Calculate frame dimensions: 2 rows x 13 columns
+        float frameWidthFloat = sheetWidth / 13f;
+        float frameHeightFloat = sheetHeight / 2f;
+        
+        // Round to nearest integer for pixel boundaries
+        int frameWidth = Math.round(frameWidthFloat);
+        int frameHeight = Math.round(frameHeightFloat);
+        
+        // Calculate position
+        int x = Math.round(frameX * frameWidthFloat);
+        int y = Math.round(frameY * frameHeightFloat);
+        
+        // Debug output to help diagnose the issue
+        System.out.println("Sprite Sheet: " + sheetWidth + "x" + sheetHeight);
+        System.out.println("Calculated Frame: " + frameWidth + "x" + frameHeight);
+        System.out.println("Extracting at: (" + x + "," + y + ")");
+        
+        // Ensure bounds
+        if (x + frameWidth > sheetWidth) frameWidth = sheetWidth - x;
+        if (y + frameHeight > sheetHeight) frameHeight = sheetHeight - y;
+        
+        return new TextureRegion(spriteSheet, x, y, frameWidth, frameHeight);
+    }
+
+    private void navigateCharacter(int direction) {
+        currentCharacterIndex += direction;
+        
+        // Wrap around
+        if (currentCharacterIndex < 0) {
+            currentCharacterIndex = NUM_CHARACTERS - 1;
+        } else if (currentCharacterIndex >= NUM_CHARACTERS) {
+            currentCharacterIndex = 0;
         }
+
+        // Update preview with extracted frame
+        TextureRegion previewFrame = extractFrame(characterSpriteSheets[currentCharacterIndex], 
+                                                   PREVIEW_FRAME_X, PREVIEW_FRAME_Y);
+        characterPreview.setDrawable(new TextureRegionDrawable(previewFrame));
+        characterNameLabel.setText(characterNames[currentCharacterIndex]);
     }
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0,0,0,1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         stage.act(delta);
         stage.draw();
@@ -200,22 +243,49 @@ public class CharacterSelectionScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        bgImage.setSize(width, height);
+        if (viewport != null) {
+            viewport.update(width, height, true);
+        }
+        if (bgImage != null) {
+            bgImage.setSize(width, height);
+        }
     }
 
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    @Override
+    public void pause() {}
+
+    @Override
+    public void resume() {}
+
+    @Override
+    public void hide() {}
 
     @Override
     public void dispose() {
-        stage.dispose();
-        bgTexture.dispose();
-        for (int i = 0; i < 3; i++) {
-            frameNormal[i].dispose();
-            frameSelected[i].dispose();
-            portraits[i].dispose();
+        if (stage != null) {
+            stage.dispose();
+        }
+        if (bgTexture != null) {
+            bgTexture.dispose();
+        }
+        if (characterSpriteSheets != null) {
+            for (int i = 0; i < characterSpriteSheets.length; i++) {
+                if (characterSpriteSheets[i] != null) {
+                    characterSpriteSheets[i].dispose();
+                }
+            }
+        }
+        if (confirmNormalTexture != null) {
+            confirmNormalTexture.dispose();
+        }
+        if (confirmPressedTexture != null) {
+            confirmPressedTexture.dispose();
+        }
+        if (leftArrowTexture != null) {
+            leftArrowTexture.dispose();
+        }
+        if (rightArrowTexture != null) {
+            rightArrowTexture.dispose();
         }
     }
 }

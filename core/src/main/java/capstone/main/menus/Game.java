@@ -38,8 +38,8 @@ public class Game implements Screen {
 
     private final Corrupted game;
     private SpriteBatch spriteBatch;
-    private Viewport viewport;
-    private Viewport uiViewport;
+    private Viewport viewport;      // world viewport
+    private Viewport uiViewport;    // UI viewport for pause stage
     private OrthographicCamera camera;
 
     private Texture weaponTexture;
@@ -65,6 +65,7 @@ public class Game implements Screen {
     private BitmapFont damageFont;
 
     private MapManager mapManager;
+    private PhysicsManager physicsManager;
 
     OrthogonalTiledMapRenderer mapRenderer;
     ShaderProgram treeFadeShader;
@@ -73,11 +74,13 @@ public class Game implements Screen {
     EntityRenderer entityRenderer;
     TreeRenderer treeRenderer;
     ShapeRenderer shapeRenderer;
+    WeaponRenderer weaponRenderer;
+    CameraManager cameraManager;
+    ScreenShake screenShake;
 
     PlayerLogic playerLogic;
     BulletLogic bulletLogic;
     EnemyLogic enemyLogic;
-    WeaponRenderer weaponRenderer;
 
     public Game(Corrupted game) {
         this.game = game;
@@ -85,11 +88,42 @@ public class Game implements Screen {
 
     @Override
     public void show() {
+        // --- Physics world (use physics-enabled map manager) ---
+        physicsManager = new PhysicsManager(); // contains Box2D world
+        mapManager = new MapManager(physicsManager);
+        mapManager.load("Textures/World1.tmx");
+        mapRenderer = mapManager.getRenderer();
 
-        // CREATE THESE FIRST, before using them
+        mapWidth = mapManager.getWorldWidth();
+        mapHeight = mapManager.getWorldHeight();
+
+        // Viewports & camera
+        viewport = new ExtendViewport(20, 12);
+        camera = (OrthographicCamera) viewport.getCamera();
+
+        uiViewport = new ExtendViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+
+        // Screen shake + camera manager
+        screenShake = new ScreenShake();
+        cameraManager = new CameraManager(camera, screenShake, mapWidth, mapHeight);
+
+        // Create player with physics world (adjust constructor if needed)
+        player = new VicoSotto(
+            120, 80, 5, 8, 10, 9f, 9f, 1f, 1f, new ArrayList<>(),
+            mapWidth, mapHeight,
+            physicsManager.getWorld()
+        );
+
+        // Weapon sprite
+        weaponTexture = new Texture("gun.png");
+        weaponSprite = new Sprite(weaponTexture);
+        weaponSprite.setSize(.3f, .3f);
+        weaponSprite.setOrigin(1f, -3f);
+
+        // Input setup
         inputManager = new InputManager();
-
-        gameInputProcessor = new com.badlogic.gdx.InputProcessor() {
+        // gameInputProcessor handles ESC toggle and F11 fullscreen
+        gameInputProcessor = new InputProcessor() {
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
@@ -102,18 +136,14 @@ public class Game implements Screen {
                     return true;
                 }
 
-                // FULLSCREEN TOGGLE (F11)
                 if (keycode == com.badlogic.gdx.Input.Keys.F11) {
                     if (Gdx.graphics.isFullscreen()) {
-                        // Return to windowed mode
-                        Gdx.graphics.setWindowedMode(1280, 720);   // Choose your window size
+                        Gdx.graphics.setWindowedMode(1280, 720);
                     } else {
-                        // Enter fullscreen using current monitor resolution
                         Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
                     }
                     return true;
                 }
-
                 return false;
             }
 
@@ -121,60 +151,49 @@ public class Game implements Screen {
             @Override public boolean keyTyped(char character) { return false; }
             @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
             @Override public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
-            @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }
             @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
             @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
             @Override public boolean scrolled(float amountX, float amountY) { return false; }
+
+            // REQUIRED BY YOUR LIBGDX VERSION
+            @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+                return false;
+            }
         };
 
-        // NOW it's safe to use inputManager and gameInputProcessor.
+
         gameplayInputs = new InputMultiplexer();
         gameplayInputs.addProcessor(inputManager);
         gameplayInputs.addProcessor(gameInputProcessor);
         Gdx.input.setInputProcessor(gameplayInputs);
 
-        // --- everything below stays the same ---
-        mapManager = new MapManager();
-        mapManager.load("Textures/World1.tmx");
-        mapRenderer = mapManager.getRenderer();
-
-        mapWidth = mapManager.getWorldWidth();
-        mapHeight = mapManager.getWorldHeight();
-
-        player = new VicoSotto(120,80, 5, 8,4,9f, 9f, 2f, 2f, new ArrayList<>(), mapWidth, mapHeight);
-
-        weaponTexture = new Texture("gun.png");
-        weaponSprite = new Sprite(weaponTexture);
-        weaponSprite.setSize(.3f, .3f);
-        weaponSprite.setOrigin(1f, -3f);
-
-        movementManager = new MovementManager();
+        // Movement and logic managers
+        movementManager = new MovementManager(player); // physics-aware movement manager
         damageNumbers = new ArrayList<>();
         damageFont = new BitmapFont();
         damageFont.getData().setScale(0.1f);
 
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight);
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
         enemySpawner.spawnInitial(5);
 
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        uiViewport = new ExtendViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        pauseStage = new Stage(uiViewport, spriteBatch);
-        viewport = new ExtendViewport(20, 12);
-        camera = (OrthographicCamera) viewport.getCamera();
 
+        // Back button sprite (world coordinates)
         backBtnTexture = new Texture("ui/Menu/back_button.png");
         backBtnSprite = new Sprite(backBtnTexture);
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
+        // Shaders
         ShaderProgram.pedantic = false;
         treeFadeShader = new ShaderProgram(
             Gdx.files.internal("shaders/default.vert"),
             Gdx.files.internal("shaders/treeFade.glsl")
         );
 
-        bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont);
+        // Logic & renderers
+        bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
         playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
 
@@ -183,18 +202,28 @@ public class Game implements Screen {
         treeRenderer = new TreeRenderer(spriteBatch, mapManager.getTiledMap(), player);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
 
+        // Pause UI stage and skin
         pauseSkin = new Skin(Gdx.files.internal("uiskin.json"));
+        pauseStage = new Stage(uiViewport, spriteBatch);
     }
-
 
     @Override
     public void render(float delta) {
+        // Cap delta to avoid large physics steps during debugging/resizes
+        float stepDelta = Math.min(delta, 1f / 30f);
+
         if (!isPaused) {
             inputManager.update();
+            // Step physics only when not paused
+            physicsManager.step(stepDelta);
+
             playerLogic.update(delta);
             bulletLogic.update(delta);
             enemyLogic.update(delta);
+
+            screenShake.update(delta);
         } else {
+            // paused -> update pause UI only
             if (pauseStage.getActors().size == 0) {
                 createPauseMenu();
             }
@@ -209,7 +238,7 @@ public class Game implements Screen {
             pauseStage.draw();
         }
 
-        // detect mouse click on back button
+        // detect mouse click on back button only when not paused
         if (Gdx.input.justTouched() && !isPaused) {
             Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0);
             viewport.getCamera().unproject(mouse);
@@ -223,20 +252,25 @@ public class Game implements Screen {
     }
 
     private void updateWeaponAiming() {
-        player.updateWeaponAiming(viewport);
+        // Use physics-aware aiming update (same logic from your physics version)
+        player.updateWeaponAimingRad(viewport);
         float weaponRad = player.getWeaponAimingRad();
 
-        weaponSprite.setOrigin(weaponSprite.getWidth()/2f, weaponSprite.getHeight()*0.25f);
-        weaponSprite.setRotation((float)Math.toDegrees(weaponRad));
+        // Player center
+        float playerCenterX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+        float playerCenterY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
 
-        float gap = 0.1f;
-        float weaponCenterX = player.getSprite().getX() + player.getSprite().getWidth()/2f
-            + (float)Math.cos(weaponRad) * gap;
-        float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight()/2f
-            + (float)Math.sin(weaponRad) * gap;
+        boolean lookingLeft = Math.cos(weaponRad) < 0;
 
-        weaponSprite.setPosition(weaponCenterX - weaponSprite.getOriginX(),
-            weaponCenterY - weaponSprite.getOriginY());
+        weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
+        weaponSprite.setFlip(lookingLeft, false);
+
+        float angleDeg = (float)Math.toDegrees(weaponRad);
+        if (lookingLeft) angleDeg += 180f;
+        weaponSprite.setRotation(angleDeg);
+
+        weaponSprite.setPosition(playerCenterX - weaponSprite.getOriginX(),
+            playerCenterY - weaponSprite.getOriginY());
     }
 
     private void createPauseMenu() {
@@ -272,12 +306,13 @@ public class Game implements Screen {
         table.add(backButton).width(120).height(35);
 
         pauseStage.addActor(table);
+        // ensure pause stage receives input
         Gdx.input.setInputProcessor(pauseStage);
     }
 
     private void updateCamera() {
-        float halfViewWidth = viewport.getWorldWidth()/2f;
-        float halfViewHeight = viewport.getWorldHeight()/2f;
+        float halfViewWidth = viewport.getWorldWidth() / 2f;
+        float halfViewHeight = viewport.getWorldHeight() / 2f;
 
         float targetX = player.getSprite().getX() + player.getSprite().getWidth()/2f;
         float targetY = player.getSprite().getY() + player.getSprite().getHeight()/2f;
@@ -287,15 +322,12 @@ public class Game implements Screen {
         targetX += (mouseWorld.x - targetX) * panFactor;
         targetY += (mouseWorld.y - targetY) * panFactor;
 
-        float cameraX = MathUtils.clamp(targetX, halfViewWidth, mapWidth - halfViewWidth);
-        float cameraY = MathUtils.clamp(targetY, halfViewHeight, mapHeight - halfViewHeight);
-
-        camera.position.lerp(new Vector3(cameraX, cameraY, 0), 0.1f);
-        camera.update();
+        // Use camera manager (handles clamp + shake)
+        cameraManager.update(Gdx.graphics.getDeltaTime(), targetX, targetY, mouseWorld);
     }
 
     private void draw() {
-        Gdx.gl.glClearColor(1, 1, 1, 1);
+        Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         viewport.apply();
@@ -305,10 +337,10 @@ public class Game implements Screen {
         //treeRenderer.render(camera);
         weaponRenderer.render(spriteBatch);
 
+        // world-space UI: draw back button as part of world projection
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
         backBtnSprite.draw(spriteBatch);
-
         spriteBatch.end();
     }
 
@@ -318,15 +350,43 @@ public class Game implements Screen {
         viewport.update(width, height);
         uiViewport.update(width, height);
 
-        float targetAspect = viewport.getWorldWidth()/viewport.getWorldHeight();
-        float windowAspect = (float) width/height;
+        float targetAspect = viewport.getWorldWidth() / viewport.getWorldHeight();
+        float windowAspect = (float) width / height;
 
-        camera.zoom = windowAspect > targetAspect ? windowAspect/targetAspect : targetAspect/windowAspect;
+        camera.zoom = windowAspect > targetAspect ? windowAspect / targetAspect : targetAspect / windowAspect;
         camera.update();
     }
 
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
-    @Override public void dispose() {}
+    @Override
+    public void pause() {
+        // libGDX lifecycle pause (not same as isPaused toggle)
+    }
+
+    @Override
+    public void resume() {
+        // libGDX lifecycle resume
+    }
+
+    @Override
+    public void hide() {
+        // When hidden, ensure physics stopped
+        isPaused = true;
+        Gdx.input.setInputProcessor(pauseStage);
+    }
+
+    @Override
+    public void dispose() {
+        // Dispose resources used by this screen
+        try { spriteBatch.dispose(); } catch (Exception ignored) {}
+        try { weaponTexture.dispose(); } catch (Exception ignored) {}
+        try { backBtnTexture.dispose(); } catch (Exception ignored) {}
+        try { shapeRenderer.dispose(); } catch (Exception ignored) {}
+        try { damageFont.dispose(); } catch (Exception ignored) {}
+        try { pauseStage.dispose(); } catch (Exception ignored) {}
+        try { pauseSkin.dispose(); } catch (Exception ignored) {}
+        try { treeFadeShader.dispose(); } catch (Exception ignored) {}
+        if (physicsManager != null) physicsManager.dispose(); // if you have cleanup
+        if (mapManager != null) mapManager.dispose();
+
+    }
 }

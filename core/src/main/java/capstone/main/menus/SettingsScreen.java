@@ -1,6 +1,7 @@
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
+import capstone.main.Managers.MusicManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
@@ -31,7 +32,7 @@ public class SettingsScreen implements Screen {
     private Texture fullscreenUpTex, fullscreenDownTex;
     private Texture backUpTex, backDownTex;
 
-    private boolean isMusicOn = true;
+    private MusicManager musicManager;
     private boolean isFullscreen = false;
 
     public SettingsScreen(Corrupted game) {
@@ -50,6 +51,9 @@ public class SettingsScreen implements Screen {
         hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
         background = new Texture("mainMenuBG.png");
 
+        // Get music manager instance
+        musicManager = MusicManager.getInstance();
+
         musicUpTex = new Texture("ui/Menu/music_button_normal.png");
         musicDownTex = new Texture("ui/Menu/music_button_pressed.png");
         fullscreenUpTex = new Texture("ui/Menu/fullscreen_button_normal.png");
@@ -67,7 +71,7 @@ public class SettingsScreen implements Screen {
 
         layout.add(titleLabel).padBottom(60f).row();
         layout.add(createToggleButton(musicUpTex, musicDownTex, () -> {
-            isMusicOn = !isMusicOn;
+            musicManager.setMusicEnabled(!musicManager.isMusicEnabled());
         })).pad(12).width(200).height(60).row();
 
         layout.add(createToggleButton(fullscreenUpTex, fullscreenDownTex, () -> {

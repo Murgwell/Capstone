@@ -1,6 +1,7 @@
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
+import capstone.main.Managers.MusicManager;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
@@ -46,34 +47,52 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void show() {
+        // Initialize camera and viewport BEFORE setWindowedMode to avoid resize issues
+        if (camera == null) {
+            camera = new OrthographicCamera(WORLD_WIDTH, WORLD_HEIGHT);
+        }
+        camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
+        camera.update();
+
+        if (viewport == null) {
+            viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
+        }
 
         Gdx.graphics.setWindowedMode(1280, 720);
         Gdx.graphics.setResizable(false);
 
-        batch = new SpriteBatch();
-        background = new Texture("mainMenuBG.png");
+        if (batch == null) {
+            batch = new SpriteBatch();
+        }
+        if (background == null) {
+            background = new Texture("mainMenuBG.png");
+        }
 
-        skin = new Skin(Gdx.files.internal("uiskin.json"));
-        hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
+        if (skin == null) {
+            skin = new Skin(Gdx.files.internal("uiskin.json"));
+        }
+        if (hoverSound == null) {
+            hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
+        }
 
-        camera = new OrthographicCamera(WORLD_WIDTH, WORLD_HEIGHT);
-        camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
-        camera.update();
+        // Load and play background music (only loads if not already loaded)
+        MusicManager musicManager = MusicManager.getInstance();
+        musicManager.ensurePlaying();
 
-        viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
-
-        uiStage = new Stage(new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera));
+        // Initialize stages if needed
+        if (uiStage == null) {
+            uiStage = new Stage(new ScreenViewport());
+        } else {
+            uiStage.clear(); // Clear actors when screen is shown again
+        }
         Gdx.input.setInputProcessor(uiStage);
-
-        // Load background texture
-        background = new Texture("mainMenuBG.png");
 
         // Main stage for world elements
-        stage = new Stage(viewport, batch);
-
-        // UI overlay stage
-        uiStage = new Stage(new ScreenViewport());
-        Gdx.input.setInputProcessor(uiStage);
+        if (stage == null) {
+            stage = new Stage(viewport, batch);
+        } else {
+            stage.clear(); // Clear actors when screen is shown again
+        }
 
 
 
@@ -197,42 +216,56 @@ public class MainMenuScreen implements Screen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        camera.update();
-        batch.setProjectionMatrix(camera.combined);
+        if (camera != null && batch != null) {
+            camera.update();
+            batch.setProjectionMatrix(camera.combined);
 
-        batch.begin();
-        batch.draw(background, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
-        batch.end();
+            if (background != null) {
+                batch.begin();
+                batch.draw(background, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+                batch.end();
+            }
+        }
 
         // Glitch flicker for title
-        glitchTimer += delta;
-        if (glitchTimer > glitchInterval) {
-            glitchTimer = 0f;
-            titleLabel.setColor(
-                MathUtils.random(0.7f, 1f),
-                MathUtils.random(0.7f, 1f),
-                MathUtils.random(0.7f, 1f),
-                1f
-            );
-            titleLabel.setPosition(
-                (Gdx.graphics.getWidth() / 2f - titleLabel.getPrefWidth() / 2f) + MathUtils.random(-3f, 3f),
-                (Gdx.graphics.getHeight() - 150f) + MathUtils.random(-2f, 2f)
-            );
+        if (titleLabel != null) {
+            glitchTimer += delta;
+            if (glitchTimer > glitchInterval) {
+                glitchTimer = 0f;
+                titleLabel.setColor(
+                    MathUtils.random(0.7f, 1f),
+                    MathUtils.random(0.7f, 1f),
+                    MathUtils.random(0.7f, 1f),
+                    1f
+                );
+                titleLabel.setPosition(
+                    (Gdx.graphics.getWidth() / 2f - titleLabel.getPrefWidth() / 2f) + MathUtils.random(-3f, 3f),
+                    (Gdx.graphics.getHeight() - 150f) + MathUtils.random(-2f, 2f)
+                );
+            }
         }
 
         // Draw stages
-        stage.act(delta);
-        stage.draw();
+        if (stage != null) {
+            stage.act(delta);
+            stage.draw();
+        }
 
-        uiStage.act(delta);
-        uiStage.draw();
+        if (uiStage != null) {
+            uiStage.act(delta);
+            uiStage.draw();
+        }
     }
 
 
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height, true);
-        uiStage.getViewport().update(width, height, true);
+        if (viewport != null) {
+            viewport.update(width, height, true);
+        }
+        if (uiStage != null && uiStage.getViewport() != null) {
+            uiStage.getViewport().update(width, height, true);
+        }
     }
 
     @Override
@@ -250,8 +283,30 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void dispose() {
-        background.dispose();
-        stage.dispose();
-        skin.dispose();
+        if (background != null) {
+            background.dispose();
+            background = null;
+        }
+        if (stage != null) {
+            stage.dispose();
+            stage = null;
+        }
+        if (uiStage != null) {
+            uiStage.dispose();
+            uiStage = null;
+        }
+        if (skin != null) {
+            skin.dispose();
+            skin = null;
+        }
+        if (hoverSound != null) {
+            hoverSound.dispose();
+            hoverSound = null;
+        }
+        if (batch != null) {
+            batch.dispose();
+            batch = null;
+        }
+        // Don't dispose viewport and camera - they may be reused
     }
 }
