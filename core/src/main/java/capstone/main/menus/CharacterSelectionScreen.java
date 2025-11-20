@@ -118,18 +118,34 @@ public class CharacterSelectionScreen implements Screen {
         characterArea.add(leftArrowButton).width(80).height(80).padRight(40f);
 
         // Character preview (center) - extract a single frame from sprite sheet
-        TextureRegion previewFrame = extractFrame(characterSpriteSheets[currentCharacterIndex], 
-                                                   PREVIEW_FRAME_X, PREVIEW_FRAME_Y);
+        TextureRegion previewFrame = extractFrame(
+            characterSpriteSheets[currentCharacterIndex],
+            PREVIEW_FRAME_X,
+            PREVIEW_FRAME_Y
+        );
+
+        // Create preview image using ONE frame
         characterPreview = new Image(new TextureRegionDrawable(previewFrame));
-        characterPreview.setScaling(Scaling.fit);
+
+        // Make the preview BIGGER and cleaner
+        characterPreview.setSize(350, 350);          // enlarge character
+        characterPreview.setScaling(Scaling.fill);   // fills the box, avoids small rendering
+
         characterNameLabel = new Label(characterNames[currentCharacterIndex], skin);
         characterNameLabel.setFontScale(2.0f);
         characterNameLabel.setColor(Color.WHITE);
 
+        // Create preview table
         Table previewTable = new Table();
-        previewTable.add(characterPreview).size(400, 400).row();
-        previewTable.add(characterNameLabel).padTop(20f);
+        previewTable.add(characterPreview)
+                .width(350)
+                .height(350)
+                .row();
+        previewTable.add(characterNameLabel)
+                .padTop(20f);
+
         characterArea.add(previewTable).expand().center();
+
 
         // Right arrow button
         ImageButton rightArrowButton = createArrowButton(rightArrowTexture);
@@ -152,7 +168,7 @@ public class CharacterSelectionScreen implements Screen {
                 System.out.println("Selected character: " + currentCharacterIndex + " - " + characterNames[currentCharacterIndex]);
                 // Stop music when entering game (Game.java doesn't have music)
                 MusicManager.getInstance().stop();
-                game.setScreen(new Game(game));
+                game.setScreen(new Game(game, currentCharacterIndex));
             }
         });
 
@@ -218,20 +234,30 @@ public class CharacterSelectionScreen implements Screen {
 
     private void navigateCharacter(int direction) {
         currentCharacterIndex += direction;
-        
-        // Wrap around
+    
+        // Wrap around character index
         if (currentCharacterIndex < 0) {
             currentCharacterIndex = NUM_CHARACTERS - 1;
         } else if (currentCharacterIndex >= NUM_CHARACTERS) {
             currentCharacterIndex = 0;
         }
-
-        // Update preview with extracted frame
-        TextureRegion previewFrame = extractFrame(characterSpriteSheets[currentCharacterIndex], 
-                                                   PREVIEW_FRAME_X, PREVIEW_FRAME_Y);
+    
+        // Extract a clean preview frame again
+        TextureRegion previewFrame = extractFrame(
+                characterSpriteSheets[currentCharacterIndex],
+                PREVIEW_FRAME_X,
+                PREVIEW_FRAME_Y
+        );
+    
+        // Update the preview image
         characterPreview.setDrawable(new TextureRegionDrawable(previewFrame));
+        characterPreview.setSize(350, 350);
+        characterPreview.setScaling(Scaling.fill);
+    
+        // Update displayed character name
         characterNameLabel.setText(characterNames[currentCharacterIndex]);
     }
+    
 
     @Override
     public void render(float delta) {
