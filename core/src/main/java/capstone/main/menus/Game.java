@@ -26,7 +26,6 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -37,6 +36,7 @@ import java.util.ArrayList;
 public class Game implements Screen {
 
     private final Corrupted game;
+    private final int selectedCharacterIndex;
     private SpriteBatch spriteBatch;
     private Viewport viewport;      // world viewport
     private Viewport uiViewport;    // UI viewport for pause stage
@@ -82,8 +82,9 @@ public class Game implements Screen {
     BulletLogic bulletLogic;
     EnemyLogic enemyLogic;
 
-    public Game(Corrupted game) {
+    public Game(Corrupted game, int selectedCharacterIndex) {
         this.game = game;
+        this.selectedCharacterIndex = selectedCharacterIndex;
     }
 
     @Override
@@ -108,11 +109,7 @@ public class Game implements Screen {
         cameraManager = new CameraManager(camera, screenShake, mapWidth, mapHeight);
 
         // Create player with physics world (adjust constructor if needed)
-        player = new VicoSotto(
-            120, 80, 5, 8, 10, 9f, 9f, 1f, 1f, new ArrayList<>(),
-            mapWidth, mapHeight,
-            physicsManager.getWorld()
-        );
+        player = createPlayer();
 
         // Weapon sprite
         weaponTexture = new Texture("gun.png");
@@ -311,9 +308,6 @@ public class Game implements Screen {
     }
 
     private void updateCamera() {
-        float halfViewWidth = viewport.getWorldWidth() / 2f;
-        float halfViewHeight = viewport.getWorldHeight() / 2f;
-
         float targetX = player.getSprite().getX() + player.getSprite().getWidth()/2f;
         float targetY = player.getSprite().getY() + player.getSprite().getHeight()/2f;
 
@@ -388,5 +382,27 @@ public class Game implements Screen {
         if (physicsManager != null) physicsManager.dispose(); // if you have cleanup
         if (mapManager != null) mapManager.dispose();
 
+    }
+
+    private AbstractPlayer createPlayer() {
+        ArrayList<Bullet> bullets = new ArrayList<>();
+        switch (selectedCharacterIndex) {
+            case 1:
+                return new MannyPacquiao(
+                    120, 80, 6, 10, 11,
+                    9f, 9f, 1f, 1f,
+                    bullets,
+                    mapWidth, mapHeight,
+                    physicsManager.getWorld()
+                );
+            default:
+                return new VicoSotto(
+                    120, 80, 5, 8, 10,
+                    9f, 9f, 1f, 1f,
+                    bullets,
+                    mapWidth, mapHeight,
+                    physicsManager.getWorld()
+                );
+        }
     }
 }
