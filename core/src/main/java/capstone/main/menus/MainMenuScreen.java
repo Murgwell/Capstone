@@ -1,45 +1,55 @@
+
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
 import capstone.main.Managers.MusicManager;
+import capstone.main.Managers.VideoSettings;
+
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.MathUtils;
+
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.scenes.scene2d.actions.Actions;
-import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.scenes.scene2d.ui.*;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
+
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 
 public class MainMenuScreen implements Screen {
-    private static final float WORLD_WIDTH = 1280;
-    private static final float WORLD_HEIGHT = 720;
+    private static final float WORLD_WIDTH  = 1280f;
+    private static final float WORLD_HEIGHT = 720f;
 
     private final Corrupted game;
+
     private SpriteBatch batch;
     private Texture background;
+
     private OrthographicCamera camera;
     private FitViewport viewport;
 
-    private Stage stage;
-    private Stage uiStage;
+    private Stage stage;    // world stage (background, etc.)
+    private Stage uiStage;  // UI stage (title, buttons)
     private Skin skin;
-    private Label titleLabel;
-    private float glitchTimer = 0f;
-    private float glitchInterval = 0.2f; // how often it flickers
 
+    private Label titleLabel;
     private Sound hoverSound;
+
+    // Glitch effect state
+    private float glitchTimer    = 0f;
+    private float glitchInterval = 0.2f;
 
     public MainMenuScreen(Corrupted game) {
         this.game = game;
@@ -47,112 +57,101 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void show() {
-        // Initialize camera and viewport BEFORE setWindowedMode to avoid resize issues
+        // Apply the user's preferred video mode (fullscreen/windowed)
+        VideoSettings.apply();
+
+        // Camera + world viewport
         if (camera == null) {
             camera = new OrthographicCamera(WORLD_WIDTH, WORLD_HEIGHT);
         }
-        camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0);
+        camera.position.set(WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f, 0f);
         camera.update();
 
         if (viewport == null) {
             viewport = new FitViewport(WORLD_WIDTH, WORLD_HEIGHT, camera);
         }
 
-        Gdx.graphics.setWindowedMode(1280, 720);
-        Gdx.graphics.setResizable(false);
+        // Do NOT force windowed here; honor VideoSettings
+        boolean isFullscreen = VideoSettings.isFullscreen();
+        Gdx.graphics.setResizable(!isFullscreen); // optional: lock resizing only in windowed mode
 
-        if (batch == null) {
-            batch = new SpriteBatch();
-        }
-        if (background == null) {
-            background = new Texture("mainMenuBG.png");
-        }
+        // Resources
+        if (batch == null)      batch = new SpriteBatch();
+        if (background == null) background = new Texture("mainMenuBG.png");
+        if (skin == null)       skin = new Skin(Gdx.files.internal("uiskin.json"));
+        if (hoverSound == null) hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
 
-        if (skin == null) {
-            skin = new Skin(Gdx.files.internal("uiskin.json"));
-        }
-        if (hoverSound == null) {
-            hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
-        }
+        // Music
+        MusicManager.getInstance().ensurePlaying();
 
-        // Load and play background music (only loads if not already loaded)
-        MusicManager musicManager = MusicManager.getInstance();
-        musicManager.ensurePlaying();
-
-        // Initialize stages if needed
+        // UI stage (ScreenViewport makes UI scale to the window/screen)
         if (uiStage == null) {
             uiStage = new Stage(new ScreenViewport());
         } else {
-            uiStage.clear(); // Clear actors when screen is shown again
+            uiStage.clear();
         }
         Gdx.input.setInputProcessor(uiStage);
 
-        // Main stage for world elements
+        // World stage
         if (stage == null) {
             stage = new Stage(viewport, batch);
         } else {
-            stage.clear(); // Clear actors when screen is shown again
+            stage.clear();
         }
-
-
-
 
         // === Title ===
         titleLabel = new Label("CORRUPTED", skin, "default");
         titleLabel.setFontScale(3.5f);
         titleLabel.setColor(Color.WHITE);
-        titleLabel.setPosition(Gdx.graphics.getWidth() / 2f - titleLabel.getPrefWidth() / 2f, Gdx.graphics.getHeight() - 150f);
+
+        // Use UI viewport world size for stable positioning across modes
+        float uiW = uiStage.getViewport().getWorldWidth();
+        float uiH = uiStage.getViewport().getWorldHeight();
+        titleLabel.setPosition(uiW / 2f - titleLabel.getPrefWidth() / 2f, uiH - 150f);
         uiStage.addActor(titleLabel);
 
-        // === Play Button ===
-        Texture playNormal = new Texture("ui/Menu/Main Menu/play_normal.png");
-        Texture playPressed = new Texture("ui/Menu/Main Menu/play_pressed.png");
+        // === Buttons ===
+        Texture playNormal      = new Texture("ui/Menu/Main Menu/play_normal.png");
+        Texture playPressed     = new Texture("ui/Menu/Main Menu/play_pressed.png");
+        Texture settingsNormal  = new Texture("ui/Menu/Main Menu/settings_normal.png");
+        Texture settingsPressed = new Texture("ui/Menu/Main Menu/settings_pressed.png");
+        Texture exitNormal      = new Texture("ui/Menu/Main Menu/quit_normal.png");
+        Texture exitPressed     = new Texture("ui/Menu/Main Menu/quit_pressed.png");
 
         ImageButton.ImageButtonStyle playStyle = new ImageButton.ImageButtonStyle();
-        playStyle.up = new TextureRegionDrawable(new TextureRegion(playNormal));
+        playStyle.up   = new TextureRegionDrawable(new TextureRegion(playNormal));
         playStyle.down = new TextureRegionDrawable(new TextureRegion(playPressed));
-
         ImageButton playButton = new ImageButton(playStyle);
 
-        // === Settings Button ===
-        Texture settingsNormal = new Texture("ui/Menu/Main Menu/settings_normal.png");
-        Texture settingsPressed = new Texture("ui/Menu/Main Menu/settings_pressed.png");
-
         ImageButton.ImageButtonStyle settingsStyle = new ImageButton.ImageButtonStyle();
-        settingsStyle.up = new TextureRegionDrawable(new TextureRegion(settingsNormal));
+        settingsStyle.up   = new TextureRegionDrawable(new TextureRegion(settingsNormal));
         settingsStyle.down = new TextureRegionDrawable(new TextureRegion(settingsPressed));
-
         ImageButton settingsButton = new ImageButton(settingsStyle);
 
-
-        // === Exit Button ===
-        Texture exitNormal = new Texture("ui/Menu/Main Menu/quit_normal.png");
-        Texture exitPressed = new Texture("ui/Menu/Main Menu/quit_pressed.png");
-
         ImageButton.ImageButtonStyle exitStyle = new ImageButton.ImageButtonStyle();
-        exitStyle.up = new TextureRegionDrawable(new TextureRegion(exitNormal));
+        exitStyle.up   = new TextureRegionDrawable(new TextureRegion(exitNormal));
         exitStyle.down = new TextureRegionDrawable(new TextureRegion(exitPressed));
-
         ImageButton exitButton = new ImageButton(exitStyle);
 
         addHoverEffect(playButton);
         addHoverEffect(settingsButton);
         addHoverEffect(exitButton);
 
+        // Layout
         Table table = new Table();
         table.setFillParent(true);
         table.center();
-        table.padTop(140f); // pushes buttons a bit lower
+        table.padTop(140f);
 
-        table.add(playButton).pad(12).width(200).height(60);
+        table.add(playButton).pad(12f).width(200f).height(60f);
         table.row();
-        table.add(settingsButton).pad(12).width(200).height(60);
+        table.add(settingsButton).pad(12f).width(200f).height(60f);
         table.row();
-        table.add(exitButton).pad(12).width(200).height(60);
+        table.add(exitButton).pad(12f).width(200f).height(60f);
 
         uiStage.addActor(table);
 
-        // === Button actions ===
+        // Actions
         playButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -176,9 +175,9 @@ public class MainMenuScreen implements Screen {
     }
 
     private void addHoverEffect(final ImageButton button) {
-        final Color originalColor = new Color(button.getColor());
-        final float originalScaleX = button.getScaleX();
-        final float originalScaleY = button.getScaleY();
+        final Color originalColor   = new Color(button.getColor());
+        final float originalScaleX  = button.getScaleX();
+        final float originalScaleY  = button.getScaleY();
 
         button.addListener(new ClickListener() {
             @Override
@@ -213,7 +212,7 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void render(float delta) {
-        Gdx.gl.glClearColor(0, 0, 0, 1);
+        Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         if (camera != null && batch != null) {
@@ -222,13 +221,13 @@ public class MainMenuScreen implements Screen {
 
             if (background != null) {
                 batch.begin();
-                batch.draw(background, 0, 0, WORLD_WIDTH, WORLD_HEIGHT);
+                batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
                 batch.end();
             }
         }
 
         // Glitch flicker for title
-        if (titleLabel != null) {
+        if (titleLabel != null && uiStage != null) {
             glitchTimer += delta;
             if (glitchTimer > glitchInterval) {
                 glitchTimer = 0f;
@@ -238,11 +237,20 @@ public class MainMenuScreen implements Screen {
                     MathUtils.random(0.7f, 1f),
                     1f
                 );
+                float uiW = uiStage.getViewport().getWorldWidth();
+                float uiH = uiStage.getViewport().getWorldHeight();
                 titleLabel.setPosition(
-                    (Gdx.graphics.getWidth() / 2f - titleLabel.getPrefWidth() / 2f) + MathUtils.random(-3f, 3f),
-                    (Gdx.graphics.getHeight() - 150f) + MathUtils.random(-2f, 2f)
+                    (uiW / 2f - titleLabel.getPrefWidth() / 2f) + MathUtils.random(-3f, 3f),
+                    (uiH - 150f) + MathUtils.random(-2f, 2f)
                 );
             }
+        }
+
+        // Toggle fullscreen with F11
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F11)) {
+            boolean newFs = !VideoSettings.isFullscreen();
+            capstone.main.Managers.VideoSettings.setFullscreen(newFs);
+            capstone.main.Managers.VideoSettings.apply();
         }
 
         // Draw stages
@@ -250,13 +258,11 @@ public class MainMenuScreen implements Screen {
             stage.act(delta);
             stage.draw();
         }
-
         if (uiStage != null) {
             uiStage.act(delta);
             uiStage.draw();
         }
     }
-
 
     @Override
     public void resize(int width, int height) {
@@ -268,14 +274,8 @@ public class MainMenuScreen implements Screen {
         }
     }
 
-    @Override
-    public void pause() {
-    }
-
-    @Override
-    public void resume() {
-    }
-
+    @Override public void pause()  {}
+    @Override public void resume() {}
     @Override
     public void hide() {
         Gdx.input.setInputProcessor(null);
@@ -283,30 +283,12 @@ public class MainMenuScreen implements Screen {
 
     @Override
     public void dispose() {
-        if (background != null) {
-            background.dispose();
-            background = null;
-        }
-        if (stage != null) {
-            stage.dispose();
-            stage = null;
-        }
-        if (uiStage != null) {
-            uiStage.dispose();
-            uiStage = null;
-        }
-        if (skin != null) {
-            skin.dispose();
-            skin = null;
-        }
-        if (hoverSound != null) {
-            hoverSound.dispose();
-            hoverSound = null;
-        }
-        if (batch != null) {
-            batch.dispose();
-            batch = null;
-        }
-        // Don't dispose viewport and camera - they may be reused
+        if (background != null) { background.dispose(); background = null; }
+        if (stage != null)      { stage.dispose();      stage      = null; }
+        if (uiStage != null)    { uiStage.dispose();    uiStage    = null; }
+        if (skin != null)       { skin.dispose();       skin       = null; }
+        if (hoverSound != null) { hoverSound.dispose(); hoverSound = null; }
+        if (batch != null)      { batch.dispose();      batch      = null; }
+        // Camera/viewport are owned; no need to dispose
     }
 }

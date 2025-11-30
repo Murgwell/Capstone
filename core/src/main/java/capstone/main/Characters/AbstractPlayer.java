@@ -14,7 +14,11 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 public abstract class AbstractPlayer {
     private static final float PPM = 32f; // 32 pixels per meter
     protected Body body;
+
+    // --- HEALTH ---
     protected float healthPoints;
+    protected float maxHealthPoints;
+
     protected float manaPoints;
     protected float baseDamage;
     protected float maxDamage;
@@ -37,7 +41,8 @@ public abstract class AbstractPlayer {
                           float baseAttackSpeed, Texture texture, float x, float y,
                           float width, float height, float worldWidth, float worldHeight,
                           World physicsWorld) {
-        this.healthPoints = healthPoints;
+        this.maxHealthPoints = Math.max(1f, healthPoints); // NEW: set max
+        this.healthPoints    = Math.min(Math.max(0f, healthPoints), maxHealthPoints); // clamp
         this.manaPoints = manaPoints;
         this.baseDamage = baseDamage;
         this.maxDamage = maxDamage;
@@ -63,6 +68,42 @@ public abstract class AbstractPlayer {
         body.createFixture(shape, 1f);
         shape.dispose();
     }
+
+
+    // ----------------------------
+    // Health API (NEW)
+    // ----------------------------
+    public int getHp() {
+        return Math.round(healthPoints);
+    }
+
+    public int getMaxHp() {
+        return Math.round(maxHealthPoints);
+    }
+
+    public boolean isDead() {
+        return healthPoints <= 0f;
+    }
+
+    public void heal(float amount) {
+        if (amount <= 0f) return;
+        float old = healthPoints;
+        healthPoints = Math.min(healthPoints + amount, maxHealthPoints);
+        onHealed(healthPoints - old);
+    }
+
+    public void damage(float amount) {
+        if (amount <= 0f) return;
+        float old = healthPoints;
+        healthPoints = Math.max(healthPoints - amount, 0f);
+        onDamaged(old - healthPoints);
+    }
+
+    /** Called when HP increases (override for effects). */
+    protected void onHealed(float delta) {}
+
+    /** Called when HP decreases (override for effects like flash/shake). */
+    protected void onDamaged(float delta) {}
 
     public void update(float delta, InputManager input, MovementManager movementManager, Viewport viewport) {
         // --- Compute mouse aiming ---
