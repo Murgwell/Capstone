@@ -4,15 +4,15 @@ import capstone.main.Managers.*;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
-
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 public abstract class AbstractPlayer {
-    private static final float PPM = 32f; // 32 pixels per meter
+    private static final float PPM = 32f;
     protected Body body;
 
     // --- HEALTH ---
@@ -37,12 +37,44 @@ public abstract class AbstractPlayer {
     protected float postDodgeTimer = postDodgeDelay;
     protected float postSprintTimer = postSprintDelay;
 
+    // --- ANIMATION ---
+    protected CharacterAnimationManager animationManager;
+    protected TextureRegion currentFrame;
+    protected boolean useAnimations = false; // flag to enable/disable animations
+
+    // Constructor for animated characters (NEW)
+    public AbstractPlayer(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
+                          float baseAttackSpeed, String characterName, float x, float y,
+                          float width, float height, float worldWidth, float worldHeight,
+                          World physicsWorld) {
+        this.maxHealthPoints = Math.max(1f, healthPoints);
+        this.healthPoints = Math.min(Math.max(0f, healthPoints), maxHealthPoints);
+        this.manaPoints = manaPoints;
+        this.baseDamage = baseDamage;
+        this.maxDamage = maxDamage;
+        this.baseAttackSpeed = baseAttackSpeed;
+        this.width = width;
+        this.height = height;
+
+        // Initialize animation manager
+        animationManager = new CharacterAnimationManager(characterName);
+        currentFrame = animationManager.getCurrentFrame();
+        useAnimations = true;
+
+        // Create sprite from first frame
+        sprite = new Sprite(currentFrame);
+        sprite.setSize(width, height);
+
+        initializeCommon(x, y, worldWidth, worldHeight, physicsWorld);
+    }
+
+    // Constructor for static texture characters (EXISTING - for compatibility)
     public AbstractPlayer(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
                           float baseAttackSpeed, Texture texture, float x, float y,
                           float width, float height, float worldWidth, float worldHeight,
                           World physicsWorld) {
-        this.maxHealthPoints = Math.max(1f, healthPoints); // NEW: set max
-        this.healthPoints    = Math.min(Math.max(0f, healthPoints), maxHealthPoints); // clamp
+        this.maxHealthPoints = Math.max(1f, healthPoints);
+        this.healthPoints = Math.min(Math.max(0f, healthPoints), maxHealthPoints);
         this.manaPoints = manaPoints;
         this.baseDamage = baseDamage;
         this.maxDamage = maxDamage;
@@ -52,7 +84,13 @@ public abstract class AbstractPlayer {
 
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
+        useAnimations = false;
 
+        initializeCommon(x, y, worldWidth, worldHeight, physicsWorld);
+    }
+
+    // Common initialization code
+    private void initializeCommon(float x, float y, float worldWidth, float worldHeight, World physicsWorld) {
         boundaryManager = new BoundaryManager(worldWidth, worldHeight, physicsWorld);
         directionManager = new DirectionManager(sprite);
 
@@ -60,7 +98,7 @@ public abstract class AbstractPlayer {
         BodyDef bodyDef = new BodyDef();
         bodyDef.type = BodyDef.BodyType.DynamicBody;
         bodyDef.position.set(x + width/2f, y + height/2f);
-        bodyDef.fixedRotation = true; // top-down, no rotation
+        bodyDef.fixedRotation = true;
         body = physicsWorld.createBody(bodyDef);
 
         PolygonShape shape = new PolygonShape();
@@ -69,10 +107,7 @@ public abstract class AbstractPlayer {
         shape.dispose();
     }
 
-
-    // ----------------------------
-    // Health API (NEW)
-    // ----------------------------
+    // Health API
     public int getHp() {
         return Math.round(healthPoints);
     }
@@ -99,10 +134,7 @@ public abstract class AbstractPlayer {
         onDamaged(old - healthPoints);
     }
 
-    /** Called when HP increases (override for effects). */
     protected void onHealed(float delta) {}
-
-    /** Called when HP decreases (override for effects like flash/shake). */
     protected void onDamaged(float delta) {}
 
     public void update(float delta, InputManager input, MovementManager movementManager, Viewport viewport) {
@@ -116,6 +148,21 @@ public abstract class AbstractPlayer {
 
         // --- Apply movement ---
         movementManager.update(inputDir, delta, shiftHeld);
+
+        // --- Update animation if enabled ---
+        if (useAnimations && animationManager != null) {
+            Vector2 velocity = movementManager.getVelocity();
+            if (velocity.len() > 0.1f) {
+                // Character is moving - play animation
+                animationManager.update(delta, velocity.x, velocity.y);
+                currentFrame = animationManager.getCurrentFrame();
+                sprite.setRegion(currentFrame);
+            } else {
+                // Character is idle - show first frame of current direction
+                currentFrame = animationManager.getIdleFrame();
+                sprite.setRegion(currentFrame);
+            }
+        }
 
         // --- Clamp position so we don't go past walls ---
         Vector2 clamped = boundaryManager.clamp(
@@ -141,10 +188,8 @@ public abstract class AbstractPlayer {
         );
     }
 
-
     public Sprite getSprite() {
         return sprite;
-
     }
 
     public void updateWeaponAimingRad(Viewport viewport) {
@@ -184,24 +229,26 @@ public abstract class AbstractPlayer {
     public float getHeight() { return height; }
     public float getWidth() { return width; }
 
-    // --- Collision settings ---
-
     public float getCollisionWidth() {
         float w = width - getCollisionInsetLeft() - getCollisionInsetRight();
-        return Math.max(0.01f, w / PPM); // ensure minimal width
+        return Math.max(0.01f, w / PPM);
     }
 
     public float getCollisionHeight() {
         float h = height * 0.2f;
-        return Math.max(0.01f, h / PPM); // ensure minimal height
+        return Math.max(0.01f, h / PPM);
     }
+
     public float getCollisionInsetLeft() { return 0.5f; }
     public float getCollisionInsetRight() { return 0.5f; }
     public float getCollisionOffsetY() { return 0f; }
 
     public Vector2 getPosition() { return body.getPosition(); }
+    public Body getBody() { return body; }
 
-    public Body getBody(){
-        return body;
+    public void dispose() {
+        if (useAnimations && animationManager != null) {
+            animationManager.dispose();
+        }
     }
 }

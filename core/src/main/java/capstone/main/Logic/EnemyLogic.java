@@ -2,6 +2,7 @@ package capstone.main.Logic;
 
 import capstone.main.Enemies.*;
 import capstone.main.Characters.AbstractPlayer;
+import com.badlogic.gdx.Gdx;
 
 import java.util.ArrayList;
 
@@ -19,9 +20,14 @@ public class EnemyLogic {
     public void update(float delta) {
         spawner.update(delta);
 
-        // Update enemies
+        // Update enemies and check for melee attacks
         for (AbstractEnemy e : enemies) {
-            if (!e.isDead()) e.update(delta, player);
+            if (!e.isDead()) {
+                e.update(delta, player);
+
+                // Check if enemy is close enough to attack player
+                checkMeleeAttack(e);
+            }
         }
 
         // Resolve collisions
@@ -37,4 +43,24 @@ public class EnemyLogic {
         }
     }
 
+    private void checkMeleeAttack(AbstractEnemy enemy) {
+        // Calculate distance between enemy and player
+        float enemyX = enemy.getBody().getPosition().x;
+        float enemyY = enemy.getBody().getPosition().y;
+
+        float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+        float playerY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
+
+        float dx = playerX - enemyX;
+        float dy = playerY - enemyY;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+        // If enemy is in melee range and can attack
+        if (distance <= enemy.getMeleeRange() && enemy.canAttack()) {
+            player.damage(enemy.getMeleeDamage());
+            enemy.resetAttackCooldown();
+
+            Gdx.app.log("EnemyAttack", "Enemy attacked player! Player HP: " + player.getHp() + "/" + player.getMaxHp());
+        }
+    }
 }

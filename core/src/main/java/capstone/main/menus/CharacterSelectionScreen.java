@@ -88,7 +88,7 @@ public class CharacterSelectionScreen implements Screen {
         characterSpriteSheets[0] = new Texture("Textures/Characters/Vico_Sotto_Idle_Run_Animation.png");
         characterNames[0] = "Vico Sotto";
 
-        characterSpriteSheets[1] = new Texture("Textures/Characters/Manny_Pacquiao_Idle_Run_Animation.png");
+        characterSpriteSheets[1] = new Texture("Textures/Characters/Manny Pacquiao/Frame.png");
         characterNames[1] = "Manny Pacquiao";
 
         characterSpriteSheets[2] = new Texture("Textures/Characters/Quiboloy_Idle_Run_Anim.png");

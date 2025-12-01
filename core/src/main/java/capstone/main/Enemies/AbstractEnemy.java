@@ -34,6 +34,12 @@ public abstract class AbstractEnemy {
     protected Sprite whiteOverlaySprite;
     protected DirectionManager directionManager;
 
+    // Add these fields near the top with other fields
+    private float attackCooldown = 0f;
+    private static final float ATTACK_COOLDOWN_TIME = 1.0f; // 1 second between attacks
+    private static final float MELEE_RANGE = 0.8f; // How close to attack
+    private static final float MELEE_DAMAGE = 5f; // 5 HP = half a heart
+
     public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, ScreenShake screenShake, PhysicsManager physics) {
         this.sprite = new Sprite(texture);
         this.sprite.setPosition(x, y);
@@ -82,6 +88,9 @@ public abstract class AbstractEnemy {
             body.setLinearVelocity(0, 0);
             return;
         }
+
+        // Update attack cooldown
+        updateAttackCooldown(delta);
 
         float px = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
         float py = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
@@ -139,6 +148,29 @@ public abstract class AbstractEnemy {
             if (hitFlashTimer < 0f) hitFlashTimer = 0f;
             Gdx.app.log("HitFlash", "Enemy: " + this + ", timer=" + hitFlashTimer + ", alpha=" + getHitFlashAlpha());
         }
+    }
+
+    // Add this method
+    public void updateAttackCooldown(float delta) {
+        if (attackCooldown > 0) {
+            attackCooldown -= delta;
+        }
+    }
+
+    public boolean canAttack() {
+        return attackCooldown <= 0;
+    }
+
+    public void resetAttackCooldown() {
+        attackCooldown = ATTACK_COOLDOWN_TIME;
+    }
+
+    public float getMeleeRange() {
+        return MELEE_RANGE;
+    }
+
+    public float getMeleeDamage() {
+        return MELEE_DAMAGE;
     }
 
     public boolean isDead() { return health <= 0; }
