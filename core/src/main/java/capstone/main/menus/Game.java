@@ -434,8 +434,9 @@ public class Game implements Screen {
         switch (selectedCharacterIndex) {
             case 1:
                 // Manny Pacquiao - Melee fighter
-                return new MannyPacquiao(120,80, 8, 12, 1.5f,9f, 9f, 2f, 2f, enemySpawner.getEnemies(), damageNumbers, damageFont, mapWidth, mapHeight, physicsManager.getWorld(), screenShake
-                );
+                return new MannyPacquiao(120,80, 8, 12, 1.5f,9f, 9f, 2f, 2f, enemySpawner.getEnemies(), damageNumbers, damageFont, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
+            case 2:
+                return new Quiboloy(120, 80, 5, 8, 10, 9f, 9f, 2f, 2f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
             default:
                 return new VicoSotto(120, 80, 5, 8, 10, 9f, 9f, 2f, 2f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
         }
