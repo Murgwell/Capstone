@@ -90,7 +90,7 @@ public class SettingsScreen implements Screen {
         Gdx.input.setInputProcessor(inputMux);
 
         skin = new Skin(Gdx.files.internal("uiskin.json"));
-        hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
+        hoverSound = Gdx.audio.newSound(Gdx.files.internal("Music/hover.wav"));
         background = new Texture("mainMenuBG.png");
 
         // Managers

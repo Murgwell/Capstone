@@ -83,6 +83,10 @@ public abstract class AbstractEnemy {
 
     public abstract void update(float delta, AbstractPlayer player);
 
+    public float getMaxHealth() {
+        return maxHealth;
+    }
+
     protected void defaultChaseBehavior(float delta, AbstractPlayer player) {
         if (isDead()) {
             body.setLinearVelocity(0, 0);

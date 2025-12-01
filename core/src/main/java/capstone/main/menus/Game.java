@@ -128,8 +128,18 @@ public class Game implements Screen {
         screenShake = new ScreenShake();
         cameraManager = new CameraManager(camera, screenShake, mapWidth, mapHeight);
 
-        // --- Player & weapon ---
+        // --- Initialize damage system first ---
+        damageNumbers = new ArrayList<>();
+        damageFont = new BitmapFont();
+        damageFont.getData().setScale(0.1f);
+
+        // --- Create enemy spawner ---
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
+        enemySpawner.spawnInitial(5);
+
+        // --- NOW create player (with enemies available for Manny) ---
         player = createPlayer();
+
         weaponTexture = new Texture("gun.png");
         weaponSprite = new Sprite(weaponTexture);
         weaponSprite.setSize(0.3f, 0.3f);
@@ -140,7 +150,6 @@ public class Game implements Screen {
         globalInputProcessor = new InputProcessor() {
             @Override public boolean keyDown(int keycode) {
                 if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
-                    if (isGameOver) return true; // ignore ESC during game-over
                     isPaused = !isPaused;
                     Gdx.input.setInputProcessor(isPaused ? pauseStage : gameplayInputs);
                     return true;
@@ -150,6 +159,23 @@ public class Game implements Screen {
                     VideoSettings.setFullscreen(newFs);
                     VideoSettings.apply();
                     return true;
+                }
+
+                // Skill keybinds
+                if (!isPaused && player instanceof MannyPacquiao) {
+                    MannyPacquiao manny = (MannyPacquiao) player;
+                    if (keycode == com.badlogic.gdx.Input.Keys.Q) {
+                        manny.useMeteorFist();
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.E) {
+                        manny.useBarrageCombo();
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.R) {
+                        manny.useChampionsKnockout();
+                        return true;
+                    }
                 }
                 return false;
             }
@@ -162,18 +188,23 @@ public class Game implements Screen {
             @Override public boolean scrolled(float amountX, float amountY) { return false; }
             @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }
         };
+
         gameplayInputs = new InputMultiplexer();
         gameplayInputs.addProcessor(inputManager);
         gameplayInputs.addProcessor(globalInputProcessor);
         Gdx.input.setInputProcessor(gameplayInputs);
 
+        // --- Initialize skills for Manny ---
+        if (player instanceof MannyPacquiao) {
+            ((MannyPacquiao) player).initializeSkills(
+                enemySpawner.getEnemies(),
+                damageNumbers,
+                damageFont
+            );
+        }
+
         // --- Movement/logic ---
         movementManager = new MovementManager(player);
-        damageNumbers = new ArrayList<>();
-        damageFont = new BitmapFont();
-        damageFont.getData().setScale(0.1f);
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
-        enemySpawner.spawnInitial(5);
 
         // --- Batches & renderers ---
         spriteBatch = new SpriteBatch();
@@ -182,12 +213,18 @@ public class Game implements Screen {
         backBtnSprite = new Sprite(backBtnTexture);
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
+
         ShaderProgram.pedantic = false;
         treeFadeShader = new ShaderProgram(
             Gdx.files.internal("shaders/default.vert"),
             Gdx.files.internal("shaders/treeFade.glsl")
         );
-        bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+
+        // For Vico (ranged), initialize bullet logic
+        if (player instanceof Ranged) {
+            bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+        }
+
         playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
@@ -199,39 +236,34 @@ public class Game implements Screen {
         pauseSkin = new Skin(Gdx.files.internal("uiskin.json"));
         pauseStage = new Stage(uiViewport, spriteBatch);
 
-        // --- Game Over UI ---
-        gameOverStage = new Stage(uiViewport, spriteBatch);
-        gameOverSkin = pauseSkin; // reuse pause skin
-
+        // --- HUD ---
         heartsHud = new HeartsHud(uiViewport, spriteBatch, player);
     }
 
     @Override
     public void render(float delta) {
         float stepDelta = Math.min(delta, 1f / 30f);
-
-        // --- Death / Game Over detection ---
-        if (!isGameOver && player.isDead()) {
-            isGameOver = true;
-            Gdx.input.setInputProcessor(gameOverStage);
-            if (!gameOverUIBuilt) {
-                buildGameOverOverlay();
-                gameOverUIBuilt = true;
-            }
-        }
-
-        if (!isPaused && !isGameOver) {
+        if (!isPaused) {
             inputManager.update();
             physicsManager.step(stepDelta);
             playerLogic.update(delta);
-            bulletLogic.update(delta);
+
+            // Only update bullet logic if it exists (for ranged characters)
+            if (bulletLogic != null) {
+                bulletLogic.update(delta);
+            }
+
             enemyLogic.update(delta);
             screenShake.update(delta);
-        } else if (isPaused) {
+            entityRenderer.update(delta);
+
+            // Update skills if Manny
+            if (player instanceof MannyPacquiao) {
+                ((MannyPacquiao) player).updateSkills(delta);
+            }
+        } else {
             if (pauseStage.getActors().size == 0) createPauseMenu();
             pauseStage.act(delta);
-        } else if (isGameOver) {
-            gameOverStage.act(delta);
         }
 
         updateCamera();
@@ -244,6 +276,7 @@ public class Game implements Screen {
         worldRenderer.renderGround(camera);
         entityRenderer.render(camera);
         weaponRenderer.render(spriteBatch);
+
         spriteBatch.setProjectionMatrix(camera.combined);
         spriteBatch.begin();
         backBtnSprite.draw(spriteBatch);
@@ -252,11 +285,11 @@ public class Game implements Screen {
         // --- UI HUD ---
         heartsHud.update(delta);
         heartsHud.draw();
+
         if (isPaused) pauseStage.draw();
-        if (isGameOver) gameOverStage.draw();
 
         // Back button click
-        if (Gdx.input.justTouched() && !isPaused && !isGameOver) {
+        if (Gdx.input.justTouched() && !isPaused) {
             Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
             viewport.getCamera().unproject(mouse);
             if (backBtnSprite.getBoundingRectangle().contains(mouse.x, mouse.y)) {
@@ -402,9 +435,11 @@ public class Game implements Screen {
         ArrayList<Bullet> bullets = new ArrayList<>();
         switch (selectedCharacterIndex) {
             case 1:
-                return new MannyPacquiao(120, 80, 6, 10, 11, 9f, 9f, 1f, 1f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
+                // Manny Pacquiao - Melee fighter
+                return new MannyPacquiao(120,80, 8, 12, 1.5f,9f, 9f, 2f, 2f, enemySpawner.getEnemies(), damageNumbers, damageFont, mapWidth, mapHeight, physicsManager.getWorld(), screenShake
+                );
             default:
-                return new VicoSotto(120, 80, 5, 8, 10, 9f, 9f, 1f, 1f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
+                return new VicoSotto(120, 80, 5, 8, 10, 9f, 9f, 2f, 2f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
         }
     }
 }

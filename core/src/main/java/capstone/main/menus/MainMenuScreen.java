@@ -79,7 +79,7 @@ public class MainMenuScreen implements Screen {
         if (batch == null)      batch = new SpriteBatch();
         if (background == null) background = new Texture("mainMenuBG.png");
         if (skin == null)       skin = new Skin(Gdx.files.internal("uiskin.json"));
-        if (hoverSound == null) hoverSound = Gdx.audio.newSound(Gdx.files.internal("hover.wav"));
+        if (hoverSound == null) hoverSound = Gdx.audio.newSound(Gdx.files.internal("Music/hover.wav"));
 
         // Music
         MusicManager.getInstance().ensurePlaying();

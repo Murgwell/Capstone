@@ -1,6 +1,7 @@
 package capstone.main.Logic;
 
 import capstone.main.Characters.AbstractPlayer;
+import capstone.main.Characters.Melee;
 import capstone.main.Characters.Ranged;
 import capstone.main.Managers.InputManager;
 import capstone.main.Managers.MovementManager;
@@ -25,14 +26,14 @@ public class PlayerLogic {
         player.update(delta, input, movementManager, viewport);
         player.updatePostMovementTimers(delta, movementManager); // <-- always runs
 
-        if (player instanceof Ranged && input.isAttacking()) {
-            if (player.canAttack()) {
-                player.performAttack(delta, player.getWeaponAimingRad()); // generic call
-
-                // Only spawn bullets if the player actually has bullets
-                if (player instanceof Ranged) {
-                    bulletLogic.spawnBullet((Ranged) player, player.getWeaponAimingRad());
-                }
+        // In the update method, modify the attack section:
+        if (input.isAttacking() && player.canAttack()) {
+            if (player instanceof Ranged && bulletLogic != null) {
+                // Ranged attack
+                bulletLogic.spawnBullet((Ranged) player, player.getWeaponAimingRad());
+            } else if (player instanceof Melee) {
+                // Melee attack
+                player.performAttack(delta, player.getWeaponAimingRad());
             }
         }
     }
