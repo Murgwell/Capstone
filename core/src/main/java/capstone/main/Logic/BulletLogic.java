@@ -74,4 +74,12 @@ public class BulletLogic {
         bullets.add(new Bullet(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
     }
 
+    public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, com.badlogic.gdx.graphics.OrthographicCamera camera) {
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        for (Bullet b : player.getBullets()) {
+            b.draw(batch);
+        }
+        batch.end();
+    }
 }

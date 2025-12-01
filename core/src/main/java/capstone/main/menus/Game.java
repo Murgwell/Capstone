@@ -13,9 +13,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.InputMultiplexer;
 import com.badlogic.gdx.InputProcessor;
-import com.badlogic.gdx.graphics.GL20;
-import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.*;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -23,8 +21,11 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
+import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.Stage;
+import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.*;
+import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
@@ -101,6 +102,8 @@ public class Game implements Screen {
 
     // State
     private boolean isPaused = false;
+    private boolean isGameOver = false;
+
 
     public Game(Corrupted game, int selectedCharacterIndex) {
         this.game = game;
@@ -133,9 +136,9 @@ public class Game implements Screen {
 
         // --- Create enemy spawner ---
         enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
-        enemySpawner.spawnInitial(5);
+        enemySpawner.spawnInitial(10);
 
-        // --- NOW create player (with enemies available for Manny) ---
+        // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
 
         weaponTexture = new Texture("gun.png");
@@ -204,6 +207,17 @@ public class Game implements Screen {
         // --- Movement/logic ---
         movementManager = new MovementManager(player);
 
+        // Initialize bullet logic for ranged characters
+        if (player instanceof Ranged) {
+            bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+        } else {
+            bulletLogic = null;
+        }
+
+        // Now construct playerLogic with movementManager and bulletLogic present
+        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
+        enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
+
         // --- Batches & renderers ---
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
@@ -218,13 +232,6 @@ public class Game implements Screen {
             Gdx.files.internal("shaders/treeFade.glsl")
         );
 
-        // For Vico (ranged), initialize bullet logic
-        if (player instanceof Ranged) {
-            bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
-        }
-
-        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
-        enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         treeRenderer = new TreeRenderer(spriteBatch, mapManager.getTiledMap(), player);
@@ -234,45 +241,72 @@ public class Game implements Screen {
         pauseSkin = new Skin(Gdx.files.internal("uiskin.json"));
         pauseStage = new Stage(uiViewport, spriteBatch);
 
+        // --- Game Over UI: initialize here so it exists if we set input to it
+        gameOverSkin = new Skin(Gdx.files.internal("uiskin.json"));
+        gameOverStage = new Stage(uiViewport, spriteBatch);
+
         // --- HUD ---
         heartsHud = new HeartsHud(uiViewport, spriteBatch, player);
     }
 
+
     @Override
     public void render(float delta) {
         float stepDelta = Math.min(delta, 1f / 30f);
-        if (!isPaused) {
+
+        // --- Update logic ---
+        if (!isPaused && !isGameOver) {
             inputManager.update();
             physicsManager.step(stepDelta);
             playerLogic.update(delta);
 
-            // Only update bullet logic if it exists (for ranged characters)
             if (bulletLogic != null) {
-                bulletLogic.update(delta);
+                bulletLogic.update(stepDelta);
             }
 
             enemyLogic.update(delta);
             screenShake.update(delta);
             entityRenderer.update(delta);
 
-            // Update skills if Manny
             if (player instanceof MannyPacquiao) {
                 ((MannyPacquiao) player).updateSkills(delta);
             }
-        } else {
+        } else if (isPaused) {
             if (pauseStage.getActors().size == 0) createPauseMenu();
             pauseStage.act(delta);
         }
 
-        updateCamera();
-        updateWeaponAiming();
+        // --- Check Game Over ---
+        if (!isPaused && player.isDead() && !isGameOver) {
+            isGameOver = true;
+            buildGameOverOverlay();
+            Gdx.input.setInputProcessor(gameOverStage);
+            return; // Stop here so the world doesn't keep rendering
+        }
 
-        // --- World rendering ---
+        // --- Clear screen ---
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+        // --- Draw Game Over Screen ---
+        if (isGameOver) {
+            gameOverStage.act(delta);
+            gameOverStage.draw();
+            return; // Skip world rendering
+        }
+
+        // --- World rendering ---
+        updateCamera();
+        updateWeaponAiming();
         viewport.apply();
         worldRenderer.renderGround(camera);
         entityRenderer.render(camera);
+
+
+        if (bulletLogic != null) {
+            bulletLogic.render(spriteBatch, camera);
+        }
+
         weaponRenderer.render(spriteBatch);
 
         spriteBatch.setProjectionMatrix(camera.combined);
@@ -286,7 +320,7 @@ public class Game implements Screen {
 
         if (isPaused) pauseStage.draw();
 
-        // Back button click
+        // --- Back button click ---
         if (Gdx.input.justTouched() && !isPaused) {
             Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
             viewport.getCamera().unproject(mouse);
@@ -297,6 +331,7 @@ public class Game implements Screen {
                 return;
             }
         }
+
     }
 
     private void updateWeaponAiming() {
@@ -351,50 +386,74 @@ public class Game implements Screen {
         Gdx.input.setInputProcessor(pauseStage);
     }
 
+
     private void buildGameOverOverlay() {
-        gameOverStage.clear();
+        gameOverStage = new Stage(uiViewport, spriteBatch);
 
-        // Dim background
-        Image dim = new Image(gameOverSkin.newDrawable("white", 0f, 0f, 0f, 0.6f));
-        dim.setFillParent(true);
-        gameOverStage.addActor(dim);
-
+        // Root table (full screen)
         Table root = new Table();
         root.setFillParent(true);
-
-        Table panel = new Table(gameOverSkin);
-        panel.setBackground("default-round");
-        panel.pad(30f);
-
-        Label title = new Label("GAME OVER", gameOverSkin);
-        title.setFontScale(1.2f);
-        Label subtitle = new Label("You have fallen.", gameOverSkin);
-
-        TextButton retryBtn = new TextButton("Retry", gameOverSkin);
-        retryBtn.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                game.setScreen(new Game(game, selectedCharacterIndex));
-                dispose();
-            }
-        });
-
-        TextButton menuBtn = new TextButton("Back to Menu", gameOverSkin);
-        menuBtn.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
-                VideoSettings.apply();
-                game.setScreen(new MainMenuScreen(game));
-                dispose();
-            }
-        });
-
-        panel.add(title).padBottom(12f).row();
-        panel.add(subtitle).padBottom(18f).row();
-        panel.add(retryBtn).width(180f).height(45f).padBottom(10f).row();
-        panel.add(menuBtn).width(180f).height(45f).row();
-
-        root.add(panel).center();
         gameOverStage.addActor(root);
+
+        // --- TRANSPARENT BACKGROUND ---
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+
+        Image overlay = new Image(texture);
+        overlay.setColor(0, 0, 0, 0.45f); // 45% dark transparent
+        overlay.setFillParent(true);
+        overlay.getColor().a = 0f; // start invisible
+        overlay.addAction(Actions.fadeIn(0.25f)); // smooth fade
+        root.addActor(overlay);
+
+        // --- UI CONTENT CONTAINER ---
+        Table content = new Table();
+        content.defaults().pad(10f);
+        content.setFillParent(true);
+
+        // GAME OVER TEXT
+        Label.LabelStyle style = new Label.LabelStyle();
+        style.font = new BitmapFont();
+        style.fontColor = Color.WHITE;
+        style.font.getData().setScale(3f); // Make text big
+        Label gameOverLabel = new Label("GAME OVER", style);
+        gameOverLabel.getColor().a = 0;
+        gameOverLabel.addAction(Actions.fadeIn(0.4f));
+
+        // BUTTONS (use skin for proper styling)
+        TextButton retryBtn = new TextButton("Retry", gameOverSkin);
+        TextButton quitBtn = new TextButton("Quit", gameOverSkin);
+
+        // Increase button font size
+        retryBtn.getLabel().setFontScale(2f);
+        quitBtn.getLabel().setFontScale(2f);
+
+        // Button logic
+        retryBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new Game(game, selectedCharacterIndex)); // restart game
+                dispose();
+            }
+        });
+        quitBtn.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                game.setScreen(new MainMenuScreen(game)); // go to menu
+                dispose();
+            }
+        });
+
+        // Layout
+        content.add(gameOverLabel).padBottom(40f).row();
+        content.add(retryBtn).width(200f).height(50f).padBottom(20f).row();
+        content.add(quitBtn).width(200f).height(50f);
+        root.addActor(content);
     }
+
 
     @Override
     public void resize(int width, int height) {
@@ -421,6 +480,8 @@ public class Game implements Screen {
         try { if (damageFont != null) damageFont.dispose(); } catch (Exception ignored) {}
         try { if (pauseStage != null) pauseStage.dispose(); } catch (Exception ignored) {}
         try { if (pauseSkin != null) pauseSkin.dispose(); } catch (Exception ignored) {}
+        try { if (gameOverStage != null) gameOverStage.dispose(); } catch (Exception ignored) {}
+        try { if (gameOverSkin != null) gameOverSkin.dispose(); } catch (Exception ignored) {}
         try { if (treeFadeShader != null) treeFadeShader.dispose(); } catch (Exception ignored) {}
         if (physicsManager != null) physicsManager.dispose();
         if (mapManager != null) mapManager.dispose();
@@ -429,16 +490,48 @@ public class Game implements Screen {
     }
 
 
+
     private AbstractPlayer createPlayer() {
-        ArrayList<Bullet> bullets = new ArrayList<>();
         switch (selectedCharacterIndex) {
             case 1:
                 // Manny Pacquiao - Melee fighter
-                return new MannyPacquiao(120,80, 8, 12, 1.5f,9f, 9f, 2f, 2f, enemySpawner.getEnemies(), damageNumbers, damageFont, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
-            case 2:
-                return new Quiboloy(120, 80, 5, 8, 10, 9f, 9f, 2f, 2f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
+                return new MannyPacquiao(
+                    120,           // healthPoints
+                    80,            // manaPoints
+                    8,             // baseDamage
+                    12,            // maxDamage
+                    1.5f,          // attackSpeed (faster than Vico for melee)
+                    9f,            // x
+                    9f,            // y
+                    2f,            // width
+                    2f,            // height
+                    enemySpawner.getEnemies(),
+                    damageNumbers,
+                    damageFont,
+                    mapWidth,
+                    mapHeight,
+                    physicsManager.getWorld(),
+                    screenShake
+                );
             default:
-                return new VicoSotto(120, 80, 5, 8, 10, 9f, 9f, 2f, 2f, bullets, mapWidth, mapHeight, physicsManager.getWorld(), screenShake);
+                // Vico Sotto - Ranged
+                ArrayList<Bullet> bullets = new ArrayList<>();
+                return new VicoSotto(
+                    60,    // healthPoints
+                    80,     // manaPoints
+                    3,      // baseDamage
+                    5,      // maxDamage
+                    0.3f,     // attackSpeed
+                    9f,     // x
+                    9f,     // y
+                    2f,     // width
+                    2f,     // height
+                    bullets,
+                    mapWidth,
+                    mapHeight,
+                    physicsManager.getWorld(),
+                    screenShake
+                );
         }
     }
 }

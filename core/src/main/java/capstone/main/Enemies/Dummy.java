@@ -10,7 +10,7 @@ public class Dummy extends AbstractEnemy {
 
 
     public Dummy(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
-        super(x, y, new Texture("enemyCharacter.png"), 0.5f, 0.5f, 100f, screenShake, physics);
+        super(x, y, new Texture("enemyCharacter.png"), 0.5f, 0.5f, 100, screenShake, physics);
 
         // random initial facing
         boolean facingLeft = MathUtils.randomBoolean();
