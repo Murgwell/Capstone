@@ -33,7 +33,6 @@ import java.util.ArrayList;
 public class Game implements Screen {
     private final Corrupted game;
     private final int selectedCharacterIndex;
-    private boolean isGameOver = false;
 
     // Rendering
     private SpriteBatch spriteBatch;
@@ -74,7 +73,6 @@ public class Game implements Screen {
     // UI (game-over)
     private Stage gameOverStage;
     private Skin gameOverSkin;
-    private boolean gameOverUIBuilt = false;
 
     // Input
     private InputManager inputManager;
