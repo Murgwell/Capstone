@@ -1,3 +1,4 @@
+
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
@@ -29,22 +30,9 @@ public class CharacterSelectionScreen implements Screen {
     private Texture leftArrowTexture;
     private Texture rightArrowTexture;
 
-    // Character sprite sheets
-    private Texture[] characterSpriteSheets;
+    // One preview texture per character (no sprite-sheet slicing)
+    private Texture[] characterPreviewTextures;
     private String[] characterNames;
-
-    // Per-character sheet layout (columns x rows)
-    // Index order must match characterSpriteSheets / characterNames
-    // Based on provided dimensions:
-    // - Vico Sotto:     2304 x 3744 -> 12 cols x 18 rows
-    // - Manny Pacquiao: 2304 x 3744 -> 12 cols x 18 rows
-    // - Quiboloy:        256 x  416 ->  4 cols x  8 rows
-    private static final int[] SHEET_COLUMNS = {12, 12, 4};
-    private static final int[] SHEET_ROWS    = {18, 18, 8};
-
-    // Choose which frame to preview (indices within the sheet grid)
-    private static final int PREVIEW_FRAME_X = 0; // column index (0-based from left)
-    private static final int PREVIEW_FRAME_Y = 0; // row index (0-based from top)
 
     private Texture bgTexture;
     private Image bgImage;
@@ -81,25 +69,25 @@ public class CharacterSelectionScreen implements Screen {
         bgImage.setScaling(Scaling.stretch);
         stage.addActor(bgImage);
 
-        // Load character sprite sheets
-        characterSpriteSheets = new Texture[NUM_CHARACTERS];
+        // --- Load character preview images (single texture per character) ---
+        characterPreviewTextures = new Texture[NUM_CHARACTERS];
         characterNames = new String[NUM_CHARACTERS];
 
-        characterSpriteSheets[0] = new Texture("Textures/Characters/Vico_Sotto_Idle_Run_Animation.png");
+        characterPreviewTextures[0] = new Texture("Textures/Characters/Vico Sotto/Frame.png");
         characterNames[0] = "Vico Sotto";
 
-        characterSpriteSheets[1] = new Texture("Textures/Characters/Manny Pacquiao/Frame.png");
+        characterPreviewTextures[1] = new Texture("Textures/Characters/Manny Pacquiao/Frame.png");
         characterNames[1] = "Manny Pacquiao";
 
-        characterSpriteSheets[2] = new Texture("Textures/Characters/Quiboloy_Idle_Run_Anim.png");
+        characterPreviewTextures[2] = new Texture("Textures/Characters/Quiboloy/Frame.png");
         characterNames[2] = "Quiboloy";
 
-        // Load arrow button textures
-        leftArrowTexture  = new Texture("ui/Menu/left_arrow.png");
+        // --- Load arrow button textures ---
+        leftArrowTexture = new Texture("ui/Menu/left_arrow.png");
         rightArrowTexture = new Texture("ui/Menu/right_arrow.png");
 
-        // Load confirm button textures
-        confirmNormalTexture  = new Texture("ui/Menu/confirm_button_normal.png");
+        // --- Load confirm button textures ---
+        confirmNormalTexture = new Texture("ui/Menu/confirm_button_normal.png");
         confirmPressedTexture = new Texture("ui/Menu/confirm_button_pressed.png");
 
         // Root table
@@ -111,7 +99,7 @@ public class CharacterSelectionScreen implements Screen {
         Label title = new Label("SELECT CHARACTER", skin);
         title.setFontScale(3.0f);
         title.setColor(Color.WHITE);
-        root.add(title).colspan(3).center().padBottom(-80f).padTop(80f);
+        root.add(title).colspan(3).center().padBottom(30f).padTop(60f);
         root.row();
 
         // Character preview area with navigation
@@ -127,17 +115,9 @@ public class CharacterSelectionScreen implements Screen {
         });
         characterArea.add(leftArrowButton).width(80).height(80).padRight(40f);
 
-        // Character preview (center) - extract a single frame from sprite sheet
-        TextureRegion previewFrame = extractFrame(
-            characterSpriteSheets[currentCharacterIndex],
-            PREVIEW_FRAME_X,
-            PREVIEW_FRAME_Y,
-            SHEET_COLUMNS[currentCharacterIndex],
-            SHEET_ROWS[currentCharacterIndex]
-        );
-
-        characterPreview = new Image(new TextureRegionDrawable(previewFrame));
-        // Make the preview bigger and preserve aspect ratio (no cropping)
+        // Character preview (center) - direct image (no slicing)
+        TextureRegion initialRegion = new TextureRegion(characterPreviewTextures[currentCharacterIndex]);
+        characterPreview = new Image(new TextureRegionDrawable(initialRegion));
         characterPreview.setSize(350, 350);
         characterPreview.setScaling(Scaling.fit);
 
@@ -152,7 +132,7 @@ public class CharacterSelectionScreen implements Screen {
             .height(350)
             .row();
         previewTable.add(characterNameLabel)
-            .padTop(20f);
+            .padTop(10f);
 
         characterArea.add(previewTable).expand().center();
 
@@ -166,8 +146,9 @@ public class CharacterSelectionScreen implements Screen {
         });
         characterArea.add(rightArrowButton).width(80).height(80).padLeft(40f);
 
-        root.add(characterArea).colspan(3).expand().center();
-        root.row().padTop(40f);
+        // Align preview lower
+        root.add(characterArea).colspan(3).expand().center().padBottom(20f);
+        root.row();
 
         // Confirm button
         ImageButton confirmButton = createConfirmButton();
@@ -180,7 +161,7 @@ public class CharacterSelectionScreen implements Screen {
                 game.setScreen(new Game(game, currentCharacterIndex));
             }
         });
-        root.add(confirmButton).colspan(3).width(250).height(70).padTop(30f).padBottom(100f);
+        root.add(confirmButton).colspan(3).width(250).height(70).padTop(20f).padBottom(40f);
     }
 
     private ImageButton createArrowButton(Texture arrowTexture) {
@@ -192,45 +173,12 @@ public class CharacterSelectionScreen implements Screen {
     }
 
     private ImageButton createConfirmButton() {
-        TextureRegion normalRegion  = new TextureRegion(confirmNormalTexture);
+        TextureRegion normalRegion = new TextureRegion(confirmNormalTexture);
         TextureRegion pressedRegion = new TextureRegion(confirmPressedTexture);
         ImageButton.ImageButtonStyle confirmStyle = new ImageButton.ImageButtonStyle();
-        confirmStyle.up   = new TextureRegionDrawable(normalRegion);
+        confirmStyle.up = new TextureRegionDrawable(normalRegion);
         confirmStyle.down = new TextureRegionDrawable(pressedRegion);
         return new ImageButton(confirmStyle);
-    }
-
-    /**
-     * Extracts a single frame from a sprite sheet with a known grid (columns x rows).
-     * @param spriteSheet The sprite sheet texture.
-     * @param frameX Column index of the frame (0-based from left).
-     * @param frameY Row index of the frame (0-based from top).
-     * @param columns Number of columns in the sheet.
-     * @param rows Number of rows in the sheet.
-     * @return TextureRegion containing the extracted frame.
-     */
-    private TextureRegion extractFrame(Texture spriteSheet, int frameX, int frameY, int columns, int rows) {
-        int sheetWidth  = spriteSheet.getWidth();
-        int sheetHeight = spriteSheet.getHeight();
-
-        // Integer division ensures pixel-perfect frame bounds
-        int frameWidth  = sheetWidth / columns;
-        int frameHeight = sheetHeight / rows;
-
-        // Clamp indices defensively
-        if (frameX < 0) frameX = 0;
-        if (frameY < 0) frameY = 0;
-        if (frameX >= columns) frameX = columns - 1;
-        if (frameY >= rows)    frameY = rows - 1;
-
-        int x = frameX * frameWidth;
-        int y = frameY * frameHeight;
-
-        // Ensure region stays within sheet
-        if (x + frameWidth > sheetWidth)   frameWidth  = sheetWidth  - x;
-        if (y + frameHeight > sheetHeight) frameHeight = sheetHeight - y;
-
-        return new TextureRegion(spriteSheet, x, y, frameWidth, frameHeight);
     }
 
     private void navigateCharacter(int direction) {
@@ -242,17 +190,9 @@ public class CharacterSelectionScreen implements Screen {
             currentCharacterIndex = 0;
         }
 
-        // Re-extract preview frame using the correct grid for the selected sheet
-        TextureRegion previewFrame = extractFrame(
-            characterSpriteSheets[currentCharacterIndex],
-            PREVIEW_FRAME_X,
-            PREVIEW_FRAME_Y,
-            SHEET_COLUMNS[currentCharacterIndex],
-            SHEET_ROWS[currentCharacterIndex]
-        );
-
-        // Update the preview image
-        characterPreview.setDrawable(new TextureRegionDrawable(previewFrame));
+        // Update the preview image with the full texture (no slicing)
+        TextureRegion newRegion = new TextureRegion(characterPreviewTextures[currentCharacterIndex]);
+        characterPreview.setDrawable(new TextureRegionDrawable(newRegion));
         characterPreview.setSize(350, 350);
         characterPreview.setScaling(Scaling.fit);
 
@@ -278,9 +218,17 @@ public class CharacterSelectionScreen implements Screen {
         }
     }
 
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void hide() {
+    }
 
     @Override
     public void dispose() {
@@ -290,14 +238,15 @@ public class CharacterSelectionScreen implements Screen {
         if (bgTexture != null) {
             bgTexture.dispose();
         }
-        if (characterSpriteSheets != null) {
-            for (Texture t : characterSpriteSheets) {
+        if (characterPreviewTextures != null) {
+            for (Texture t : characterPreviewTextures) {
                 if (t != null) t.dispose();
             }
         }
-        if (confirmNormalTexture != null)  confirmNormalTexture.dispose();
+        if (confirmNormalTexture != null) confirmNormalTexture.dispose();
         if (confirmPressedTexture != null) confirmPressedTexture.dispose();
-        if (leftArrowTexture != null)      leftArrowTexture.dispose();
-        if (rightArrowTexture != null)     rightArrowTexture.dispose();
+        if (leftArrowTexture != null) leftArrowTexture.dispose();
+        if (rightArrowTexture != null) rightArrowTexture.dispose();
+        if (skin != null) skin.dispose();
     }
 }

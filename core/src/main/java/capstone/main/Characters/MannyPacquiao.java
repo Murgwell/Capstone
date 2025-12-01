@@ -2,15 +2,11 @@ package capstone.main.Characters;
 
 import capstone.main.Managers.ScreenShake;
 import capstone.main.Sprites.Bullet;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
 
 public class MannyPacquiao extends AbstractPlayer implements Ranged {
-
-    private static final int SPRITE_COLUMNS = 13;
-    private static final int SPRITE_ROWS = 2;
 
     private final ArrayList<Bullet> bullets;
     private final ScreenShake screenShake;
