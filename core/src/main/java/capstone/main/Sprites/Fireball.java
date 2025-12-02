@@ -24,10 +24,10 @@ public class Fireball {
     private float speed = 50f;         // slower & heavier than bullets
     private float knockbackForce = 15f; // stronger knockback
 
-    // Stretch (same as Bullet)
-    private final float baseWidth = 0.3f;
-    private final float baseHeight = 0.3f;
-    private final float maxStretch = 1.8f;
+
+    private final float baseWidth = 2f;
+    private final float baseHeight = 2f;
+    private final float maxStretch = 0.5f;
     private final float stretchDistance = 0.25f;
 
     private float distanceTraveled = 0f;
