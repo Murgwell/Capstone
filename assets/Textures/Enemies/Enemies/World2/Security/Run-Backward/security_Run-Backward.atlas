@@ -1,0 +1,18 @@
+security_backward.png
+size: 2304, 288
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+Quiboloy_Walk_Backward-0
+  bounds: 0, 0, 288, 288
+Quiboloy_Walk_Backward-1
+  bounds: 288, 0, 288, 288
+Quiboloy_Walk_Backward-2
+  bounds: 576, 0, 288, 288
+Quiboloy_Walk_Backward-3
+  bounds: 864, 0, 288, 288
+Quiboloy_Walk_Backward-4
+  bounds: 1152, 0, 288, 288
+Quiboloy_Walk_Backward-5
+  bounds: 1440, 0, 288, 288
