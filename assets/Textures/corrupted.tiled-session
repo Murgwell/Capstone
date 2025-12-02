@@ -3,19 +3,19 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "World1_Boss.tmx",
+    "activeFile": "World2_Boss.tmx",
     "expandedProjectPaths": [
+        "tileset",
         ".",
-        "tilesets",
-        "tileset"
+        "tilesets"
     ],
     "fileStates": {
         "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Lava.tmx": {
             "scale": 1.5,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 923.6666666666666,
-                "y": 321
+                "x": 709,
+                "y": 318.3333333333333
             }
         },
         "C:/Users/Ceddi/Downloads/Crystal-of-JAVA-master/Crystal-of-JAVA-master/res/Maps/Lava.tmx#Dimensional_Portal": {
@@ -48,46 +48,77 @@
             "scaleInDock": 1
         },
         "Intro.tmx": {
-            "scale": 0.25,
-            "selectedLayer": 2,
+            "scale": 0.125,
+            "selectedLayer": 4,
             "viewCenter": {
-                "x": 2190,
-                "y": 1086
+                "x": 3560,
+                "y": 1140
             }
         },
         "World1.tmx": {
             "expandedObjectLayers": [
                 10
             ],
-            "scale": 0.33,
+            "scale": 0.5,
             "selectedLayer": 6,
             "viewCenter": {
-                "x": 4165.151515151515,
-                "y": 1140.9090909090908
+                "x": 1578,
+                "y": 1733
             }
         },
         "World1_Boss.tmx": {
+            "expandedObjectLayers": [
+                8
+            ],
             "scale": 0.25,
-            "selectedLayer": 5,
+            "selectedLayer": 7,
             "viewCenter": {
-                "x": 954,
-                "y": 378
+                "x": 1304,
+                "y": 926
             }
         },
         "World2.tmx": {
+            "expandedObjectLayers": [
+                13
+            ],
             "scale": 0.125,
-            "selectedLayer": 2,
+            "selectedLayer": 8,
             "viewCenter": {
-                "x": 1812,
-                "y": 1116
+                "x": 1528,
+                "y": 2140
+            }
+        },
+        "World2_Boss.tmx": {
+            "expandedObjectLayers": [
+                3
+            ],
+            "scale": 0.5,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 384,
+                "y": 561
             }
         },
         "World3.tmx": {
-            "scale": 0.25,
-            "selectedLayer": 3,
+            "expandedObjectLayers": [
+                18
+            ],
+            "scale": 0.5,
+            "selectedLayer": 6,
             "viewCenter": {
-                "x": 4990,
-                "y": 1218
+                "x": 5002,
+                "y": 1065
+            }
+        },
+        "World3_Boss.tmx": {
+            "expandedObjectLayers": [
+                7
+            ],
+            "scale": 0.33,
+            "selectedLayer": 5,
+            "viewCenter": {
+                "x": 199.9999999999999,
+                "y": 740.9090909090908
             }
         },
         "props.tsx": {
@@ -108,7 +139,7 @@
             "scaleInEditor": 1
         },
         "tilesets/bridges and fences.tsx": {
-            "scaleInDock": 0.5,
+            "scaleInDock": 1,
             "scaleInEditor": 1.497
         },
         "tilesets/buildings.tsx": {
@@ -116,7 +147,7 @@
             "scaleInEditor": 0.5
         },
         "tilesets/castle.tsx": {
-            "scaleInDock": 1,
+            "scaleInDock": 0.5,
             "scaleInEditor": 1.5
         },
         "tilesets/castle_decoratives.tsx": {
@@ -132,12 +163,12 @@
             "scaleInEditor": 1
         },
         "tilesets/furnitures.tsx": {
-            "scaleInDock": 0.33,
+            "scaleInDock": 0.25,
             "scaleInEditor": 1
         },
         "tilesets/props.tsx": {
             "dynamicWrapping": false,
-            "scaleInDock": 0.25,
+            "scaleInDock": 0.33,
             "scaleInEditor": 1
         },
         "tilesets/roofs.tsx": {
@@ -146,15 +177,15 @@
         },
         "tilesets/terrain.tsx": {
             "dynamicWrapping": false,
-            "scaleInDock": 0.5,
+            "scaleInDock": 0.33,
             "scaleInEditor": 1
         },
         "tilesets/trees.tsx": {
-            "scaleInDock": 0.5,
+            "scaleInDock": 0.33,
             "scaleInEditor": 1
         },
         "tilesets/water.tsx": {
-            "scaleInDock": 1,
+            "scaleInDock": 0.75,
             "scaleInEditor": 1
         },
         "trees.tsx": {
@@ -165,9 +196,9 @@
     },
     "last.externalTilesetPath": "C:/Users/Ceddi/Desktop/assets/tilesets",
     "last.imagePath": "C:/Users/Ceddi/Desktop/assets/buildings",
-    "map.height": 64,
+    "map.height": 32,
     "map.lastUsedFormat": "tmx",
-    "map.width": 64,
+    "map.width": 32,
     "openFiles": [
         "Intro.tmx",
         "World1.tmx",
@@ -186,7 +217,9 @@
         "tilesets/castle.tsx",
         "tilesets/castle_decoratives.tsx",
         "tilesets/castle_outside.tsx",
-        "World1_Boss.tmx"
+        "World1_Boss.tmx",
+        "World2_Boss.tmx",
+        "World3_Boss.tmx"
     ],
     "project": "corrupted.tiled-project",
     "recentFiles": [
