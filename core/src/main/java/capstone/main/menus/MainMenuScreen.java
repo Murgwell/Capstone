@@ -5,6 +5,11 @@ import capstone.main.Corrupted;
 import capstone.main.Managers.MusicManager;
 import capstone.main.Managers.VideoSettings;
 
+//import image
+import com.badlogic.gdx.scenes.scene2d.ui.Image;
+import com.badlogic.gdx.graphics.Texture;
+
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
@@ -44,7 +49,7 @@ public class MainMenuScreen implements Screen {
     private Stage uiStage;  // UI stage (title, buttons)
     private Skin skin;
 
-    private Label titleLabel;
+
     private Sound hoverSound;
 
     // Glitch effect state
@@ -100,15 +105,22 @@ public class MainMenuScreen implements Screen {
         }
 
         // === Title ===
-        titleLabel = new Label("CORRUPTED", skin, "default");
-        titleLabel.setFontScale(3.5f);
-        titleLabel.setColor(Color.WHITE);
+        Texture titleTexture = new Texture("Corrupted.png");
+        Image titleImage = new Image(titleTexture);
+
+        titleImage.setSize(300, 250); // adjust as needed
+        titleImage.setPosition(stage.getWidth() / 2f - titleImage.getWidth() / 2f,
+            stage.getHeight() * 0.60f);
+
+        stage.addActor(titleImage);
+
+
+
 
         // Use UI viewport world size for stable positioning across modes
         float uiW = uiStage.getViewport().getWorldWidth();
         float uiH = uiStage.getViewport().getWorldHeight();
-        titleLabel.setPosition(uiW / 2f - titleLabel.getPrefWidth() / 2f, uiH - 150f);
-        uiStage.addActor(titleLabel);
+
 
         // === Buttons ===
         Texture playNormal      = new Texture("ui/Menu/Main Menu/play_normal.png");
@@ -226,25 +238,6 @@ public class MainMenuScreen implements Screen {
             }
         }
 
-        // Glitch flicker for title
-        if (titleLabel != null && uiStage != null) {
-            glitchTimer += delta;
-            if (glitchTimer > glitchInterval) {
-                glitchTimer = 0f;
-                titleLabel.setColor(
-                    MathUtils.random(0.7f, 1f),
-                    MathUtils.random(0.7f, 1f),
-                    MathUtils.random(0.7f, 1f),
-                    1f
-                );
-                float uiW = uiStage.getViewport().getWorldWidth();
-                float uiH = uiStage.getViewport().getWorldHeight();
-                titleLabel.setPosition(
-                    (uiW / 2f - titleLabel.getPrefWidth() / 2f) + MathUtils.random(-3f, 3f),
-                    (uiH - 150f) + MathUtils.random(-2f, 2f)
-                );
-            }
-        }
 
         // Toggle fullscreen with F11
         if (Gdx.input.isKeyJustPressed(Input.Keys.F11)) {
