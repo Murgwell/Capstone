@@ -56,6 +56,7 @@ public class Game implements Screen {
     private PlayerLogic playerLogic;
     private BulletLogic bulletLogic;
     private EnemyLogic enemyLogic;
+    private FireballLogic fireballLogic;
 
     // Renderers
     private WorldRenderer worldRenderer;
@@ -141,7 +142,18 @@ public class Game implements Screen {
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
 
-        weaponTexture = new Texture("gun.png");
+        switch (selectedCharacterIndex) {
+            case 1: // Manny Pacquiao
+                weaponTexture = new Texture("fist.png"); // or melee weapon
+                break;
+            case 2: // Quiboloy
+                weaponTexture = new Texture("staff.png"); // fireball weapon
+                break;
+            default: // Vico Sotto
+                weaponTexture = new Texture("gun.png"); // bullet weapon
+                break;
+        }
+
         weaponSprite = new Sprite(weaponTexture);
         weaponSprite.setSize(0.3f, 0.3f);
         weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
@@ -149,7 +161,8 @@ public class Game implements Screen {
         // --- Inputs ---
         inputManager = new InputManager();
         globalInputProcessor = new InputProcessor() {
-            @Override public boolean keyDown(int keycode) {
+            @Override
+            public boolean keyDown(int keycode) {
                 if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
                     isPaused = !isPaused;
                     Gdx.input.setInputProcessor(isPaused ? pauseStage : gameplayInputs);
@@ -180,14 +193,46 @@ public class Game implements Screen {
                 }
                 return false;
             }
-            @Override public boolean keyUp(int keycode) { return false; }
-            @Override public boolean keyTyped(char character) { return false; }
-            @Override public boolean touchDown(int screenX, int screenY, int pointer, int button) { return false; }
-            @Override public boolean touchUp(int screenX, int screenY, int pointer, int button) { return false; }
-            @Override public boolean touchDragged(int screenX, int screenY, int pointer) { return false; }
-            @Override public boolean mouseMoved(int screenX, int screenY) { return false; }
-            @Override public boolean scrolled(float amountX, float amountY) { return false; }
-            @Override public boolean touchCancelled(int screenX, int screenY, int pointer, int button) { return false; }
+
+            @Override
+            public boolean keyUp(int keycode) {
+                return false;
+            }
+
+            @Override
+            public boolean keyTyped(char character) {
+                return false;
+            }
+
+            @Override
+            public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+                return false;
+            }
+
+            @Override
+            public boolean touchUp(int screenX, int screenY, int pointer, int button) {
+                return false;
+            }
+
+            @Override
+            public boolean touchDragged(int screenX, int screenY, int pointer) {
+                return false;
+            }
+
+            @Override
+            public boolean mouseMoved(int screenX, int screenY) {
+                return false;
+            }
+
+            @Override
+            public boolean scrolled(float amountX, float amountY) {
+                return false;
+            }
+
+            @Override
+            public boolean touchCancelled(int screenX, int screenY, int pointer, int button) {
+                return false;
+            }
         };
 
         gameplayInputs = new InputMultiplexer();
@@ -214,8 +259,16 @@ public class Game implements Screen {
             bulletLogic = null;
         }
 
+        // Initialize Fireball logic
+        if (player instanceof Quiboloy) {
+            fireballLogic = new FireballLogic((Quiboloy) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+        } else {
+            fireballLogic = null;
+        }
+
+
         // Now construct playerLogic with movementManager and bulletLogic present
-        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic);
+        playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic, fireballLogic);
         enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
 
         // --- Batches & renderers ---
@@ -264,6 +317,10 @@ public class Game implements Screen {
                 bulletLogic.update(stepDelta);
             }
 
+            if (fireballLogic != null) {
+                fireballLogic.update(stepDelta);
+            }
+
             enemyLogic.update(delta);
             screenShake.update(delta);
             entityRenderer.update(delta);
@@ -275,6 +332,8 @@ public class Game implements Screen {
             if (pauseStage.getActors().size == 0) createPauseMenu();
             pauseStage.act(delta);
         }
+
+
 
         // --- Check Game Over ---
         if (!isPaused && player.isDead() && !isGameOver) {
@@ -305,6 +364,10 @@ public class Game implements Screen {
 
         if (bulletLogic != null) {
             bulletLogic.render(spriteBatch, camera);
+        }
+
+        if (fireballLogic != null) {
+            fireballLogic.render(spriteBatch, camera);
         }
 
         weaponRenderer.render(spriteBatch);
@@ -367,7 +430,8 @@ public class Game implements Screen {
         table.add(musicCheckBox).padBottom(20f).row();
         TextButton resumeButton = new TextButton("Resume", pauseSkin);
         resumeButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+            @Override
+            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
                 isPaused = false;
                 Gdx.input.setInputProcessor(gameplayInputs);
             }
@@ -375,7 +439,8 @@ public class Game implements Screen {
         table.add(resumeButton).width(150f).height(40f).padBottom(20f).row();
         TextButton backButton = new TextButton("Back to Menu", pauseSkin);
         backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
-            @Override public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+            @Override
+            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
                 VideoSettings.apply();
                 game.setScreen(new MainMenuScreen(game));
                 dispose();
@@ -464,31 +529,67 @@ public class Game implements Screen {
         camera.update();
     }
 
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {
+    @Override
+    public void pause() {
+    }
+
+    @Override
+    public void resume() {
+    }
+
+    @Override
+    public void hide() {
         isPaused = true;
         Gdx.input.setInputProcessor(pauseStage);
     }
 
     @Override
     public void dispose() {
-        try { if (spriteBatch != null) spriteBatch.dispose(); } catch (Exception ignored) {}
-        try { if (shapeRenderer != null) shapeRenderer.dispose(); } catch (Exception ignored) {}
-        try { if (weaponTexture != null) weaponTexture.dispose(); } catch (Exception ignored) {}
-        try { if (backBtnTexture != null) backBtnTexture.dispose(); } catch (Exception ignored) {}
-        try { if (damageFont != null) damageFont.dispose(); } catch (Exception ignored) {}
-        try { if (pauseStage != null) pauseStage.dispose(); } catch (Exception ignored) {}
-        try { if (pauseSkin != null) pauseSkin.dispose(); } catch (Exception ignored) {}
-        try { if (gameOverStage != null) gameOverStage.dispose(); } catch (Exception ignored) {}
-        try { if (gameOverSkin != null) gameOverSkin.dispose(); } catch (Exception ignored) {}
-        try { if (treeFadeShader != null) treeFadeShader.dispose(); } catch (Exception ignored) {}
+        try {
+            if (spriteBatch != null) spriteBatch.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (shapeRenderer != null) shapeRenderer.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (weaponTexture != null) weaponTexture.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (backBtnTexture != null) backBtnTexture.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (damageFont != null) damageFont.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (pauseStage != null) pauseStage.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (pauseSkin != null) pauseSkin.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (gameOverStage != null) gameOverStage.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (gameOverSkin != null) gameOverSkin.dispose();
+        } catch (Exception ignored) {
+        }
+        try {
+            if (treeFadeShader != null) treeFadeShader.dispose();
+        } catch (Exception ignored) {
+        }
         if (physicsManager != null) physicsManager.dispose();
         if (mapManager != null) mapManager.dispose();
         if (heartsHud != null) heartsHud.dispose();
         if (player != null) player.dispose();
     }
-
 
 
     private AbstractPlayer createPlayer() {
@@ -500,7 +601,7 @@ public class Game implements Screen {
                     80,            // manaPoints
                     8,             // baseDamage
                     12,            // maxDamage
-                    1.5f,          // attackSpeed (faster than Vico for melee)
+                    1.5f,          // attackSpeed
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -513,20 +614,39 @@ public class Game implements Screen {
                     physicsManager.getWorld(),
                     screenShake
                 );
+            case 2:
+                // Quiboloy - Ranged fireball user
+                ArrayList<Fireball> fireballs = new ArrayList<>(); // create list for fireballs
+                return new Quiboloy(
+                    120,           // healthPoints
+                    80,            // manaPoints
+                    5,             // baseDamage
+                    8,             // maxDamage
+                    10f,           // attackSpeed
+                    9f,            // x
+                    9f,            // y
+                    2f,            // width
+                    2f,            // height
+                    fireballs,     // fireballs list
+                    mapWidth,
+                    mapHeight,
+                    physicsManager.getWorld(),
+                    screenShake
+                );
             default:
-                // Vico Sotto - Ranged
+                // Vico Sotto - Ranged bullets
                 ArrayList<Bullet> bullets = new ArrayList<>();
                 return new VicoSotto(
-                    60,    // healthPoints
-                    80,     // manaPoints
-                    3,      // baseDamage
-                    5,      // maxDamage
-                    0.3f,     // attackSpeed
-                    9f,     // x
-                    9f,     // y
-                    2f,     // width
-                    2f,     // height
-                    bullets,
+                    60,            // healthPoints
+                    80,            // manaPoints
+                    3,             // baseDamage
+                    5,             // maxDamage
+                    0.3f,          // attackSpeed
+                    9f,            // x
+                    9f,            // y
+                    2f,            // width
+                    2f,            // height
+                    bullets,       // bullets list
                     mapWidth,
                     mapHeight,
                     physicsManager.getWorld(),

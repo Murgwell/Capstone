@@ -1,20 +1,20 @@
 package capstone.main.Characters;
 
 import capstone.main.Managers.ScreenShake;
-import capstone.main.Sprites.Bullet;
+import capstone.main.Sprites.Fireball;
 import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
 
-public class Quiboloy extends AbstractPlayer implements Ranged {
+public class Quiboloy extends AbstractPlayer implements MagicRanged {
 
-    private final ArrayList<Bullet> bullets;
+    private final ArrayList<Fireball> fireballs;
     private final ScreenShake screenShake;
 
     // Animation-based constructor
     public Quiboloy(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
                     float attackSpeed, float x, float y, float width, float height,
-                    ArrayList<Bullet> bullets, float worldWidth, float worldHeight,
+                    ArrayList<Fireball> fireballs, float worldWidth, float worldHeight,
                     World physicsWorld, ScreenShake screenShake) {
         super(
             healthPoints,
@@ -32,7 +32,7 @@ public class Quiboloy extends AbstractPlayer implements Ranged {
             physicsWorld
         );
 
-        this.bullets = bullets;
+        this.fireballs = fireballs;
         this.screenShake = screenShake;
     }
 
@@ -40,7 +40,7 @@ public class Quiboloy extends AbstractPlayer implements Ranged {
     public void performAttack(float delta, float weaponRotationRad) {
         if (!canAttack()) return;
         onAttackPerformed();
-        // TODO: Add Quiboloy-specific attack behavior (bullets, effects, etc.)
+        // Fireball spawning should be handled by FireballLogic
     }
 
     @Override
@@ -49,8 +49,8 @@ public class Quiboloy extends AbstractPlayer implements Ranged {
         screenShake.shake(0.20f, 0.2f);
     }
 
-    @Override
-    public ArrayList<Bullet> getBullets() {
-        return bullets;
+    // New getter for FireballLogic
+    public ArrayList<Fireball> getFireballs() {
+        return fireballs;
     }
 }
