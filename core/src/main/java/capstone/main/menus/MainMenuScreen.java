@@ -108,9 +108,9 @@ public class MainMenuScreen implements Screen {
         Texture titleTexture = new Texture("Corrupted.png");
         Image titleImage = new Image(titleTexture);
 
-        titleImage.setSize(300, 250); // adjust as needed
+        titleImage.setSize(400, 300); // adjust as needed
         titleImage.setPosition(stage.getWidth() / 2f - titleImage.getWidth() / 2f,
-            stage.getHeight() * 0.60f);
+            stage.getHeight() * 0.55f);
 
         stage.addActor(titleImage);
 

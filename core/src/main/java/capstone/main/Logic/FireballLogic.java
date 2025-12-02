@@ -3,7 +3,6 @@ package capstone.main.Logic;
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Characters.MagicRanged;
 import capstone.main.Characters.Quiboloy;
-import capstone.main.Characters.Ranged;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.DamageNumber;
 import capstone.main.Sprites.Fireball;
@@ -22,6 +21,13 @@ public class FireballLogic {
     private final BitmapFont damageFont;
     private final PhysicsManager physicsManager;
 
+    // Fire rate control
+    private final float fireCooldown = 0.5f; // seconds between shots
+    private float timeSinceLastFire = 0f;
+
+    // Fireball speed
+    private final float fireballSpeed = 3f; // lower = slower
+
     public FireballLogic(Quiboloy player, ArrayList<AbstractEnemy> enemies,
                          ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
                          PhysicsManager physicsManager) {
@@ -32,9 +38,11 @@ public class FireballLogic {
         this.physicsManager = physicsManager;
     }
 
-    /** Update all fireballs (position, lifetime, physics) */
+    /** Update all fireballs (position, lifetime, physics) and cooldown */
     public void update(float delta) {
-        ArrayList<Fireball> fireballs = player.getFireballs(); // <-- updated
+        timeSinceLastFire += delta;
+
+        ArrayList<Fireball> fireballs = player.getFireballs();
 
         for (int i = fireballs.size() - 1; i >= 0; i--) {
             Fireball f = fireballs.get(i);
@@ -51,6 +59,9 @@ public class FireballLogic {
 
     /** Spawn a new fireball from player */
     public void spawnFireball(MagicRanged player, float weaponRotationRad) {
+        if (timeSinceLastFire < fireCooldown) return; // still cooling down
+        timeSinceLastFire = 0f;
+
         AbstractPlayer p = (AbstractPlayer) player;
         ArrayList<Fireball> fireballs = player.getFireballs();
 
@@ -59,24 +70,19 @@ public class FireballLogic {
         float dispersion = MathUtils.random(-maxDispersionRad, maxDispersionRad);
         float finalAngle = weaponRotationRad + dispersion;
 
-        // Shooting direction
-        Vector2 dir = new Vector2(MathUtils.cos(finalAngle), MathUtils.sin(finalAngle));
+        // Shooting direction with slower speed
+        Vector2 dir = new Vector2(MathUtils.cos(finalAngle), MathUtils.sin(finalAngle)).scl(fireballSpeed);
 
         // BACKWARD OFFSET
         float backwardOffset = 0.5f;
-        Vector2 offset = new Vector2(dir).scl(-backwardOffset);
+        Vector2 offset = new Vector2(dir).nor().scl(-backwardOffset);
 
         // Player center
-        float startX = p.getSprite().getX() + p.getSprite().getWidth() / 2f;
-        float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f;
-
-        // Apply offset
-        startX += offset.x;
-        startY += offset.y;
+        float startX = p.getSprite().getX() + p.getSprite().getWidth() / 2f + offset.x;
+        float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f + offset.y;
 
         fireballs.add(new Fireball(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
     }
-
 
     public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, com.badlogic.gdx.graphics.OrthographicCamera camera) {
         batch.setProjectionMatrix(camera.combined);
