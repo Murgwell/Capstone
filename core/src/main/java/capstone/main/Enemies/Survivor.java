@@ -127,8 +127,7 @@ public class Survivor extends AbstractEnemy {
             frames.add(new TextureRegion(tex));
         }
         if (frames.size == 0) return null;
-        Animation<TextureRegion> anim = new Animation<TextureRegion>(frameDuration, frames, Animation.PlayMode.LOOP);
-        return anim;
+        return new Animation<>(frameDuration, frames, Animation.PlayMode.LOOP);
     }
 
     private Animation<TextureRegion> loadAtlasAnim(String folder, String atlasFile, String frameBaseName, float frameDuration) {
@@ -146,7 +145,6 @@ public class Survivor extends AbstractEnemy {
             frames.add(region);
         }
         if (frames.size == 0) return null;
-        Animation<TextureRegion> anim = new Animation<TextureRegion>(frameDuration, frames, Animation.PlayMode.LOOP);
-        return anim;
+        return new Animation<>(frameDuration, frames, Animation.PlayMode.LOOP);
     }
 }
