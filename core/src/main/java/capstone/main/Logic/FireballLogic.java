@@ -46,8 +46,6 @@ public class FireballLogic {
             }
         }
     }
-
-    /** Spawn a new fireball from player */
     /** Spawn a new fireball from player */
     public void spawnFireball(MagicRanged player, float weaponRotationRad) {
 

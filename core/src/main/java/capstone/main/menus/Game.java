@@ -56,7 +56,6 @@ public class Game implements Screen {
     private EnemySpawner enemySpawner;
     private PlayerLogic playerLogic;
     private BulletLogic bulletLogic;
-    private PunchLogic punchLogic;
     private EnemyLogic enemyLogic;
     private FireballLogic fireballLogic;
 
@@ -89,8 +88,6 @@ public class Game implements Screen {
     // HUD elements
     private HeartsHud heartsHud;
     private SkillHud skillHud;
-    private Texture hpFrameTex;
-    private Texture hpFillTex;
 
     // Shaders
     private ShaderProgram treeFadeShader;
@@ -161,7 +158,7 @@ public class Game implements Screen {
         switch (selectedCharacterIndex) {
             case 1: // Manny Pacquiao
                 soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
-                soundManager.loadSound("manny_punch", "Sounds/manny_airpunch.mp3");
+                soundManager.loadSound("manny_airpunch", "Sounds/manny_airpunch.mp3");
                 //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
                 soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.mp3");
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
@@ -437,7 +434,6 @@ public class Game implements Screen {
                 VideoSettings.apply();
                 game.setScreen(new MainMenuScreen(game));
                 dispose();
-                return;
             }
         }
     }

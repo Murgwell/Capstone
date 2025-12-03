@@ -19,7 +19,7 @@ public class Corrupted extends Game {
         VideoSettings.apply();
 
         // Apply custom cursor globally
-        capstone.main.Managers.CursorManager.apply("ui/cursor.png", 0, 0);
+        capstone.main.Managers.CursorManager.apply("UI/cursor.png", 0, 0);
 
         setScreen(new MainMenuScreen(this));
     }

@@ -97,12 +97,12 @@ public class SettingsScreen implements Screen {
         musicManager = MusicManager.getInstance();
 
         // UI textures
-        musicUpTex = new Texture("ui/Menu/music_button_normal.png");
-        musicDownTex = new Texture("ui/Menu/music_button_pressed.png");
-        fullscreenUpTex = new Texture("ui/Menu/fullscreen_button_normal.png");
-        fullscreenDownTex = new Texture("ui/Menu/fullscreen_button_pressed.png");
-        backUpTex = new Texture("ui/Menu/back_button_normal.png");
-        backDownTex = new Texture("ui/Menu/back_button_pressed.png");
+        musicUpTex = new Texture("UI/Menu/music_button_normal.png");
+        musicDownTex = new Texture("UI/Menu/music_button_pressed.png");
+        fullscreenUpTex = new Texture("UI/Menu/fullscreen_button_normal.png");
+        fullscreenDownTex = new Texture("UI/Menu/fullscreen_button_pressed.png");
+        backUpTex = new Texture("UI/Menu/back_button_normal.png");
+        backDownTex = new Texture("UI/Menu/back_button_pressed.png");
 
         // Title
         Label titleLabel = new Label("SETTINGS", skin);

@@ -25,7 +25,7 @@ public final class CursorManager {
     }
 
     /**
-     * @param filePath path to cursor image (e.g., "ui/cursor.png")
+     * @param filePath path to cursor image (e.g., "cursor.png")
      * @param hotspotX hotspot X (in original image coords, from left)
      * @param hotspotY hotspot Y (in original image coords, from top)
      */

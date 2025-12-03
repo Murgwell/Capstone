@@ -50,9 +50,9 @@ public class SkillHud {
     private void loadSkillIcons() {
         if (player instanceof MannyPacquiao) {
             // Load Manny's skill icons
-            skill1Icon = new Texture(Gdx.files.internal("ui/Skills/Characters/Manny Pacquiao/meteor_fist.jpg"));
-            skill2Icon = new Texture(Gdx.files.internal("ui/Skills/Characters/Manny Pacquiao/barrage_combo.jpg"));
-            skill3Icon = new Texture(Gdx.files.internal("ui/Skills/Characters/Manny Pacquiao/champions_knockout.jpg"));
+            skill1Icon = new Texture(Gdx.files.internal("UI/Skills/Characters/Manny Pacquiao/meteor_fist.jpg"));
+            skill2Icon = new Texture(Gdx.files.internal("UI/Skills/Characters/Manny Pacquiao/barrage_combo.jpg"));
+            skill3Icon = new Texture(Gdx.files.internal("UI/Skills/Characters/Manny Pacquiao/champions_knockout.jpg"));
         }
         // Add more characters here later
 

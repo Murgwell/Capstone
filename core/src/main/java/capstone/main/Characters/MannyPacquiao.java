@@ -17,16 +17,13 @@ import java.util.ArrayList;
 
 public class MannyPacquiao extends AbstractPlayer implements Melee {
     private final ScreenShake screenShake;
-    private final ArrayList<AbstractEnemy> enemies;
-    private final ArrayList<DamageNumber> damageNumbers;
-    private final BitmapFont damageFont;
 
     // Punch animation fields
     private float punchAnimationTimer = 0f;
     private final float punchAnimationDuration = 0.2f;
     private boolean isPunching = false;
-    private Vector2 originalWeaponOffset = new Vector2(0, 0);
-    private Vector2 punchWeaponOffset = new Vector2(0, 0);
+    private final Vector2 originalWeaponOffset = new Vector2(0, 0);
+    private final Vector2 punchWeaponOffset = new Vector2(0, 0);
 
     // Skills
     private MeteorFist meteorFist;
@@ -34,7 +31,7 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     private ChampionsKnockout championsKnockout;
 
     // External melee logic (new)
-    private capstone.main.Logic.PunchLogic punchLogic;
+    private final capstone.main.Logic.PunchLogic punchLogic;
 
     public MannyPacquiao(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
                          float attackSpeed, float x, float y, float width, float height,
@@ -53,9 +50,6 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
             physicsWorld
         );
         this.screenShake = screenShake;
-        this.enemies = enemies;
-        this.damageNumbers = damageNumbers;
-        this.damageFont = damageFont;
 
         // Initialize external PunchLogic with Manny as both AbstractPlayer and Melee
         this.punchLogic = new capstone.main.Logic.PunchLogic(this, this, enemies, damageNumbers, damageFont, screenShake);
@@ -153,8 +147,8 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
         // Quick punch forward, slower return
         float animationCurve;
         if (progress < 0.3f) {
-            // Fast forward punch
-            animationCurve = progress / 0.3f;
+            // Fast-forward punch
+            animationCurve = progress / 1.2f;
         } else {
             // Slower return
             animationCurve = 1f - ((progress - 0.3f) / 0.7f);

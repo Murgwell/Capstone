@@ -24,9 +24,9 @@ public class HeartsHud {
         this.stage = new Stage(uiViewport, batch);
         this.player = player;
 
-        heartFullTex = new Texture(Gdx.files.internal("ui/Hud/Heart_Full.png"));
-        heartHalfTex = new Texture(Gdx.files.internal("ui/Hud/Heart_Half.png"));
-        heartEmptyTex = new Texture(Gdx.files.internal("ui/Hud/Heart_Empty.png"));
+        heartFullTex = new Texture(Gdx.files.internal("UI/Hud/Heart_Full.png"));
+        heartHalfTex = new Texture(Gdx.files.internal("UI/Hud/Heart_Half.png"));
+        heartEmptyTex = new Texture(Gdx.files.internal("UI/Hud/Heart_Empty.png"));
 
         int maxHearts = (int) Math.ceil(player.getMaxHp() / 10f);
         hearts = new Image[maxHearts];

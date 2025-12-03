@@ -83,12 +83,12 @@ public class CharacterSelectionScreen implements Screen {
         characterNames[2] = "Quiboloy";
 
         // --- Load arrow button textures ---
-        leftArrowTexture = new Texture("ui/Menu/left_arrow.png");
-        rightArrowTexture = new Texture("ui/Menu/right_arrow.png");
+        leftArrowTexture = new Texture("UI/Menu/left_arrow.png");
+        rightArrowTexture = new Texture("UI/Menu/right_arrow.png");
 
         // --- Load confirm button textures ---
-        confirmNormalTexture = new Texture("ui/Menu/confirm_button_normal.png");
-        confirmPressedTexture = new Texture("ui/Menu/confirm_button_pressed.png");
+        confirmNormalTexture = new Texture("UI/Menu/confirm_button_normal.png");
+        confirmPressedTexture = new Texture("UI/Menu/confirm_button_pressed.png");
 
         // Root table
         Table root = new Table();
