@@ -3,6 +3,7 @@ package capstone.main.Enemies;
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.CollisionBits;
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Managers.SoundManager;
 import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
@@ -137,7 +138,10 @@ public abstract class AbstractEnemy {
         // Trigger hit flash
         hitFlashTimer = hitFlashDuration;
 
-        screenShake.shake(0.25f, 0.05f); //
+        screenShake.shake(0.25f, 0.05f);
+
+        // PLAY ENEMY HIT SOUND
+        SoundManager.getInstance().playSound("enemy_hit");
 
         Gdx.app.log("HitFlash", "Enemy hit! Health=" + health + ", flashTimer=" + hitFlashTimer);
 

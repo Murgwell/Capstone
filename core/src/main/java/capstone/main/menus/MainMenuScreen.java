@@ -84,7 +84,7 @@ public class MainMenuScreen implements Screen {
         if (batch == null)      batch = new SpriteBatch();
         if (background == null) background = new Texture("mainMenuBG.png");
         if (skin == null)       skin = new Skin(Gdx.files.internal("uiskin.json"));
-        if (hoverSound == null) hoverSound = Gdx.audio.newSound(Gdx.files.internal("Music/hover.wav"));
+        if (hoverSound == null) hoverSound = Gdx.audio.newSound(Gdx.files.internal("Sounds/hover.wav"));
 
         // Music
         MusicManager.getInstance().ensurePlaying();
@@ -184,6 +184,10 @@ public class MainMenuScreen implements Screen {
                 Gdx.app.exit();
             }
         });
+
+        // Switch back to menu music
+        MusicManager musicManager = MusicManager.getInstance();
+        musicManager.switchMusic("Music/bg_music.mp3");
     }
 
     private void addHoverEffect(final ImageButton button) {
@@ -282,6 +286,5 @@ public class MainMenuScreen implements Screen {
         if (skin != null)       { skin.dispose();       skin       = null; }
         if (hoverSound != null) { hoverSound.dispose(); hoverSound = null; }
         if (batch != null)      { batch.dispose();      batch      = null; }
-        // Camera/viewport are owned; no need to dispose
     }
 }

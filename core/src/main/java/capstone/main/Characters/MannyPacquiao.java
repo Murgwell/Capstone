@@ -1,6 +1,7 @@
 package capstone.main.Characters;
 
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Skills.*;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Skills.MannyPacquiao.BarrageCombo;
@@ -107,7 +108,7 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
         if (!canAttack()) {
             return;
         }
-
+        SoundManager.getInstance().playSound("manny_airpunch");
         performMeleeAttack(delta, weaponRotationRad);
         onAttackPerformed();
     }
@@ -132,6 +133,9 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
             if (distance <= MELEE_RANGE) {
                 float damage = com.badlogic.gdx.math.MathUtils.random(BASE_MELEE_DAMAGE, MAX_MELEE_DAMAGE);
                 enemy.takeHit(damage);
+
+                // PLAY PUNCH SOUND
+                SoundManager.getInstance().playSound("manny_punch");
 
                 // Create damage number
                 damageNumbers.add(new DamageNumber(
@@ -167,5 +171,7 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     protected void onDamaged(float delta) {
         super.onDamaged(delta);
         screenShake.shake(0.20f, 0.2f);
+        // PLAY SOUND
+        SoundManager.getInstance().playSound("player_damage");
     }
 }

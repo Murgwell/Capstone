@@ -1,6 +1,7 @@
 package capstone.main.Characters;
 
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Sprites.Bullet;
 import com.badlogic.gdx.physics.box2d.World;
 
@@ -46,6 +47,8 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
     protected void onDamaged(float delta) {
         super.onDamaged(delta);
         screenShake.shake(0.20f, 0.2f);
+        // PLAY SOUND
+        SoundManager.getInstance().playSound("player_damage");
     }
 
     @Override

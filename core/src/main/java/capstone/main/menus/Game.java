@@ -9,6 +9,7 @@ import capstone.main.Managers.*;
 import capstone.main.Logic.*;
 import capstone.main.Render.*;
 import capstone.main.Sprites.*;
+import capstone.main.UI.SkillHud;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.InputMultiplexer;
@@ -87,6 +88,7 @@ public class Game implements Screen {
 
     // HUD elements
     private HeartsHud heartsHud;
+    private SkillHud skillHud;
     private Texture hpFrameTex;
     private Texture hpFillTex;
 
@@ -142,20 +144,48 @@ public class Game implements Screen {
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
 
+        // --- LOAD BACKGROUND MUSIC ---
+        MusicManager musicManager = MusicManager.getInstance();
+        musicManager.loadMusic("Music/World1_Music.mp3"); // Put your music file in assets/Music/
+        musicManager.play();
+
+        // --- STOP MENU MUSIC AND START WORLD 1 MUSIC ---
+        musicManager.stop(); // Stop the menu/character selection music
+        musicManager.dispose(); // Clear the old music
+        musicManager.loadMusic("Music/world1_music.mp3"); // Load World 1 music
+        musicManager.play(); // Start playing
+
+        // --- LOAD CHARACTER SOUNDS ---
+        SoundManager soundManager = SoundManager.getInstance();
+
         switch (selectedCharacterIndex) {
             case 1: // Manny Pacquiao
+                soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
+                soundManager.loadSound("manny_punch", "Sounds/manny_airpunch.mp3");
+                //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
+                //soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.wav");
+                //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
+                //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
                 weaponTexture = new Texture("fist.png"); // or melee weapon
                 break;
             case 2: // Quiboloy
+                //soundManager.loadSound("quiboloy_fireball", "Sounds/quiboloy_fireball.wav");
+                //soundManager.loadSound("quiboloy_hit", "Sounds/quiboloy_hit.wav");
                 weaponTexture = new Texture("staff.png"); // fireball weapon
                 break;
             default: // Vico Sotto
+                //soundManager.loadSound("vico_shoot", "Sounds/vico_shoot.wav");
+                //soundManager.loadSound("vico_hit", "Sounds/vico_hit.wav");
                 weaponTexture = new Texture("gun.png"); // bullet weapon
                 break;
         }
 
+        // Load common sounds
+        soundManager.loadSound("enemy_hit", "Sounds/enemy_hit.mp3");
+        soundManager.loadSound("player_damage", "Sounds/player_damage.mp3");
+
         weaponSprite = new Sprite(weaponTexture);
-        weaponSprite.setSize(0.3f, 0.3f);
+        weaponSprite.setSize(0.8f, 0.8f);
         weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
 
         // --- Inputs ---
@@ -300,6 +330,11 @@ public class Game implements Screen {
 
         // --- HUD ---
         heartsHud = new HeartsHud(uiViewport, spriteBatch, player);
+
+        // Create skill HUD if player has skills
+        if (player instanceof MannyPacquiao) {
+            skillHud = new SkillHud(uiViewport, spriteBatch, player);
+        }
     }
 
 
@@ -333,14 +368,12 @@ public class Game implements Screen {
             pauseStage.act(delta);
         }
 
-
-
         // --- Check Game Over ---
         if (!isPaused && player.isDead() && !isGameOver) {
             isGameOver = true;
             buildGameOverOverlay();
             Gdx.input.setInputProcessor(gameOverStage);
-            return; // Stop here so the world doesn't keep rendering
+            return;
         }
 
         // --- Clear screen ---
@@ -351,7 +384,7 @@ public class Game implements Screen {
         if (isGameOver) {
             gameOverStage.act(delta);
             gameOverStage.draw();
-            return; // Skip world rendering
+            return;
         }
 
         // --- World rendering ---
@@ -360,7 +393,6 @@ public class Game implements Screen {
         viewport.apply();
         worldRenderer.renderGround(camera);
         entityRenderer.render(camera);
-
 
         if (bulletLogic != null) {
             bulletLogic.render(spriteBatch, camera);
@@ -381,7 +413,28 @@ public class Game implements Screen {
         heartsHud.update(delta);
         heartsHud.draw();
 
-        if (isPaused) pauseStage.draw();
+        // Draw skill HUD
+        if (skillHud != null) {
+            skillHud.update(delta);
+            skillHud.draw();
+        }
+
+        // --- Draw pause overlay ---
+        if (isPaused) {
+            // Draw semi-transparent overlay
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+            shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(0, 0, 0, 0.6f); // 60% dark overlay
+            shapeRenderer.rect(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+
+            pauseStage.draw();
+        }
 
         // --- Back button click ---
         if (Gdx.input.justTouched() && !isPaused) {
@@ -394,7 +447,6 @@ public class Game implements Screen {
                 return;
             }
         }
-
     }
 
     private void updateWeaponAiming() {
@@ -422,31 +474,141 @@ public class Game implements Screen {
 
     private void createPauseMenu() {
         pauseStage.clear();
+
+        // Main table
         Table table = new Table();
         table.setFillParent(true);
+        table.center();
+
+        // Title
         Label titleLabel = new Label("PAUSED", pauseSkin);
-        table.add(titleLabel).padBottom(30f).row();
-        CheckBox musicCheckBox = new CheckBox("Music: ON", pauseSkin);
-        table.add(musicCheckBox).padBottom(20f).row();
-        TextButton resumeButton = new TextButton("Resume", pauseSkin);
-        resumeButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+        titleLabel.setFontScale(2f);
+        table.add(titleLabel).padBottom(40f).colspan(2).row();
+
+        // Get managers
+        final MusicManager musicManager = MusicManager.getInstance();
+        final SoundManager soundManager = SoundManager.getInstance();
+
+        // --- MUSIC SECTION ---
+        Table musicTable = new Table();
+        musicTable.left();
+
+        // Music label with status indicator
+        final Label musicLabel = new Label("Music: " + (musicManager.isMusicEnabled() ? "ON" : "OFF"), pauseSkin);
+        musicLabel.setColor(musicManager.isMusicEnabled() ? Color.GREEN : Color.RED);
+        musicTable.add(musicLabel).padRight(10f);
+
+        // Music toggle button
+        final TextButton musicToggle = new TextButton(musicManager.isMusicEnabled() ? "ON" : "OFF", pauseSkin);
+        musicToggle.getLabel().setFontScale(0.8f);
+        musicToggle.addListener(new ClickListener() {
             @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+            public void clicked(InputEvent event, float x, float y) {
+                boolean newState = !musicManager.isMusicEnabled();
+                musicManager.setMusicEnabled(newState);
+                musicToggle.setText(newState ? "ON" : "OFF");
+                musicLabel.setText("Music: " + (newState ? "ON" : "OFF"));
+                musicLabel.setColor(newState ? Color.GREEN : Color.RED);
+            }
+        });
+        musicTable.add(musicToggle).width(60f).height(30f);
+
+        table.add(musicTable).left().padBottom(10f).colspan(2).row();
+
+        // Music volume slider
+        Label musicVolumeLabel = new Label("Music Volume:", pauseSkin);
+        table.add(musicVolumeLabel).left().padRight(10f);
+
+        final Slider musicSlider = new Slider(0f, 1f, 0.01f, false, pauseSkin);
+        musicSlider.setValue(musicManager.getVolume());
+        final Label musicPercentLabel = new Label(String.format("%.0f%%", musicManager.getVolume() * 100), pauseSkin);
+
+        musicSlider.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                float value = musicSlider.getValue();
+                musicManager.setVolume(value);
+                musicPercentLabel.setText(String.format("%.0f%%", value * 100));
+            }
+        });
+
+        Table musicSliderTable = new Table();
+        musicSliderTable.add(musicSlider).width(150f).padRight(10f);
+        musicSliderTable.add(musicPercentLabel).width(40f);
+        table.add(musicSliderTable).left().padBottom(20f).row();
+
+        // --- SOUND SECTION ---
+        Table soundTable = new Table();
+        soundTable.left();
+
+        // Sound label with status indicator
+        final Label soundLabel = new Label("Sound: " + (soundManager.isSoundEnabled() ? "ON" : "OFF"), pauseSkin);
+        soundLabel.setColor(soundManager.isSoundEnabled() ? Color.GREEN : Color.RED);
+        soundTable.add(soundLabel).padRight(10f);
+
+        // Sound toggle button
+        final TextButton soundToggle = new TextButton(soundManager.isSoundEnabled() ? "ON" : "OFF", pauseSkin);
+        soundToggle.getLabel().setFontScale(0.8f);
+        soundToggle.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
+                boolean newState = !soundManager.isSoundEnabled();
+                soundManager.setSoundEnabled(newState);
+                soundToggle.setText(newState ? "ON" : "OFF");
+                soundLabel.setText("Sound: " + (newState ? "ON" : "OFF"));
+                soundLabel.setColor(newState ? Color.GREEN : Color.RED);
+            }
+        });
+        soundTable.add(soundToggle).width(60f).height(30f);
+
+        table.add(soundTable).left().padBottom(10f).colspan(2).row();
+
+        // Sound volume slider
+        Label soundVolumeLabel = new Label("Sound Volume:", pauseSkin);
+        table.add(soundVolumeLabel).left().padRight(10f);
+
+        final Slider soundSlider = new Slider(0f, 1f, 0.01f, false, pauseSkin);
+        soundSlider.setValue(soundManager.getVolume());
+        final Label soundPercentLabel = new Label(String.format("%.0f%%", soundManager.getVolume() * 100), pauseSkin);
+
+        soundSlider.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                float value = soundSlider.getValue();
+                soundManager.setVolume(value);
+                soundPercentLabel.setText(String.format("%.0f%%", value * 100));
+            }
+        });
+
+        Table soundSliderTable = new Table();
+        soundSliderTable.add(soundSlider).width(150f).padRight(10f);
+        soundSliderTable.add(soundPercentLabel).width(40f);
+        table.add(soundSliderTable).left().padBottom(30f).row();
+
+        // --- BUTTONS ---
+        TextButton resumeButton = new TextButton("Resume", pauseSkin);
+        resumeButton.getLabel().setFontScale(1.2f);
+        resumeButton.addListener(new ClickListener() {
+            @Override
+            public void clicked(InputEvent event, float x, float y) {
                 isPaused = false;
                 Gdx.input.setInputProcessor(gameplayInputs);
             }
         });
-        table.add(resumeButton).width(150f).height(40f).padBottom(20f).row();
+        table.add(resumeButton).width(180f).height(50f).padBottom(15f).colspan(2).row();
+
         TextButton backButton = new TextButton("Back to Menu", pauseSkin);
-        backButton.addListener(new com.badlogic.gdx.scenes.scene2d.utils.ClickListener() {
+        backButton.getLabel().setFontScale(1.2f);
+        backButton.addListener(new ClickListener() {
             @Override
-            public void clicked(com.badlogic.gdx.scenes.scene2d.InputEvent event, float x, float y) {
+            public void clicked(InputEvent event, float x, float y) {
                 VideoSettings.apply();
                 game.setScreen(new MainMenuScreen(game));
                 dispose();
             }
         });
-        table.add(backButton).width(140f).height(40f);
+        table.add(backButton).width(180f).height(50f).colspan(2);
+
         pauseStage.addActor(table);
         Gdx.input.setInputProcessor(pauseStage);
     }
@@ -526,6 +688,7 @@ public class Game implements Screen {
         viewport.update(width, height, true);
         uiViewport.update(width, height, true);
         heartsHud.resize(width, height);
+        if (skillHud != null) skillHud.resize(width, height);
         camera.update();
     }
 
@@ -589,6 +752,10 @@ public class Game implements Screen {
         if (mapManager != null) mapManager.dispose();
         if (heartsHud != null) heartsHud.dispose();
         if (player != null) player.dispose();
+        if (skillHud != null) skillHud.dispose();
+
+        // Stop World 1 music when leaving game screen
+        MusicManager.getInstance().stop();
     }
 
 

@@ -7,7 +7,8 @@ public class MusicManager {
     private static MusicManager instance;
     private Music backgroundMusic;
     private boolean isMusicEnabled = true;
-    private float volume = 0.5f;
+    private float volume = 0.4f;
+    private String currentMusicPath = null; // Track what's currently loaded
 
     private MusicManager() {
         // Private constructor for singleton
@@ -21,13 +22,22 @@ public class MusicManager {
     }
 
     public void loadMusic(String path) {
-        // Only load if not already loaded
-        if (backgroundMusic != null) {
+        // If the same music is already loaded, don't reload
+        if (currentMusicPath != null && currentMusicPath.equals(path)) {
             return;
         }
+
+        // Dispose old music if exists
+        if (backgroundMusic != null) {
+            backgroundMusic.stop();
+            backgroundMusic.dispose();
+        }
+
+        // Load new music
         backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal(path));
         backgroundMusic.setLooping(true);
         backgroundMusic.setVolume(volume);
+        currentMusicPath = path;
     }
 
     public void play() {
@@ -94,7 +104,15 @@ public class MusicManager {
         if (backgroundMusic != null) {
             backgroundMusic.dispose();
             backgroundMusic = null;
+            currentMusicPath = null;
         }
     }
-}
 
+    // NEW: Method to switch music smoothly
+    public void switchMusic(String newPath) {
+        stop();
+        dispose();
+        loadMusic(newPath);
+        play();
+    }
+}
