@@ -32,19 +32,19 @@ public class Greed extends AbstractEnemy {
         super(x, y, new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"), 1.5f, 1.5f, 100, screenShake, physics);
 
         // Load from per-direction atlases if available; fallback to PNG frames
-        animDown = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Forward", "Greed_Run-Forward.atlas", "Greed_Walk-", 0.10f);
-        if (animDown == null) animDown = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Forward", "Greed_Walk-", 0, 99, 0.10f);
+        animDown = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Forward", "Greed_Run-Forward.atlas", "orc1_walk_full-", 0.10f);
+        if (animDown == null) animDown = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Forward", "orc1_walk_full-", 0, 99, 0.10f);
 
-        animUp = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Backward", "Greed_Run-Backward.atlas", "Greed_Walk-", 0.10f);
-        if (animUp == null) animUp = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Backward", "Greed_Walk-", 0, 99, 0.10f);
+        animUp = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Backward", "Greed_Run-Backward.atlas", "orc1_walk_full-", 0.10f);
+        if (animUp == null) animUp = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Backward", "orc1_walk_full-", 0, 99, 0.10f);
 
-        animLeft = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Left", "Greed_Run-Left.atlas", "Greed_Walk-", 0.10f);
-        if (animLeft == null) animLeft = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Left", "Greed_Walk-", 0, 99, 0.10f);
+        animLeft = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Left", "Greed_Run-Left.atlas", "orc1_walk_full-", 0.10f);
+        if (animLeft == null) animLeft = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Left", "orc1_walk_full-", 0, 99, 0.10f);
 
-        animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right", "Greed_Run-Right.atlas", "Greed_Walk-", 0.10f);
+        animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right", "Greed_Run-Right.atlas", "orc1_walk_full-", 0.10f);
         // Handle possible misnamed atlas in right folder
-        if (animRight == null) animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right", "Greed_Run-Right.atlas", "Greed_Walk-", 0.10f);
-        if (animRight == null) animRight = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Right", "Greed_Walk-", 0, 99, 0.10f);
+        if (animRight == null) animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right", "Greed_Run-Right.atlas", "orc1_walk_full-", 0.10f);
+        if (animRight == null) animRight = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Right", "orc1_walk_full-", 0, 99, 0.10f);
 
         // random initial facing
         boolean facingLeft = MathUtils.randomBoolean();
