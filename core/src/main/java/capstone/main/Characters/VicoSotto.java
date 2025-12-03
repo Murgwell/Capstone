@@ -40,7 +40,6 @@ public class VicoSotto extends AbstractPlayer implements Ranged {
     public void performAttack(float delta, float weaponRotationRad) {
         if (!canAttack()) return;
         onAttackPerformed();
-        // TODO: Add Vico-specific attack behavior (bullets, effects, etc.)
     }
 
     @Override

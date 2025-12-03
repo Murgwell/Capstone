@@ -35,8 +35,10 @@ public class PlayerLogic {
         if (input.isAttacking() && player.canAttack()) {
             if (player instanceof MagicRanged && fireballLogic != null) {
                 fireballLogic.spawnFireball((MagicRanged) player, player.getWeaponAimingRad());
+                player.performAttack(delta, player.getWeaponAimingRad());
             } else if (player instanceof Ranged && bulletLogic != null) {
                 bulletLogic.spawnBullet((Ranged) player, player.getWeaponAimingRad());
+                player.performAttack(delta, player.getWeaponAimingRad());
             } else if (player instanceof Melee) {
                 player.performAttack(delta, player.getWeaponAimingRad());
             }

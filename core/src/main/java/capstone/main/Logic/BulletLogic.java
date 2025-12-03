@@ -10,7 +10,6 @@ import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-
 import java.util.ArrayList;
 
 public class BulletLogic {
@@ -19,10 +18,6 @@ public class BulletLogic {
     private final ArrayList<DamageNumber> damageNumbers;
     private final BitmapFont damageFont;
     private final PhysicsManager physicsManager; // add this
-
-    // Fire rate control
-    private final float fireCooldown = 0.3f; // seconds between shots
-    private float timeSinceLastFire = 0f;
 
     public BulletLogic(Ranged player, ArrayList<AbstractEnemy> enemies,
                        ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
@@ -35,8 +30,6 @@ public class BulletLogic {
     }
 
     public void update(float delta) {
-        timeSinceLastFire += delta;
-
         ArrayList<Bullet> bullets = player.getBullets();
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet b = bullets.get(i);
@@ -55,8 +48,6 @@ public class BulletLogic {
 
 
     public void spawnBullet(Ranged player, float weaponRotationRad) {
-        if (timeSinceLastFire < fireCooldown) return; // still cooling down
-        timeSinceLastFire = 0f;
 
         AbstractPlayer p = (AbstractPlayer) player;
         ArrayList<Bullet> bullets = player.getBullets();

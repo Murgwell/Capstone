@@ -7,7 +7,6 @@ import capstone.main.Managers.SoundManager;
 import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
@@ -143,8 +142,6 @@ public abstract class AbstractEnemy {
         // PLAY ENEMY HIT SOUND
         SoundManager.getInstance().playSound("enemy_hit");
 
-        Gdx.app.log("HitFlash", "Enemy hit! Health=" + health + ", flashTimer=" + hitFlashTimer);
-
         if (health <= 0 && !pendingRemoval)
             pendingRemoval = true;
     }
@@ -154,7 +151,6 @@ public abstract class AbstractEnemy {
         if (hitFlashTimer > 0f) {
             hitFlashTimer -= delta;
             if (hitFlashTimer < 0f) hitFlashTimer = 0f;
-            Gdx.app.log("HitFlash", "Enemy: " + this + ", timer=" + hitFlashTimer + ", alpha=" + getHitFlashAlpha());
         }
     }
 

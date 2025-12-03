@@ -40,23 +40,58 @@ public class CharacterAnimationManager {
         currentAnimation = forwardAnim;
     }
 
-    public void update(float delta, float velocityX, float velocityY) {
+    public void update(
+        float delta,
+        float velocityX,
+        float velocityY,
+        boolean sprinting,
+        boolean dodging,
+        boolean isShooting,
+        boolean aimingLeft
+    ) {
         stateTime += delta;
+        float V_TH = 0.05f;
 
-        // Determine direction based on velocity
-        // Prioritize vertical movement over horizontal
-        if (Math.abs(velocityY) > Math.abs(velocityX)) {
-            if (velocityY > 0) {
-                setDirection(Direction.BACKWARD); // Moving up (W key)
-            } else if (velocityY < 0) {
-                setDirection(Direction.FORWARD); // Moving down (S key)
-            }
+        // Priority 1: Sprinting / Dodging -> movement takes over fully
+        if (sprinting || dodging) {
+            updateDirectionByVelocity(velocityX, velocityY, V_TH);
+            return;
+        }
+
+        // Priority 2: Shooting -> facing strictly follows aim left/right
+        if (isShooting) {
+            setDirection(aimingLeft ? Direction.LEFT : Direction.RIGHT);
+            return;
+        }
+
+        // Priority 3: Walking while aiming -> aim overrides walking,
+        boolean verticalMovement = Math.abs(velocityY) > V_TH;
+        boolean horizontalMovement = Math.abs(velocityX) > V_TH;
+
+        // --- Pure vertical movement ---
+        if (verticalMovement && !horizontalMovement) {
+            if (velocityY > 0) setDirection(Direction.BACKWARD);
+            else setDirection(Direction.FORWARD);
+            return;
+        }
+
+        // --- Horizontal movement (including diagonal) ---
+        if (horizontalMovement) {
+            setDirection(velocityX < 0 || aimingLeft ? Direction.LEFT : Direction.RIGHT);
+            return;
+        }
+
+        // --- Idle ---
+        setDirection(aimingLeft ? Direction.LEFT : Direction.RIGHT);
+    }
+
+    private void updateDirectionByVelocity(float vx, float vy, float V_TH) {
+        if (Math.abs(vy) > Math.abs(vx)) {
+            if (vy > V_TH) setDirection(Direction.BACKWARD);
+            else if (vy < -V_TH) setDirection(Direction.FORWARD);
         } else {
-            if (velocityX < 0) {
-                setDirection(Direction.LEFT); // Moving left (A key)
-            } else if (velocityX > 0) {
-                setDirection(Direction.RIGHT); // Moving right (D key)
-            }
+            if (vx < -V_TH) setDirection(Direction.LEFT);
+            else if (vx > V_TH) setDirection(Direction.RIGHT);
         }
     }
 

@@ -21,43 +21,39 @@ public class Fireball {
     private float damage;
     private float lifetime = 3f;
 
-    private float speed = 50f;         // slower & heavier than bullets
-    private float knockbackForce = 15f; // stronger knockback
+    private float speed = 25f;
+    private float knockbackForce = 15f;
 
-
-    private final float baseWidth = 2f;
-    private final float baseHeight = 2f;
+    private final float baseSize = 3f;
     private final float maxStretch = 0.5f;
     private final float stretchDistance = 0.25f;
 
     private float distanceTraveled = 0f;
     private Vector2 lastPosition;
 
-    public Fireball(float x, float y, Vector2 direction, AbstractPlayer owner,
-                    float damage, World world) {
-
+    public Fireball(float x, float y, Vector2 direction, AbstractPlayer owner, float damage, World world) {
         this.owner = owner;
         this.damage = damage;
 
-        // ========== SPRITE ==========
+        // --- Sprite ---
         sprite = new Sprite(FIREBALL_TEXTURE);
-        sprite.setSize(baseWidth, baseHeight);
-        sprite.setOrigin(baseWidth / 2f, baseHeight / 2f);
-        sprite.setPosition(x - baseWidth / 2f, y - baseHeight / 2f);
+        sprite.setSize(baseSize, baseSize);
+        sprite.setOriginCenter(); // important: origin at center
+        sprite.setPosition(x - baseSize / 2f, y - baseSize / 2f);
 
         lastPosition = new Vector2(x, y);
 
-        // ========== BODY ==========
+        // --- Box2D body ---
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.DynamicBody;
-        bd.position.set(x, y);
+        bd.position.set(x, y); // center position
         bd.bullet = true;
-        bd.fixedRotation = false;
+        bd.fixedRotation = true; // lock rotation so physics doesn’t tilt it
 
         body = world.createBody(bd);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(baseWidth / 2f);
+        shape.setRadius(baseSize / 6f); // match sprite size
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
@@ -72,27 +68,33 @@ public class Fireball {
         shape.dispose();
 
         body.setLinearVelocity(direction.nor().scl(speed));
+
+        // rotate sprite to face direction
+        float angleDeg = (float) Math.toDegrees(Math.atan2(direction.y, direction.x));
+        sprite.setRotation(angleDeg);
     }
 
     public void update(float delta) {
         lifetime -= delta;
 
-        // stretch calculation (same as Bullet)
+        // distance traveled for stretch
         Vector2 currentPos = body.getPosition();
-        float frameDist = currentPos.cpy().sub(lastPosition).len();
-        distanceTraveled += frameDist;
+        distanceTraveled += currentPos.cpy().sub(lastPosition).len();
         lastPosition.set(currentPos);
 
+        // stretch based on distance
         float t = Math.min(distanceTraveled / stretchDistance, 1f);
-        float newHeight = baseHeight * (1 + t * (maxStretch - 1));
-        sprite.setSize(baseWidth, newHeight);
+        float newSize = baseSize * (1 + t * (maxStretch - 1));
+        sprite.setSize(newSize, newSize);
+        sprite.setOriginCenter();
 
+        // sync sprite to body (centered)
         sprite.setPosition(
             body.getPosition().x - sprite.getWidth() / 2f,
             body.getPosition().y - sprite.getHeight() / 2f
         );
 
-        // rotate fireball to its velocity
+        // rotate sprite to match velocity
         Vector2 vel = body.getLinearVelocity();
         float angleDeg = (float) Math.toDegrees(Math.atan2(vel.y, vel.x));
         sprite.setRotation(angleDeg);

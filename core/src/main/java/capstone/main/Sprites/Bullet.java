@@ -19,9 +19,9 @@ public class Bullet {
     private float speed = 75f; // faster speed
     private float knockbackForce = 10f;
 
-    private final float baseWidth = 0.05f;
-    private final float baseHeight = 0.3f;
-    private final float maxStretch = 2f;
+    private final float baseWidth = 0.07f;
+    private final float baseHeight = 0.5f;
+    private final float maxStretch = 1f;
     private final float stretchDistance = 0.25f;
     private float distanceTraveled = 0f;
     private Vector2 lastPosition;

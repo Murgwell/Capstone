@@ -11,7 +11,6 @@ import capstone.main.Managers.PhysicsManager;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
-
 import java.util.ArrayList;
 
 public class FireballLogic {
@@ -21,13 +20,6 @@ public class FireballLogic {
     private final ArrayList<DamageNumber> damageNumbers;
     private final BitmapFont damageFont;
     private final PhysicsManager physicsManager;
-
-    // Fire rate control
-    private final float fireCooldown = 0.5f; // seconds between shots
-    private float timeSinceLastFire = 0f;
-
-    // Fireball speed
-    private final float fireballSpeed = 3f; // lower = slower
 
     public FireballLogic(Quiboloy player, ArrayList<AbstractEnemy> enemies,
                          ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
@@ -41,10 +33,7 @@ public class FireballLogic {
 
     /** Update all fireballs (position, lifetime, physics) and cooldown */
     public void update(float delta) {
-        timeSinceLastFire += delta;
-
         ArrayList<Fireball> fireballs = player.getFireballs();
-
         for (int i = fireballs.size() - 1; i >= 0; i--) {
             Fireball f = fireballs.get(i);
             f.update(delta);
@@ -59,31 +48,33 @@ public class FireballLogic {
     }
 
     /** Spawn a new fireball from player */
+    /** Spawn a new fireball from player */
     public void spawnFireball(MagicRanged player, float weaponRotationRad) {
-        if (timeSinceLastFire < fireCooldown) return; // still cooling down
-        timeSinceLastFire = 0f;
 
         AbstractPlayer p = (AbstractPlayer) player;
         ArrayList<Fireball> fireballs = player.getFireballs();
 
+        // --- Dispersion ---
         float maxDispersionDeg = 1.5f;
         float maxDispersionRad = maxDispersionDeg * MathUtils.degreesToRadians;
         float dispersion = MathUtils.random(-maxDispersionRad, maxDispersionRad);
         float finalAngle = weaponRotationRad + dispersion;
 
-        // Shooting direction with slower speed
-        Vector2 dir = new Vector2(MathUtils.cos(finalAngle), MathUtils.sin(finalAngle)).scl(fireballSpeed);
+        // Shooting direction
+        Vector2 dir = new Vector2(MathUtils.cos(finalAngle), MathUtils.sin(finalAngle));
 
-        // BACKWARD OFFSET
+        // --- BACKWARD OFFSET (only horizontal) ---
         float backwardOffset = 0.5f;
-        Vector2 offset = new Vector2(dir).nor().scl(-backwardOffset);
+        Vector2 offset = new Vector2(-Math.signum(dir.x) * backwardOffset, 0f);
 
         // Player center
         float startX = p.getSprite().getX() + p.getSprite().getWidth() / 2f + offset.x;
-        float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f + offset.y;
+        float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f; // always centered vertically
 
+        // Create fireball
         fireballs.add(new Fireball(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
 
+        // Play sound
         SoundManager.getInstance().playSound("quiboloy_fireball");
     }
 
