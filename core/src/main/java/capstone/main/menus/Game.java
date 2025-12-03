@@ -162,7 +162,7 @@ public class Game implements Screen {
         switch (selectedCharacterIndex) {
             case 1: // Manny Pacquiao
                 soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
-                soundManager.loadSound("manny_punch", "Sounds/manny_airpunch.mp3");
+                soundManager.loadSound("manny_airpunch", "Sounds/manny_airpunch.mp3");
                 //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
                 soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.mp3");
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
@@ -357,6 +357,7 @@ public class Game implements Screen {
 
             if (player instanceof MannyPacquiao) {
                 ((MannyPacquiao) player).updateSkills(delta);
+                ((MannyPacquiao) player).updatePunchAnimation(delta);
             }
         } else if (isPaused) {
             if (pauseStage.getActors().size == 0) createPauseMenu();
@@ -397,6 +398,7 @@ public class Game implements Screen {
             fireballLogic.render(spriteBatch, camera);
         }
 
+        weaponRenderer.update();
         weaponRenderer.render(spriteBatch);
 
         spriteBatch.setProjectionMatrix(camera.combined);
@@ -527,6 +529,7 @@ public class Game implements Screen {
             }
         });
 
+        /* --- Music slider table --- */
         Table musicSliderTable = new Table();
         musicSliderTable.add(musicSlider).width(150f).padRight(10f);
         musicSliderTable.add(musicPercentLabel).width(40f);
@@ -758,12 +761,13 @@ public class Game implements Screen {
         switch (selectedCharacterIndex) {
             case 1:
                 // Manny Pacquiao - Melee fighter
+                // High HP, moderate damage, moderate speed, low mana
                 return new MannyPacquiao(
-                    120,           // healthPoints
-                    80,            // manaPoints
-                    8,             // baseDamage
-                    12,            // maxDamage
-                    1.5f,          // attackSpeed
+                    150,           // healthPoints (highest - melee needs survivability)
+                    60,            // manaPoints (lowest - skills cost mana)
+                    10,            // baseDamage
+                    15,            // maxDamage (10-15 damage range)
+                    1.2f,          // attackSpeed (moderate - 1.2 attacks/sec)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -780,15 +784,15 @@ public class Game implements Screen {
                 // Quiboloy - Ranged fireball user
                 ArrayList<Fireball> fireballs = new ArrayList<>(); // create list for fireballs
                 return new Quiboloy(
-                    120,           // healthPoints
-                    80,            // manaPoints
-                    5,             // baseDamage
-                    8,             // maxDamage
-                    10f,           // attackSpeed
+                    90,            // healthPoints (lowest - glass cannon)
+                    120,           // manaPoints (highest - mage needs mana)
+                    12,            // baseDamage
+                    18,            // maxDamage (12-18 damage range - highest damage)
+                    0.8f,          // attackSpeed (slowest - 0.8 attacks/sec)
                     9f,            // x
                     9f,            // y
                     2f,            // width
-                    2f,            // height
+                    2f,         // height
                     fireballs,     // fireballs list
                     mapWidth,
                     mapHeight,
@@ -799,11 +803,11 @@ public class Game implements Screen {
                 // Vico Sotto - Ranged bullets
                 ArrayList<Bullet> bullets = new ArrayList<>();
                 return new VicoSotto(
-                    60,            // healthPoints
-                    80,            // manaPoints
-                    3,             // baseDamage
-                    5,             // maxDamage
-                    0.3f,          // attackSpeed
+                    120,           // healthPoints (middle ground)
+                    70,            // manaPoints (moderate)
+                    6,             // baseDamage
+                    10,            // maxDamage (6-10 damage range)
+                    2.0f,          // attackSpeed (fastest - 2 attacks/sec)
                     9f,            // x
                     9f,            // y
                     2f,            // width

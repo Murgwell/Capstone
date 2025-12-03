@@ -40,7 +40,7 @@ public class PunchLogic {
         this.screenShake = screenShake;
     }
 
-    public void update(float delta) {
+    public void update(float delta, float weaponRotationRad) {
         // Optional: punch state/animation bookkeeping
     }
 

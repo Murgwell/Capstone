@@ -10,6 +10,7 @@ import capstone.main.Skills.MannyPacquiao.ChampionsKnockout;
 import capstone.main.Skills.MannyPacquiao.MeteorFist;
 import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
@@ -19,6 +20,13 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     private final ArrayList<AbstractEnemy> enemies;
     private final ArrayList<DamageNumber> damageNumbers;
     private final BitmapFont damageFont;
+
+    // Punch animation fields
+    private float punchAnimationTimer = 0f;
+    private final float punchAnimationDuration = 0.2f;
+    private boolean isPunching = false;
+    private Vector2 originalWeaponOffset = new Vector2(0, 0);
+    private Vector2 punchWeaponOffset = new Vector2(0, 0);
 
     // Skills
     private MeteorFist meteorFist;
@@ -92,23 +100,70 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
         return championsKnockout;
     }
 
-    // --- Melee attack delegation (like Quiboloy) ---
     @Override
     public void performAttack(float delta, float weaponRotationRad) {
         if (!canAttack()) return;
 
-        // Consume attack & play "air punch" upfront (character-level, just like Quiboloy)
         onAttackPerformed();
-        capstone.main.Managers.SoundManager.getInstance().playSound("manny_airpunch");
 
-        // Delegate the actual punch to PunchLogic (external)
+        // Start punch animation
+        isPunching = true;
+        punchAnimationTimer = 0f;
+
+        // Calculate punch direction offset
+        float punchDistance = getMeleeRange();
+        punchWeaponOffset.set(
+            (float)Math.cos(weaponRotationRad) * punchDistance,
+            (float)Math.sin(weaponRotationRad) * punchDistance
+        );
+
+        // Delegate actual damage to PunchLogic
         punchLogic.performPunch(weaponRotationRad);
+    }
+
+    public void updatePunchAnimation(float delta) {
+        if (isPunching) {
+            float oldProgress = punchAnimationTimer / punchAnimationDuration;
+            punchAnimationTimer += delta;
+            float newProgress = punchAnimationTimer / punchAnimationDuration;
+
+            // Play punch sound when animation reaches peak (30% progress)
+            if (oldProgress < 0.3f && newProgress >= 0.3f) {
+                SoundManager.getInstance().playSound("manny_airpunch");
+            }
+
+            if (punchAnimationTimer >= punchAnimationDuration) {
+                isPunching = false;
+                punchAnimationTimer = 0f;
+            }
+        }
     }
 
     // Satisfy the Melee interface (delegate as well)
     @Override
     public void performMeleeAttack(float delta, float weaponRotationRad) {
         performAttack(delta, weaponRotationRad);
+    }
+
+    public Vector2 getWeaponAnimationOffset() {
+        if (!isPunching) return originalWeaponOffset;
+
+        float progress = punchAnimationTimer / punchAnimationDuration;
+
+        // Quick punch forward, slower return
+        float animationCurve;
+        if (progress < 0.3f) {
+            // Fast forward punch
+            animationCurve = progress / 0.3f;
+        } else {
+            // Slower return
+            animationCurve = 1f - ((progress - 0.3f) / 0.7f);
+        }
+
+        return new Vector2(
+            punchWeaponOffset.x * animationCurve,
+            punchWeaponOffset.y * animationCurve
+        );
     }
 
     // Manny's melee stats used by PunchLogic

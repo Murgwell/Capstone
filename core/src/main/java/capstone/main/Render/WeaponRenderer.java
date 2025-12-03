@@ -1,8 +1,10 @@
 package capstone.main.Render;
 
 import capstone.main.Characters.AbstractPlayer;
+import capstone.main.Characters.MannyPacquiao;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.math.Vector2;
 
 public class WeaponRenderer {
     private final AbstractPlayer player;
@@ -25,6 +27,12 @@ public class WeaponRenderer {
         float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight()/2f
             + (float)Math.sin(weaponRad) * gap;
 
+        if (player instanceof MannyPacquiao) {
+            MannyPacquiao manny = (MannyPacquiao) player;
+            Vector2 animOffSet = manny.getWeaponAnimationOffset();
+            weaponCenterX += animOffSet.x;
+            weaponCenterY += animOffSet.y;
+        }
         weaponSprite.setPosition(weaponCenterX - weaponSprite.getOriginX(),
             weaponCenterY - weaponSprite.getOriginY());
     }
