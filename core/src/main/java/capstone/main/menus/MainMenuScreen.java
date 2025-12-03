@@ -16,11 +16,9 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.math.MathUtils;
 
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.Stage;
@@ -51,10 +49,6 @@ public class MainMenuScreen implements Screen {
 
 
     private Sound hoverSound;
-
-    // Glitch effect state
-    private float glitchTimer    = 0f;
-    private float glitchInterval = 0.2f;
 
     public MainMenuScreen(Corrupted game) {
         this.game = game;
@@ -113,14 +107,6 @@ public class MainMenuScreen implements Screen {
             stage.getHeight() * 0.55f);
 
         stage.addActor(titleImage);
-
-
-
-
-        // Use UI viewport world size for stable positioning across modes
-        float uiW = uiStage.getViewport().getWorldWidth();
-        float uiH = uiStage.getViewport().getWorldHeight();
-
 
         // === Buttons ===
         Texture playNormal      = new Texture("ui/Menu/Main Menu/play_normal.png");
