@@ -2,6 +2,7 @@ package capstone.main.Logic;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Managers.PhysicsManager;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Characters.Ranged;
 import capstone.main.Enemies.AbstractEnemy;
@@ -19,6 +20,10 @@ public class BulletLogic {
     private final BitmapFont damageFont;
     private final PhysicsManager physicsManager; // add this
 
+    // Fire rate control
+    private final float fireCooldown = 0.3f; // seconds between shots
+    private float timeSinceLastFire = 0f;
+
     public BulletLogic(Ranged player, ArrayList<AbstractEnemy> enemies,
                        ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
                        PhysicsManager physicsManager) {
@@ -30,6 +35,8 @@ public class BulletLogic {
     }
 
     public void update(float delta) {
+        timeSinceLastFire += delta;
+
         ArrayList<Bullet> bullets = player.getBullets();
         for (int i = bullets.size() - 1; i >= 0; i--) {
             Bullet b = bullets.get(i);
@@ -48,6 +55,9 @@ public class BulletLogic {
 
 
     public void spawnBullet(Ranged player, float weaponRotationRad) {
+        if (timeSinceLastFire < fireCooldown) return; // still cooling down
+        timeSinceLastFire = 0f;
+
         AbstractPlayer p = (AbstractPlayer) player;
         ArrayList<Bullet> bullets = player.getBullets();
 
@@ -72,6 +82,8 @@ public class BulletLogic {
         startY += offset.y;
 
         bullets.add(new Bullet(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
+
+        SoundManager.getInstance().playSound("vico_shoot");
     }
 
     public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, com.badlogic.gdx.graphics.OrthographicCamera camera) {

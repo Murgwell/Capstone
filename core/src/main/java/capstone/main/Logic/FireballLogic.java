@@ -4,6 +4,7 @@ import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Characters.MagicRanged;
 import capstone.main.Characters.Quiboloy;
 import capstone.main.Enemies.AbstractEnemy;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Sprites.DamageNumber;
 import capstone.main.Sprites.Fireball;
 import capstone.main.Managers.PhysicsManager;
@@ -82,6 +83,8 @@ public class FireballLogic {
         float startY = p.getSprite().getY() + p.getSprite().getHeight() / 2f + offset.y;
 
         fireballs.add(new Fireball(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
+
+        SoundManager.getInstance().playSound("quiboloy_fireball");
     }
 
     public void render(com.badlogic.gdx.graphics.g2d.SpriteBatch batch, com.badlogic.gdx.graphics.OrthographicCamera camera) {

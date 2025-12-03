@@ -56,6 +56,7 @@ public class Game implements Screen {
     private EnemySpawner enemySpawner;
     private PlayerLogic playerLogic;
     private BulletLogic bulletLogic;
+    private PunchLogic punchLogic;
     private EnemyLogic enemyLogic;
     private FireballLogic fireballLogic;
 
@@ -163,19 +164,17 @@ public class Game implements Screen {
                 soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
                 soundManager.loadSound("manny_punch", "Sounds/manny_airpunch.mp3");
                 //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
-                //soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.wav");
+                soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.mp3");
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
                 //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
                 weaponTexture = new Texture("fist.png"); // or melee weapon
                 break;
             case 2: // Quiboloy
-                //soundManager.loadSound("quiboloy_fireball", "Sounds/quiboloy_fireball.wav");
-                //soundManager.loadSound("quiboloy_hit", "Sounds/quiboloy_hit.wav");
+                soundManager.loadSound("quiboloy_fireball", "Sounds/quiboloy_fireball.mp3");
                 weaponTexture = new Texture("staff.png"); // fireball weapon
                 break;
             default: // Vico Sotto
-                //soundManager.loadSound("vico_shoot", "Sounds/vico_shoot.wav");
-                //soundManager.loadSound("vico_hit", "Sounds/vico_hit.wav");
+                soundManager.loadSound("vico_shoot", "Sounds/vico_shoot.mp3");
                 weaponTexture = new Texture("gun.png"); // bullet weapon
                 break;
         }
@@ -270,17 +269,13 @@ public class Game implements Screen {
         gameplayInputs.addProcessor(globalInputProcessor);
         Gdx.input.setInputProcessor(gameplayInputs);
 
-        // --- Initialize skills for Manny ---
-        if (player instanceof MannyPacquiao) {
-            ((MannyPacquiao) player).initializeSkills(
-                enemySpawner.getEnemies(),
-                damageNumbers,
-                damageFont
-            );
-        }
-
         // --- Movement/logic ---
         movementManager = new MovementManager(player);
+
+        // Initialize Manny's skills with enemy list
+        if (player instanceof MannyPacquiao) {
+            ((MannyPacquiao) player).initializeSkills(enemySpawner.getEnemies(), damageNumbers, damageFont);
+        }
 
         // Initialize bullet logic for ranged characters
         if (player instanceof Ranged) {

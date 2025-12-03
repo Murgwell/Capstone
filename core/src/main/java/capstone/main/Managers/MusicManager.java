@@ -7,7 +7,7 @@ public class MusicManager {
     private static MusicManager instance;
     private Music backgroundMusic;
     private boolean isMusicEnabled = true;
-    private float volume = 0.4f;
+    private float volume = 0.2f;
     private String currentMusicPath = null; // Track what's currently loaded
 
     private MusicManager() {

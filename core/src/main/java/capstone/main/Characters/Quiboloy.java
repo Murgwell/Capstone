@@ -42,6 +42,7 @@ public class Quiboloy extends AbstractPlayer implements MagicRanged {
         if (!canAttack()) return;
         onAttackPerformed();
         // Fireball spawning should be handled by FireballLogic
+        SoundManager.getInstance().playSound("quiboloy_fireball");
     }
 
     @Override

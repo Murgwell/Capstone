@@ -36,6 +36,10 @@ public abstract class Skill {
         return currentCooldown;
     }
 
+    public boolean isActive() {
+        return isActive;
+    }
+
     public String getName() {
         return name;
     }
