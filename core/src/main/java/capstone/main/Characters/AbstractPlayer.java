@@ -148,20 +148,45 @@ public abstract class AbstractPlayer {
 
         // --- Apply movement ---
         movementManager.update(inputDir, delta, shiftHeld);
+        Vector2 velocity = movementManager.getVelocity();
+
+        // --- Update facing based on movement and aiming ---
+        directionManager.updateFacing(
+            velocity,
+            movementManager.isSprinting(),
+            movementManager.isDodging(),
+            isShooting,
+            aimingLeft
+        );
 
         // --- Update animation if enabled ---
         if (useAnimations && animationManager != null) {
-            Vector2 velocity = movementManager.getVelocity();
             if (velocity.len() > 0.1f) {
-                // Character is moving - play animation
-                animationManager.update(delta, velocity.x, velocity.y);
+                // Moving: play running animation
+                animationManager.update(
+                    delta,
+                    velocity.x,
+                    velocity.y,
+                    movementManager.isSprinting(),
+                    movementManager.isDodging(),
+                    isShooting,
+                    aimingLeft
+                );
                 currentFrame = animationManager.getCurrentFrame();
-                sprite.setRegion(currentFrame);
             } else {
-                // Character is idle - show first frame of current direction
+                // Idle: force direction again to ensure proper flip
+                animationManager.update(
+                    delta,
+                    0f,
+                    0f,
+                    movementManager.isSprinting(),
+                    movementManager.isDodging(),
+                    isShooting,
+                    aimingLeft
+                );
                 currentFrame = animationManager.getIdleFrame();
-                sprite.setRegion(currentFrame);
             }
+            sprite.setRegion(currentFrame);
         }
 
         // --- Clamp position so we don't go past walls ---
@@ -176,15 +201,6 @@ public abstract class AbstractPlayer {
         sprite.setPosition(
             body.getPosition().x - width / 2f,
             body.getPosition().y - height / 2f
-        );
-
-        // --- Update facing ---
-        directionManager.updateFacing(
-            movementManager.getVelocity(),
-            movementManager.isSprinting(),
-            movementManager.isDodging(),
-            isShooting,
-            aimingLeft
         );
     }
 

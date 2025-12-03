@@ -63,7 +63,6 @@ public class Game implements Screen {
     // Renderers
     private WorldRenderer worldRenderer;
     private EntityRenderer entityRenderer;
-    private TreeRenderer treeRenderer;
     private WeaponRenderer weaponRenderer;
 
     // Camera helpers
@@ -92,9 +91,6 @@ public class Game implements Screen {
     private SkillHud skillHud;
     private Texture hpFrameTex;
     private Texture hpFillTex;
-
-    // Shaders
-    private ShaderProgram treeFadeShader;
 
     // Back button (world-space)
     private Texture backBtnTexture;
@@ -168,24 +164,29 @@ public class Game implements Screen {
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
                 //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
                 weaponTexture = new Texture("fist.png"); // or melee weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.75f, 0.75f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
             case 2: // Quiboloy
                 soundManager.loadSound("quiboloy_fireball", "Sounds/quiboloy_fireball.mp3");
                 weaponTexture = new Texture("staff.png"); // fireball weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.5f, 3f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
             default: // Vico Sotto
                 soundManager.loadSound("vico_shoot", "Sounds/vico_shoot.mp3");
                 weaponTexture = new Texture("gun.png"); // bullet weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.3f, 0.3f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
         }
 
         // Load common sounds
         soundManager.loadSound("enemy_hit", "Sounds/enemy_hit.mp3");
         soundManager.loadSound("player_damage", "Sounds/player_damage.mp3");
-
-        weaponSprite = new Sprite(weaponTexture);
-        weaponSprite.setSize(0.8f, 0.8f);
-        weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
 
         // --- Inputs ---
         inputManager = new InputManager();
@@ -304,15 +305,8 @@ public class Game implements Screen {
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
-        ShaderProgram.pedantic = false;
-        treeFadeShader = new ShaderProgram(
-            Gdx.files.internal("shaders/default.vert"),
-            Gdx.files.internal("shaders/treeFade.glsl")
-        );
-
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
-        treeRenderer = new TreeRenderer(spriteBatch, mapManager.getTiledMap(), player);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
 
         // --- Pause UI ---
@@ -335,20 +329,20 @@ public class Game implements Screen {
 
     @Override
     public void render(float delta) {
-        float stepDelta = Math.min(delta, 1f / 30f);
 
         // --- Update logic ---
         if (!isPaused && !isGameOver) {
             inputManager.update();
-            physicsManager.step(stepDelta);
+            physicsManager.step(delta);
             playerLogic.update(delta);
 
             if (bulletLogic != null) {
-                bulletLogic.update(stepDelta);
+                bulletLogic.update(delta);
+
             }
 
             if (fireballLogic != null) {
-                fireballLogic.update(stepDelta);
+                fireballLogic.update(delta);
             }
 
             enemyLogic.update(delta);
@@ -739,10 +733,6 @@ public class Game implements Screen {
             if (gameOverSkin != null) gameOverSkin.dispose();
         } catch (Exception ignored) {
         }
-        try {
-            if (treeFadeShader != null) treeFadeShader.dispose();
-        } catch (Exception ignored) {
-        }
         if (physicsManager != null) physicsManager.dispose();
         if (mapManager != null) mapManager.dispose();
         if (heartsHud != null) heartsHud.dispose();
@@ -782,9 +772,9 @@ public class Game implements Screen {
                 return new Quiboloy(
                     120,           // healthPoints
                     80,            // manaPoints
-                    5,             // baseDamage
-                    8,             // maxDamage
-                    10f,           // attackSpeed
+                    10,             // baseDamage
+                    15,             // maxDamage
+                    1f,           // attackSpeed
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -801,9 +791,9 @@ public class Game implements Screen {
                 return new VicoSotto(
                     60,            // healthPoints
                     80,            // manaPoints
-                    3,             // baseDamage
-                    5,             // maxDamage
-                    0.3f,          // attackSpeed
+                    5,             // baseDamage
+                    8,             // maxDamage
+                    4f,            // attackSpeed
                     9f,            // x
                     9f,            // y
                     2f,            // width
