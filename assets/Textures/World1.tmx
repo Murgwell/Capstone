@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="192" height="64" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="204">
- <tileset firstgid="1" source="tilesets/terrain.tsx"/>
- <tileset firstgid="3277" source="tilesets/water.tsx"/>
- <tileset firstgid="3515" source="tilesets/buildings.tsx"/>
- <tileset firstgid="6119" source="tilesets/roofs.tsx"/>
- <tileset firstgid="6583" source="tilesets/bridges and fences.tsx"/>
- <tileset firstgid="7199" source="tilesets/props.tsx"/>
- <tileset firstgid="8609" source="tilesets/furnitures.tsx"/>
+ <tileset firstgid="1" source="Backgrounds/tilesets/terrain.tsx"/>
+ <tileset firstgid="3277" source="Backgrounds/tilesets/water.tsx"/>
+ <tileset firstgid="3515" source="Backgrounds/tilesets/buildings.tsx"/>
+ <tileset firstgid="6119" source="Backgrounds/tilesets/roofs.tsx"/>
+ <tileset firstgid="6583" source="Backgrounds/tilesets/bridges and fences.tsx"/>
+ <tileset firstgid="7199" source="Backgrounds/tilesets/props.tsx"/>
+ <tileset firstgid="8609" source="Backgrounds/tilesets/furnitures.tsx"/>
  <layer id="3" name="water" width="192" height="64">
   <data encoding="csv">
 3500,3501,3502,3503,3504,3505,3506,3507,3508,3509,3507,3508,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3498,3499,3498,3499,3500,3501,3502,3503,3504,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3498,3499,3500,3501,3502,3503,3504,3505,3506,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3509,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3498,3499,3500,3501,3502,3503,3504,3505,3498,3499,3500,3501,3502,3503,3504,3505,3506,3498,3499,3500,3501,3502,3503,3504,3505,3506,3498,3499,3500,3501,3502,3503,3498,3499,3500,3501,3502,3503,3504,3505,3498,3499,3500,3501,3502,3503,3504,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3508,3509,3500,3501,3502,3503,3504,3498,3499,3500,3501,3502,3503,3504,3505,3506,3507,3464,3465,3466,3467,3468,3469,3470,3471,3472,3473,3474,3475,

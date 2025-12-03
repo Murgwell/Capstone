@@ -77,7 +77,7 @@ public abstract class AbstractEnemy {
 
         shape.dispose();
 
-        whiteOverlaySprite = new Sprite(new Texture("enemyCharacterWhiteOverlay.png"));
+        whiteOverlaySprite = new Sprite(new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"));
         whiteOverlaySprite.setSize(width, height);
     }
 

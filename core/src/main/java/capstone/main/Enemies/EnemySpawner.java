@@ -4,6 +4,7 @@ import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.ScreenShake;
 
 import java.util.ArrayList;
+import java.util.Random;
 
 public class EnemySpawner {
     private ScreenShake screenShake;
@@ -13,6 +14,7 @@ public class EnemySpawner {
     private final float spawnInterval = 1f;
     private final float worldWidth;
     private final float worldHeight;
+    private Random random;
 
     public EnemySpawner(float worldWidth, float worldHeight, ScreenShake screenShake, PhysicsManager physics) {
         enemies = new ArrayList<>();
@@ -20,24 +22,51 @@ public class EnemySpawner {
         this.worldHeight = worldHeight;
         this.screenShake = screenShake;
         this.physics = physics;
+        this.random = new Random();
     }
 
     public void spawnInitial(int count) {
-        for (int i = 0; i < count; i++) spawnDummy();
+        for (int i = 0; i < count; i++) {
+            spawnRandomEnemy();
+        }
     }
 
     public void update(float delta) {
         spawnTimer += delta;
         if (spawnTimer >= spawnInterval) {
-            spawnDummy();
+            spawnRandomEnemy();
             spawnTimer = 0f;
         }
     }
 
-    private void spawnDummy() {
+    private void spawnRandomEnemy() {
         float x = (float) Math.random() * worldWidth;
         float y = (float) Math.random() * worldHeight;
-        enemies.add(new Dummy(x, y, screenShake, physics));
+
+        // Randomly choose between Survivor and Greed
+        int enemyType = random.nextInt(2); // 0 or 1
+
+        switch (enemyType) {
+            case 0:
+                enemies.add(new Survivor(x, y, screenShake, physics));
+                break;
+            case 1:
+                enemies.add(new Greed(x, y, screenShake, physics));
+                break;
+        }
+    }
+
+    // Spawn specific enemy types (useful for testing or special spawns)
+    public void spawnSurvivor() {
+        float x = (float) Math.random() * worldWidth;
+        float y = (float) Math.random() * worldHeight;
+        enemies.add(new Survivor(x, y, screenShake, physics));
+    }
+
+    public void spawnGreed() {
+        float x = (float) Math.random() * worldWidth;
+        float y = (float) Math.random() * worldHeight;
+        enemies.add(new Greed(x, y, screenShake, physics));
     }
 
     public ArrayList<AbstractEnemy> getEnemies() {

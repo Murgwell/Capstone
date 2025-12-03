@@ -105,7 +105,7 @@ public class MainMenuScreen implements Screen {
         }
 
         // === Title ===
-        Texture titleTexture = new Texture("Corrupted.png");
+        Texture titleTexture = new Texture("Textures/Icons/Corrupted.png");
         Image titleImage = new Image(titleTexture);
 
         titleImage.setSize(400, 300); // adjust as needed

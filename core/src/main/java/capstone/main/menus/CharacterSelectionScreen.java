@@ -63,7 +63,7 @@ public class CharacterSelectionScreen implements Screen {
         MusicManager.getInstance().ensurePlaying();
 
         // Background
-        bgTexture = new Texture("character_screen_bg.png");
+        bgTexture = new Texture("Textures/Backgrounds/character_screen_bg.png");
         bgImage = new Image(bgTexture);
         bgImage.setFillParent(true);
         bgImage.setScaling(Scaling.stretch);
