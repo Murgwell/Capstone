@@ -161,30 +161,35 @@ public class Game implements Screen {
         switch (selectedCharacterIndex) {
             case 1: // Manny Pacquiao
                 soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
-                soundManager.loadSound("manny_airpunch", "Sounds/manny_airpunch.mp3");
+                soundManager.loadSound("manny_punch", "Sounds/manny_airpunch.mp3");
                 //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
                 soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.mp3");
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
                 //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
                 weaponTexture = new Texture("fist.png"); // or melee weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.75f, 0.75f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
             case 2: // Quiboloy
                 soundManager.loadSound("quiboloy_fireball", "Sounds/quiboloy_fireball.mp3");
                 weaponTexture = new Texture("staff.png"); // fireball weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.5f, 3f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
             default: // Vico Sotto
                 soundManager.loadSound("vico_shoot", "Sounds/vico_shoot.mp3");
                 weaponTexture = new Texture("gun.png"); // bullet weapon
+                weaponSprite = new Sprite(weaponTexture);
+                weaponSprite.setSize(0.3f, 0.3f);
+                weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
                 break;
         }
 
         // Load common sounds
         soundManager.loadSound("enemy_hit", "Sounds/enemy_hit.mp3");
         soundManager.loadSound("player_damage", "Sounds/player_damage.mp3");
-
-        weaponSprite = new Sprite(weaponTexture);
-        weaponSprite.setSize(0.8f, 0.8f);
-        weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
 
         // --- Inputs ---
         inputManager = new InputManager();
@@ -303,12 +308,6 @@ public class Game implements Screen {
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
-        ShaderProgram.pedantic = false;
-        treeFadeShader = new ShaderProgram(
-            Gdx.files.internal("shaders/default.vert"),
-            Gdx.files.internal("shaders/treeFade.glsl")
-        );
-
         worldRenderer = new WorldRenderer(mapManager.getRenderer());
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
@@ -333,20 +332,19 @@ public class Game implements Screen {
 
     @Override
     public void render(float delta) {
-        float stepDelta = Math.min(delta, 1f / 30f);
-
         // --- Update logic ---
         if (!isPaused && !isGameOver) {
             inputManager.update();
-            physicsManager.step(stepDelta);
+            physicsManager.step(delta);
             playerLogic.update(delta);
 
             if (bulletLogic != null) {
-                bulletLogic.update(stepDelta);
+                bulletLogic.update(delta);
+
             }
 
             if (fireballLogic != null) {
-                fireballLogic.update(stepDelta);
+                fireballLogic.update(delta);
             }
 
             enemyLogic.update(delta);

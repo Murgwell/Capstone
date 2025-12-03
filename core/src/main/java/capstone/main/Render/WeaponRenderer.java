@@ -16,25 +16,36 @@ public class WeaponRenderer {
     }
 
     public void update() {
-        // Update weapon position & rotation based on player's aiming
+        // Get aiming angle
         float weaponRad = player.getWeaponAimingRad();
-        weaponSprite.setOrigin(weaponSprite.getWidth()/2f, weaponSprite.getHeight()*0.25f);
-        weaponSprite.setRotation((float)Math.toDegrees(weaponRad));
+        float angleDeg = (float) Math.toDegrees(weaponRad);
 
-        float gap = 0.1f; // adjust distance from player center
-        float weaponCenterX = player.getSprite().getX() + player.getSprite().getWidth()/2f
-            + (float)Math.cos(weaponRad) * gap;
-        float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight()/2f
-            + (float)Math.sin(weaponRad) * gap;
+        // Determine flip based on aiming direction
+        boolean lookingLeft = Math.cos(weaponRad) < 0;
+        weaponSprite.setFlip(lookingLeft, false);
+        if (lookingLeft) angleDeg += 180f;
 
+        // Set origin at the center
+        weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);
+
+        // Base weapon position at player's center + small gap
+        float gap = 0.1f;
+        float weaponCenterX = player.getSprite().getX() + player.getSprite().getWidth() / 2f
+            + (float) Math.cos(weaponRad) * gap;
+        float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight() / 2f
+            + (float) Math.sin(weaponRad) * gap;
+
+        // Add Manny's punch animation offset if applicable
         if (player instanceof MannyPacquiao) {
-            MannyPacquiao manny = (MannyPacquiao) player;
-            Vector2 animOffSet = manny.getWeaponAnimationOffset();
-            weaponCenterX += animOffSet.x;
-            weaponCenterY += animOffSet.y;
+            Vector2 animOffset = ((MannyPacquiao) player).getWeaponAnimationOffset();
+            weaponCenterX += animOffset.x;
+            weaponCenterY += animOffset.y;
         }
+
+        // Set final position and rotation
         weaponSprite.setPosition(weaponCenterX - weaponSprite.getOriginX(),
             weaponCenterY - weaponSprite.getOriginY());
+        weaponSprite.setRotation(angleDeg);
     }
 
     public void render(SpriteBatch batch) {
