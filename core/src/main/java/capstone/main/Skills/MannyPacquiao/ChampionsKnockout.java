@@ -11,8 +11,8 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 
 public class ChampionsKnockout extends Skill {
-    private static final float BASE_DAMAGE_MIN = 6f;
-    private static final float BASE_DAMAGE_MAX = 10f;
+    private static final float BASE_DAMAGE_MIN = 20f;
+    private static final float BASE_DAMAGE_MAX = 40f;
     private static final float HP_PERCENT = 0.20f; // 20% of enemy's base HP
     private static final float RANGE = 3f;
 
