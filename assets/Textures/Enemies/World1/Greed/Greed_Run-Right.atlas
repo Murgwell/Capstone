@@ -2,7 +2,6 @@ size: 2880,288
 format: RGBA8888
 filter: Linear,Linear
 repeat: none
-
 Greed_Right.png
   frame_0: 0,0,288,288
   frame_1: 288,0,288,288
