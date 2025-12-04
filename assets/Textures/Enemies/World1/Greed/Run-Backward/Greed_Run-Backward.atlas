@@ -1,12 +1,24 @@
-size: 2880,288
-format: RGBA8888
-filter: Linear,Linear
-repeat: none
-
 Greed_Backward.png
-  frame_0: 0,0,288,288
-  frame_1: 288,0,288,288
-  frame_2: 576,0,288,288
-  frame_3: 864,0,288,288
-  frame_4: 1152,0,288,288
-  frame_5: 1440,0,288,288
+size: 1788, 265
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+orc1_walk_full-0
+  bounds: 293, 1, 299, 254
+  offsets: 188, 179, 576, 576
+orc1_walk_full-1
+  bounds: 594, 1, 308, 263
+  offsets: 179, 197, 576, 576
+orc1_walk_full-2
+  bounds: 904, 1, 299, 263
+  offsets: 188, 188, 576, 576
+orc1_walk_full-3
+  bounds: 1, 1, 290, 245
+  offsets: 188, 188, 576, 576
+orc1_walk_full-4
+  bounds: 1205, 1, 290, 263
+  offsets: 188, 197, 576, 576
+orc1_walk_full-5
+  bounds: 1497, 1, 290, 263
+  offsets: 188, 188, 576, 576

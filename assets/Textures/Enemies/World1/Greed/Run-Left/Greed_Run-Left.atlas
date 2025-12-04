@@ -1,12 +1,24 @@
-size: 2880,288
-format: RGBA8888
-filter: Linear,Linear
-repeat: none
-
 Greed_Left.png
-  frame_0: 0,0,288,288
-  frame_1: 288,0,288,288
-  frame_2: 576,0,288,288
-  frame_3: 864,0,288,288
-  frame_4: 1152,0,288,288
-  frame_5: 1440,0,288,288
+size: 182, 1524
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+orc1_walk_full-0
+  bounds: 0, 1279, 155, 245
+  offsets: 197, 197, 576, 576
+orc1_walk_full-1
+  bounds: 0, 526, 182, 254
+  offsets: 179, 197, 576, 576
+orc1_walk_full-2
+  bounds: 0, 0, 182, 263
+  offsets: 170, 197, 576, 576
+orc1_walk_full-3
+  bounds: 0, 1034, 182, 245
+  offsets: 170, 197, 576, 576
+orc1_walk_full-4
+  bounds: 0, 780, 173, 254
+  offsets: 179, 197, 576, 576
+orc1_walk_full-5
+  bounds: 0, 263, 164, 263
+  offsets: 188, 197, 576, 576

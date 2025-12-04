@@ -1,12 +1,24 @@
-size: 2880,288
-format: RGBA8888
-filter: Linear,Linear
-repeat: none
-
 Greed_Forward.png
-  frame_0: 0,0,288,288
-  frame_1: 288,0,288,288
-  frame_2: 576,0,288,288
-  frame_3: 864,0,288,288
-  frame_4: 1152,0,288,288
-  frame_5: 1440,0,288,288
+size: 1860, 265
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+orc1_walk_full-0
+  bounds: 302, 1, 308, 254
+  offsets: 89, 179, 576, 576
+orc1_walk_full-1
+  bounds: 612, 1, 317, 263
+  offsets: 89, 197, 576, 576
+orc1_walk_full-2
+  bounds: 931, 1, 308, 263
+  offsets: 89, 188, 576, 576
+orc1_walk_full-3
+  bounds: 1, 1, 299, 245
+  offsets: 98, 188, 576, 576
+orc1_walk_full-4
+  bounds: 1241, 1, 308, 263
+  offsets: 98, 197, 576, 576
+orc1_walk_full-5
+  bounds: 1551, 1, 308, 263
+  offsets: 98, 188, 576, 576
