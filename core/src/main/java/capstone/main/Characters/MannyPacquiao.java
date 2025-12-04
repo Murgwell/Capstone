@@ -1,4 +1,3 @@
-
 package capstone.main.Characters;
 
 import capstone.main.Managers.ScreenShake;
@@ -24,6 +23,9 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     private boolean isPunching = false;
     private final Vector2 originalWeaponOffset = new Vector2(0, 0);
     private final Vector2 punchWeaponOffset = new Vector2(0, 0);
+
+    // Melee range visualization
+    private boolean showMeleeRange = true; // Toggle this to show/hide range
 
     // Skills
     private MeteorFist meteorFist;
@@ -55,7 +57,7 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
         this.punchLogic = new capstone.main.Logic.PunchLogic(this, this, enemies, damageNumbers, damageFont, screenShake);
     }
 
-    // Skills setup (unchanged from your design)
+    // Skills setup (with sound support)
     public void initializeSkills(ArrayList<AbstractEnemy> enemies,
                                  ArrayList<DamageNumber> damageNumbers,
                                  BitmapFont damageFont) {
@@ -71,15 +73,21 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     }
 
     public void useMeteorFist() {
-        if (meteorFist != null) meteorFist.activate();
+        if (meteorFist != null) {
+            meteorFist.activate();
+        }
     }
 
     public void useBarrageCombo() {
-        if (barrageCombo != null) barrageCombo.activate();
+        if (barrageCombo != null) {
+            barrageCombo.activate();
+        }
     }
 
     public void useChampionsKnockout() {
-        if (championsKnockout != null) championsKnockout.activate();
+        if (championsKnockout != null) {
+            championsKnockout.activate();
+        }
     }
 
     public Skill getMeteorFist() {
@@ -169,6 +177,16 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     @Override
     public float getMeleeDamage() {
         return com.badlogic.gdx.math.MathUtils.random(8f, 12f);
+    }
+
+    // Method to check if melee range should be shown
+    public boolean shouldShowMeleeRange() {
+        return showMeleeRange;
+    }
+
+    // Toggle melee range visibility (can be bound to a key if needed)
+    public void toggleMeleeRange() {
+        showMeleeRange = !showMeleeRange;
     }
 
     @Override

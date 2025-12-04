@@ -2,6 +2,7 @@ package capstone.main.Skills.MannyPacquiao;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Enemies.AbstractEnemy;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Skills.Skill;
 import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -62,7 +63,7 @@ public class BarrageCombo extends Skill {
 
         Vector2 playerPos = player.getPosition();
 
-        // Find closest enemy in range
+        // Find the closest enemy in range
         AbstractEnemy closestEnemy = null;
         float closestDist = Float.MAX_VALUE;
 
@@ -84,7 +85,7 @@ public class BarrageCombo extends Skill {
             hitsRemaining = HIT_COUNT;
             hitTimer = 0f;
             startCooldown();
-
+            SoundManager.getInstance().playSound("manny_skill2");
             com.badlogic.gdx.Gdx.app.log("BarrageCombo", "Started barrage on enemy!");
         } else {
             com.badlogic.gdx.Gdx.app.log("BarrageCombo", "No enemy in range!");

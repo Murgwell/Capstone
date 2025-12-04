@@ -1,8 +1,10 @@
 package capstone.main.Render;
 
 import capstone.main.Characters.AbstractPlayer;
+import capstone.main.Characters.MannyPacquiao;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.DamageNumber;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
@@ -32,6 +34,39 @@ public class EntityRenderer {
 
         // Draw player
         player.getSprite().draw(spriteBatch);
+
+        // Draw melee range indicator for Manny Pacquiao
+        if (player instanceof MannyPacquiao) {
+            MannyPacquiao manny = (MannyPacquiao) player;
+            if (manny.shouldShowMeleeRange()) {
+                spriteBatch.end(); // End sprite batch to draw shapes
+
+                // Enable blending for transparency
+                com.badlogic.gdx.Gdx.gl.glEnable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+                com.badlogic.gdx.Gdx.gl.glBlendFunc(
+                    com.badlogic.gdx.graphics.GL20.GL_SRC_ALPHA,
+                    com.badlogic.gdx.graphics.GL20.GL_ONE_MINUS_SRC_ALPHA
+                );
+
+                shapeRenderer.setProjectionMatrix(camera.combined);
+                shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
+
+                float playerCenterX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+                float playerCenterY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
+                float meleeRange = manny.getMeleeRange();
+
+                // Draw circle outline for better visibility
+                shapeRenderer.end();
+                shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
+                shapeRenderer.setColor(Color.WHITE);
+                shapeRenderer.circle(playerCenterX, playerCenterY, meleeRange, 50);
+
+                shapeRenderer.end();
+                com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
+
+                spriteBatch.begin(); // Resume sprite batch
+            }
+        }
 
         // Draw enemies
         for (AbstractEnemy enemy : enemies) {

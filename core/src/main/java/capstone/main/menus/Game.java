@@ -160,7 +160,7 @@ public class Game implements Screen {
                 soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
                 soundManager.loadSound("manny_airpunch", "Sounds/manny_airpunch.mp3");
                 //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
-                soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.mp3");
+                soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.wav");
                 //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
                 //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
                 weaponTexture = new Texture("fist.png"); // or melee weapon
