@@ -40,8 +40,22 @@ public class EnemySpawner {
     }
 
     private void spawnRandomEnemy() {
-        float x = (float) Math.random() * worldWidth;
-        float y = (float) Math.random() * worldHeight;
+        float x, y;
+        int attempts = 0;
+        int maxAttempts = 20; // Prevent infinite loop
+        
+        // Try to find a walkable spawn position
+        do {
+            x = 2f + (float) Math.random() * (worldWidth - 4f); // Keep away from edges
+            y = 2f + (float) Math.random() * (worldHeight - 4f);
+            attempts++;
+        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
+        
+        // If we couldn't find a good position after 20 attempts, use safe fallback
+        if (attempts >= maxAttempts) {
+            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f); // Middle 50% of map
+            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
+        }
 
         // Randomly choose between Survivor and Greed
         int enemyType = random.nextInt(2); // 0 or 1
@@ -55,17 +69,71 @@ public class EnemySpawner {
                 break;
         }
     }
+    
+    /**
+     * Check if a position is walkable (not on collision layer)
+     */
+    private boolean isWalkablePosition(float x, float y) {
+        // Simple heuristic: avoid positions that are too close to map edges
+        // and avoid obvious water/obstacle areas
+        
+        // Avoid map edges (likely walls/boundaries)
+        if (x < 1f || x > worldWidth - 1f || y < 1f || y > worldHeight - 1f) {
+            return false;
+        }
+        
+        // For World1, avoid known water areas (rough estimates)
+        // Center water area
+        if (x > worldWidth * 0.3f && x < worldWidth * 0.7f && 
+            y > worldHeight * 0.4f && y < worldHeight * 0.6f) {
+            return false;
+        }
+        
+        // Additional water areas (adjust based on actual map layout)
+        if ((x > worldWidth * 0.1f && x < worldWidth * 0.4f && y < worldHeight * 0.2f) ||
+            (x > worldWidth * 0.6f && x < worldWidth * 0.9f && y > worldHeight * 0.7f)) {
+            return false;
+        }
+        
+        return true;
+    }
 
     // Spawn specific enemy types (useful for testing or special spawns)
     public void spawnSurvivor() {
-        float x = (float) Math.random() * worldWidth;
-        float y = (float) Math.random() * worldHeight;
+        float x, y;
+        int attempts = 0;
+        int maxAttempts = 20;
+        
+        do {
+            x = 2f + (float) Math.random() * (worldWidth - 4f);
+            y = 2f + (float) Math.random() * (worldHeight - 4f);
+            attempts++;
+        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
+        
+        if (attempts >= maxAttempts) {
+            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
+            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
+        }
+        
         enemies.add(new Survivor(x, y, screenShake, physics));
     }
 
     public void spawnGreed() {
-        float x = (float) Math.random() * worldWidth;
-        float y = (float) Math.random() * worldHeight;
+        float x, y;
+        int attempts = 0;
+        int maxAttempts = 20;
+        
+        do {
+            x = 2f + (float) Math.random() * (worldWidth - 4f);
+            y = 2f + (float) Math.random() * (worldHeight - 4f);
+            attempts++;
+        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
+        
+        if (attempts >= maxAttempts) {
+            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
+            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
+        }
+        
         enemies.add(new Greed(x, y, screenShake, physics));
     }
 

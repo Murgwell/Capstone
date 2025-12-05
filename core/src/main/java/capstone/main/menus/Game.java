@@ -2,6 +2,7 @@
 package capstone.main.menus;
 
 import capstone.main.UI.HeartsHud;
+import capstone.main.UI.InventoryUI;
 import capstone.main.Corrupted;
 import capstone.main.Characters.*;
 import capstone.main.Enemies.*;
@@ -88,6 +89,11 @@ public class Game implements Screen {
     // HUD elements
     private HeartsHud heartsHud;
     private SkillHud skillHud;
+    
+    // Inventory system
+    private Inventory inventory;
+    private InventoryUI inventoryUI;
+    private boolean isInventoryOpen = false;
 
     // Shaders
     private ShaderProgram treeFadeShader;
@@ -132,7 +138,10 @@ public class Game implements Screen {
         // --- Initialize damage system first ---
         damageNumbers = new ArrayList<>();
         damageFont = new BitmapFont();
-        damageFont.getData().setScale(0.1f);
+        damageFont.getData().setScale(0.1f); // Reverted back to original 0.1f
+        
+        // Set up damage number system for physics collisions (bullets/fireballs)
+        physicsManager.setDamageNumberSystem(damageNumbers, damageFont);
 
         // --- Create enemy spawner ---
         enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
@@ -193,15 +202,50 @@ public class Game implements Screen {
             @Override
             public boolean keyDown(int keycode) {
                 if (keycode == com.badlogic.gdx.Input.Keys.ESCAPE) {
-                    isPaused = !isPaused;
-                    Gdx.input.setInputProcessor(isPaused ? pauseStage : gameplayInputs);
-                    return true;
+                    if (isInventoryOpen) {
+                        // Close inventory first
+                        isInventoryOpen = false;
+                        inventoryUI.toggle();
+                        Gdx.input.setInputProcessor(gameplayInputs);
+                        return true;
+                    } else {
+                        // Toggle pause menu
+                        isPaused = !isPaused;
+                        Gdx.input.setInputProcessor(isPaused ? pauseStage : gameplayInputs);
+                        return true;
+                    }
+                }
+                if (keycode == com.badlogic.gdx.Input.Keys.I) {
+                    if (!isPaused && !isGameOver) {
+                        inventoryUI.toggle();
+                        return true;
+                    }
                 }
                 if (keycode == com.badlogic.gdx.Input.Keys.F11) {
                     boolean newFs = !VideoSettings.isFullscreen();
                     VideoSettings.setFullscreen(newFs);
                     VideoSettings.apply();
                     return true;
+                }
+
+                // Quick access hotkeys (1-4)
+                if (!isPaused && !isGameOver && !isInventoryOpen) {
+                    if (keycode == com.badlogic.gdx.Input.Keys.NUM_1) {
+                        useQuickAccessItem(0);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.NUM_2) {
+                        useQuickAccessItem(1);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.NUM_3) {
+                        useQuickAccessItem(2);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.NUM_4) {
+                        useQuickAccessItem(3);
+                        return true;
+                    }
                 }
 
                 // Skill keybinds
@@ -323,8 +367,88 @@ public class Game implements Screen {
         if (player instanceof MannyPacquiao) {
             skillHud = new SkillHud(uiViewport, spriteBatch, player);
         }
+        
+        // --- Inventory System ---
+        inventory = new Inventory();
+        
+        // Add some test items (only bandages now)
+        inventory.addItem("Bandage", "Textures/UI/Inventory/Objects/Icon_Bandage.png", 5);
+        
+        // Set up quick access slots
+        inventory.setQuickAccessSlot(0, 0); // Bandages in slot 1
+        
+        inventoryUI = new InventoryUI(uiViewport, spriteBatch, inventory);
+        inventoryUI.setOnToggleCallback(() -> {
+            isInventoryOpen = inventoryUI.isOpen();
+            if (isInventoryOpen) {
+                Gdx.input.setInputProcessor(inventoryUI.getStage());
+            } else {
+                Gdx.input.setInputProcessor(gameplayInputs);
+            }
+        });
+        
+        // Set item use callback
+        inventoryUI.setOnItemUseCallback(item -> {
+            if (item.getType() == Inventory.ItemType.HEALING) {
+                // Heal the player
+                int oldHp = player.getHp();
+                player.heal(item.getHealAmount());
+                int newHp = player.getHp();
+                int actualHealing = newHp - oldHp;
+                
+                // Show healing feedback
+                Gdx.app.log("Inventory", "Used " + item.getName() + " - Healed for " + actualHealing + " HP (" + newHp + "/" + player.getMaxHp() + ")");
+            }
+        });
+        
+        // Set health check callback
+        inventoryUI.setHealthCheckCallback(() -> player.getHp() < player.getMaxHp());
+        
+        // Set floating text callback
+        inventoryUI.setFloatingTextCallback((text, r, g, b) -> {
+            // Create floating text above the player
+            float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+            float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
+            Color textColor = new Color(r / 255f, g / 255f, b / 255f, 1f);
+            
+            damageNumbers.add(new DamageNumber(text, playerX, playerY, damageFont, textColor));
+        });
     }
 
+    private void useQuickAccessItem(int quickSlotIndex) {
+        // Check if healing item and health is full before consuming
+        int inventoryIndex = inventory.getQuickAccessSlot(quickSlotIndex);
+        if (inventoryIndex >= 0) {
+            Inventory.InventoryItem item = inventory.getItem(inventoryIndex);
+            if (item != null && item.getType() == Inventory.ItemType.HEALING) {
+                if (player.getHp() >= player.getMaxHp()) {
+                    Gdx.app.log("Inventory", "Health is already full! Cannot use " + item.getName() + " from quick slot " + (quickSlotIndex + 1));
+                    
+                    // Show floating text above player
+                    float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+                    float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
+                    Color textColor = new Color(1f, 0.4f, 0.4f, 1f); // Red color
+                    damageNumbers.add(new DamageNumber("Health is full!", playerX, playerY, damageFont, textColor));
+                    
+                    return; // Don't consume the item
+                }
+            }
+        }
+        
+        Inventory.InventoryItem usedItem = inventory.useQuickAccessItem(quickSlotIndex);
+        if (usedItem != null) {
+            if (usedItem.getType() == Inventory.ItemType.HEALING) {
+                // Heal the player
+                int oldHp = player.getHp();
+                player.heal(usedItem.getHealAmount());
+                int newHp = player.getHp();
+                int actualHealing = newHp - oldHp;
+                
+                // Show healing feedback
+                Gdx.app.log("Inventory", "Used " + usedItem.getName() + " from quick slot " + (quickSlotIndex + 1) + " - Healed for " + actualHealing + " HP (" + newHp + "/" + player.getMaxHp() + ")");
+            }
+        }
+    }
 
     @Override
     public void render(float delta) {
@@ -407,6 +531,10 @@ public class Game implements Screen {
             skillHud.update(delta);
             skillHud.draw();
         }
+        
+        // --- Inventory System ---
+        inventoryUI.update(delta);
+        inventoryUI.draw();
 
         // --- Draw pause overlay ---
         if (isPaused) {
@@ -470,7 +598,7 @@ public class Game implements Screen {
 
         // Title
         Label titleLabel = new Label("PAUSED", pauseSkin);
-        titleLabel.setFontScale(2f);
+        titleLabel.setFontScale(2f); // Reverted back to 2f
         table.add(titleLabel).padBottom(40f).colspan(2).row();
 
         // Get managers
@@ -488,7 +616,7 @@ public class Game implements Screen {
 
         // Music toggle button
         final TextButton musicToggle = new TextButton(musicManager.isMusicEnabled() ? "ON" : "OFF", pauseSkin);
-        musicToggle.getLabel().setFontScale(0.8f);
+        musicToggle.getLabel().setFontScale(0.8f); // Reverted back to 0.8f
         musicToggle.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -537,7 +665,7 @@ public class Game implements Screen {
 
         // Sound toggle button
         final TextButton soundToggle = new TextButton(soundManager.isSoundEnabled() ? "ON" : "OFF", pauseSkin);
-        soundToggle.getLabel().setFontScale(0.8f);
+        soundToggle.getLabel().setFontScale(0.8f); // Reverted back to 0.8f
         soundToggle.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -678,6 +806,7 @@ public class Game implements Screen {
         uiViewport.update(width, height, true);
         heartsHud.resize(width, height);
         if (skillHud != null) skillHud.resize(width, height);
+        if (inventoryUI != null) inventoryUI.resize(width, height);
         camera.update();
     }
 
@@ -742,6 +871,7 @@ public class Game implements Screen {
         if (heartsHud != null) heartsHud.dispose();
         if (player != null) player.dispose();
         if (skillHud != null) skillHud.dispose();
+        if (inventoryUI != null) inventoryUI.dispose();
 
         // Stop World 1 music when leaving game screen
         MusicManager.getInstance().stop();
@@ -754,11 +884,11 @@ public class Game implements Screen {
                 // Manny Pacquiao - Melee fighter
                 // High HP, moderate damage, moderate speed, low mana
                 return new MannyPacquiao(
-                    150,           // healthPoints (highest - melee needs survivability)
+                    130,           // healthPoints (rebalanced: 150→130 - less tanky)
                     60,            // manaPoints (lowest - skills cost mana)
-                    10,            // baseDamage
-                    15,            // maxDamage (10-15 damage range)
-                    1.2f,          // attackSpeed (moderate - 1.2 attacks/sec)
+                    12,            // baseDamage (rebalanced: 10→12)
+                    16,            // maxDamage (rebalanced: 15→16, now 12-16 damage range)
+                    1.0f,          // attackSpeed (rebalanced: 1.2→1.0 - slightly slower)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -775,11 +905,11 @@ public class Game implements Screen {
                 // Quiboloy - Ranged fireball user
                 ArrayList<Fireball> fireballs = new ArrayList<>(); // create list for fireballs
                 return new Quiboloy(
-                    90,            // healthPoints (lowest - glass cannon)
+                    100,           // healthPoints (rebalanced: 90→100 - slightly less fragile)
                     120,           // manaPoints (highest - mage needs mana)
-                    12,            // baseDamage
-                    18,            // maxDamage (12-18 damage range - highest damage)
-                    0.8f,          // attackSpeed (slowest - 0.8 attacks/sec)
+                    10,            // baseDamage (rebalanced: 12→10)
+                    15,            // maxDamage (rebalanced: 18→15, now 10-15 damage range)
+                    1.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -796,9 +926,9 @@ public class Game implements Screen {
                 return new VicoSotto(
                     120,           // healthPoints (middle ground)
                     70,            // manaPoints (moderate)
-                    6,             // baseDamage
-                    10,            // maxDamage (6-10 damage range)
-                    2.0f,          // attackSpeed (fastest - 2 attacks/sec)
+                    8,             // baseDamage (rebalanced: 6→8)
+                    12,            // maxDamage (rebalanced: 10→12, now 8-12 damage range)
+                    1.8f,          // attackSpeed (rebalanced: 2.0→1.8 - slightly slower but stronger)
                     9f,            // x
                     9f,            // y
                     2f,            // width
