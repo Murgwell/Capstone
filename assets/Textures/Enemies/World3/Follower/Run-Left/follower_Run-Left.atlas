@@ -1,0 +1,19 @@
+follower_walk.png
+size: 2304, 288
+format: RGBA8888
+filter: Linear, Linear
+repeat: none
+pma: false
+
+follower_walk-0.png
+  bounds: 0, 0, 288, 288
+follower_walk-1.png
+  bounds: 288, 0, 288, 288
+follower_walk-2.png
+  bounds: 576, 0, 288, 288
+follower_walk-3.png
+  bounds: 864, 0, 288, 288
+follower_walk-4.png
+  bounds: 1152, 0, 288, 288
+follower_walk-5.png
+  bounds: 1440, 0, 288, 288
