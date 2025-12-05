@@ -44,7 +44,7 @@ public class EnemySpawner {
         float y = (float) Math.random() * worldHeight;
 
         // Randomly choose between Survivor and Greed
-        int enemyType = random.nextInt(4); // 0 or 1
+        int enemyType = random.nextInt(5); // 0 or 1
 
         switch (enemyType) {
             case 0:
@@ -58,6 +58,9 @@ public class EnemySpawner {
                 break;
             case 3:
                 enemies.add(new Discaya(x, y, screenShake, physics));
+                break;
+            case 4:
+                enemies.add(new QuiboloyBoss(x, y, screenShake, physics));
                 break;
         }
     }
@@ -85,6 +88,12 @@ public class EnemySpawner {
         float x = (float) Math.random() * worldWidth;
         float y = (float) Math.random() * worldHeight;
         enemies.add(new Discaya(x, y, screenShake, physics));
+    }
+
+    public void spawnQuiboloyBoss() {
+        float x = (float) Math.random() * worldWidth;
+        float y = (float) Math.random() * worldHeight;
+        enemies.add(new QuiboloyBoss(x, y, screenShake, physics));
     }
 
     public ArrayList<AbstractEnemy> getEnemies() {
