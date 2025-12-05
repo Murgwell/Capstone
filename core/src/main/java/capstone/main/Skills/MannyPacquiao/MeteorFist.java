@@ -16,10 +16,10 @@ public class MeteorFist extends Skill {
     private static final float MAX_DAMAGE = 13f;
     private static final float RANGE = 3f; // Attack range
 
-    private AbstractPlayer player;
-    private ArrayList<AbstractEnemy> enemies;
-    private ArrayList<DamageNumber> damageNumbers;
-    private BitmapFont damageFont;
+    private final AbstractPlayer player;
+    private final ArrayList<AbstractEnemy> enemies;
+    private final ArrayList<DamageNumber> damageNumbers;
+    private final BitmapFont damageFont;
 
     public MeteorFist(AbstractPlayer player, ArrayList<AbstractEnemy> enemies,
                       ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont) {

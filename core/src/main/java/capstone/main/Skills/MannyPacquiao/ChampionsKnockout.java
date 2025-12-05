@@ -20,10 +20,10 @@ public class ChampionsKnockout extends Skill {
     private static final float SLOW_DURATION = 3f; // 3 seconds of slow
     private static final float SLOW_AMOUNT = 0.5f; // 50% speed reduction
 
-    private AbstractPlayer player;
-    private ArrayList<AbstractEnemy> enemies;
-    private ArrayList<DamageNumber> damageNumbers;
-    private BitmapFont damageFont;
+    private final AbstractPlayer player;
+    private final ArrayList<AbstractEnemy> enemies;
+    private final ArrayList<DamageNumber> damageNumbers;
+    private final BitmapFont damageFont;
 
     public ChampionsKnockout(AbstractPlayer player, ArrayList<AbstractEnemy> enemies,
                              ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont) {
