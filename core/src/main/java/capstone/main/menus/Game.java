@@ -145,6 +145,8 @@ public class Game implements Screen {
 
         // --- Create enemy spawner ---
         enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
+        enemySpawner.setCurrentWorld("Textures/World1.tmx"); // Set current world for world-specific spawning
+        enemySpawner.setCollisionMap(mapManager.getTiledMap()); // Set collision map for proper spawn detection
         enemySpawner.spawnInitial(10);
 
         // --- Create player (with enemies available for Manny) ---

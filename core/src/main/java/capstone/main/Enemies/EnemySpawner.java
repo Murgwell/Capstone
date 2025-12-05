@@ -2,6 +2,9 @@ package capstone.main.Enemies;
 
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Managers.CollisionLoader;
+import com.badlogic.gdx.maps.tiled.TiledMap;
+import com.badlogic.gdx.math.Rectangle;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -15,6 +18,8 @@ public class EnemySpawner {
     private final float worldWidth;
     private final float worldHeight;
     private Random random;
+    private String currentWorld = "World1"; // Default to World1
+    private ArrayList<Rectangle> collisionRectangles;
 
     public EnemySpawner(float worldWidth, float worldHeight, ScreenShake screenShake, PhysicsManager physics) {
         enemies = new ArrayList<>();
@@ -57,57 +62,103 @@ public class EnemySpawner {
             y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
         }
 
-        // Randomly choose between Survivor and Greed
-        int enemyType = random.nextInt(6); // 0 or 1
-
-        switch (enemyType) {
-            case 0:
-                enemies.add(new Survivor(x, y, screenShake, physics));
-                break;
-            case 1:
-                enemies.add(new Greed(x, y, screenShake, physics));
-                break;
-            case 2:
-                enemies.add(new Security(x, y, screenShake, physics));
-                break;
-            case 3:
-                enemies.add(new Discaya(x, y, screenShake, physics));
-                break;
-            case 4:
-                enemies.add(new Follower(x, y, screenShake, physics));
-                break;
-            case 5:
-                enemies.add(new QuiboloyBoss(x, y, screenShake, physics));
-                break;
-        }
+        // Spawn enemies based on current world
+        spawnWorldSpecificEnemy(x, y);
+    }
+    
+    /**
+     * Set the collision map for proper collision detection
+     */
+    public void setCollisionMap(TiledMap map) {
+        // Get collision rectangles from the map's collision layer
+        this.collisionRectangles = CollisionLoader.getCollisionRectangles(map, "collisionLayer", 1/32f);
     }
     
     /**
      * Check if a position is walkable (not on collision layer)
      */
     private boolean isWalkablePosition(float x, float y) {
-        // Simple heuristic: avoid positions that are too close to map edges
-        // and avoid obvious water/obstacle areas
-        
-        // Avoid map edges (likely walls/boundaries)
+        // Avoid map edges
         if (x < 1f || x > worldWidth - 1f || y < 1f || y > worldHeight - 1f) {
             return false;
         }
         
-        // For World1, avoid known water areas (rough estimates)
-        // Center water area
-        if (x > worldWidth * 0.3f && x < worldWidth * 0.7f && 
-            y > worldHeight * 0.4f && y < worldHeight * 0.6f) {
-            return false;
-        }
-        
-        // Additional water areas (adjust based on actual map layout)
-        if ((x > worldWidth * 0.1f && x < worldWidth * 0.4f && y < worldHeight * 0.2f) ||
-            (x > worldWidth * 0.6f && x < worldWidth * 0.9f && y > worldHeight * 0.7f)) {
-            return false;
+        // Check if position overlaps with any collision rectangle
+        if (collisionRectangles != null) {
+            // Create a small rectangle around the spawn point to check for collision
+            Rectangle spawnRect = new Rectangle(x - 0.5f, y - 0.5f, 1f, 1f);
+            
+            for (Rectangle collisionRect : collisionRectangles) {
+                if (spawnRect.overlaps(collisionRect)) {
+                    return false; // Position overlaps with collision (water/wall)
+                }
+            }
         }
         
         return true;
+    }
+    
+    /**
+     * Set the current world for world-specific enemy spawning
+     */
+    public void setCurrentWorld(String worldPath) {
+        if (worldPath.contains("World1_Boss") || worldPath.contains("World1")) {
+            this.currentWorld = "World1";
+        } else if (worldPath.contains("World2_Boss") || worldPath.contains("World2")) {
+            this.currentWorld = "World2";
+        } else if (worldPath.contains("World3_Boss") || worldPath.contains("World3")) {
+            this.currentWorld = "World3";
+        }
+    }
+    
+    /**
+     * Spawn enemies specific to the current world
+     */
+    private void spawnWorldSpecificEnemy(float x, float y) {
+        switch (currentWorld) {
+            case "World1":
+                // World1 enemies: Survivor and Greed
+                int world1EnemyType = random.nextInt(2);
+                switch (world1EnemyType) {
+                    case 0:
+                        enemies.add(new Survivor(x, y, screenShake, physics));
+                        break;
+                    case 1:
+                        enemies.add(new Greed(x, y, screenShake, physics));
+                        break;
+                }
+                break;
+                
+            case "World2":
+                // World2 enemies: Security and Discaya
+                int world2EnemyType = random.nextInt(2);
+                switch (world2EnemyType) {
+                    case 0:
+                        enemies.add(new Security(x, y, screenShake, physics));
+                        break;
+                    case 1:
+                        enemies.add(new Discaya(x, y, screenShake, physics));
+                        break;
+                }
+                break;
+                
+            case "World3":
+                // World3 enemies: Follower and QuiboloyBoss (rare)
+                int world3EnemyType = random.nextInt(10); // 0-9
+                if (world3EnemyType < 8) {
+                    // 80% chance for Followers
+                    enemies.add(new Follower(x, y, screenShake, physics));
+                } else {
+                    // 20% chance for QuiboloyBoss
+                    enemies.add(new QuiboloyBoss(x, y, screenShake, physics));
+                }
+                break;
+                
+            default:
+                // Fallback to World1 enemies if unknown world
+                enemies.add(new Survivor(x, y, screenShake, physics));
+                break;
+        }
     }
 
     // Spawn specific enemy types (useful for testing or special spawns)
