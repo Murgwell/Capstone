@@ -2,6 +2,7 @@ package capstone.main.Skills.MannyPacquiao;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Enemies.AbstractEnemy;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Skills.Skill;
 import capstone.main.Sprites.DamageNumber;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -64,13 +65,12 @@ public class MeteorFist extends Skill {
                 damageFont,
                 com.badlogic.gdx.graphics.Color.YELLOW // Special color for skill damage
             ));
-
+            startCooldown();
+            SoundManager.getInstance().playSound("manny_skill1");
             com.badlogic.gdx.Gdx.app.log("MeteorFist", "Hit enemy for " + damage + " damage!");
         } else {
             com.badlogic.gdx.Gdx.app.log("MeteorFist", "No enemy in range!");
         }
-
-        startCooldown();
     }
 
     @Override

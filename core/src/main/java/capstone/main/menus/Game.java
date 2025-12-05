@@ -157,13 +157,12 @@ public class Game implements Screen {
 
         switch (selectedCharacterIndex) {
             case 1: // Manny Pacquiao
-                soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
                 soundManager.loadSound("manny_airpunch", "Sounds/manny_airpunch.mp3");
-                //soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.wav");
+                soundManager.loadSound("manny_punch", "Sounds/manny_punch.mp3");
+                soundManager.loadSound("manny_skill1", "Sounds/manny_skill1.mp3");
                 soundManager.loadSound("manny_skill2", "Sounds/manny_skill2.wav");
-                //soundManager.loadSound("manny_skill3", "Sounds/manny_skill3.wav");
-                //soundManager.loadSound("manny_hit", "Sounds/manny_hit.wav");
-                weaponTexture = new Texture("fist.png"); // or melee weapon
+                soundManager.loadSound("manny_ult", "Sounds/manny_ult.mp3");
+                weaponTexture = new Texture("fist.png"); // melee weapon
                 weaponSprite = new Sprite(weaponTexture);
                 weaponSprite.setSize(0.75f, 0.75f);
                 weaponSprite.setOrigin(weaponSprite.getWidth() / 2f, weaponSprite.getHeight() / 2f);

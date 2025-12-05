@@ -12,11 +12,11 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import java.util.ArrayList;
 
 public class EntityRenderer {
-    private SpriteBatch spriteBatch;
-    private ShapeRenderer shapeRenderer;
-    private AbstractPlayer player;
-    private ArrayList<AbstractEnemy> enemies;
-    private ArrayList<DamageNumber> damageNumbers;
+    private final SpriteBatch spriteBatch;
+    private final ShapeRenderer shapeRenderer;
+    private final AbstractPlayer player;
+    private final ArrayList<AbstractEnemy> enemies;
+    private final ArrayList<DamageNumber> damageNumbers;
 
     public EntityRenderer(SpriteBatch spriteBatch, ShapeRenderer shapeRenderer,
                           AbstractPlayer player, ArrayList<AbstractEnemy> enemies,
@@ -34,6 +34,45 @@ public class EntityRenderer {
 
         // Draw player
         player.getSprite().draw(spriteBatch);
+
+        // Draw enemies
+        for (AbstractEnemy enemy : enemies) {
+            enemy.getSprite().draw(spriteBatch);
+
+            // Draw white overlay if hit
+            if (enemy.getHitFlashAlpha() > 0f) {
+                enemy.updateWhiteOverlay();
+                enemy.getWhiteOverlaySprite().setAlpha(enemy.getHitFlashAlpha());
+                enemy.getWhiteOverlaySprite().draw(spriteBatch);
+            }
+
+            // Draw status text above enemy
+            if (enemy.isSlowed() && !enemy.getStatusText().isEmpty()) {
+                float textX = enemy.getSprite().getX() + enemy.getSprite().getWidth() / 2f;
+                float textY = enemy.getSprite().getY() + enemy.getSprite().getHeight() + 0.6f;
+
+                // Draw with pulsing effect
+                float pulseAlpha = 0.7f + 0.3f * (float)Math.sin(enemy.getSlowTimer() * 5f);
+                com.badlogic.gdx.graphics.Color originalColor = enemy.getStatusFont().getColor().cpy();
+
+                // Shadow
+                enemy.getStatusFont().setColor(0, 0, 0, pulseAlpha);
+                enemy.getStatusFont().draw(spriteBatch, enemy.getStatusText(), textX + 0.02f, textY - 0.02f);
+
+                // Text
+                enemy.getStatusFont().setColor(0.3f, 0.8f, 1f, pulseAlpha); // Cyan color
+
+                // Center the text
+                com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
+                    new com.badlogic.gdx.graphics.g2d.GlyphLayout(enemy.getStatusFont(), enemy.getStatusText());
+                float centeredX = textX - layout.width / 2f;
+
+                enemy.getStatusFont().draw(spriteBatch, enemy.getStatusText(), centeredX, textY);
+
+                // Restore original color
+                enemy.getStatusFont().setColor(originalColor);
+            }
+        }
 
         // Draw melee range indicator for Manny Pacquiao
         if (player instanceof MannyPacquiao) {
@@ -65,18 +104,6 @@ public class EntityRenderer {
                 com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
 
                 spriteBatch.begin(); // Resume sprite batch
-            }
-        }
-
-        // Draw enemies
-        for (AbstractEnemy enemy : enemies) {
-            enemy.getSprite().draw(spriteBatch);
-
-            // Draw white overlay if hit
-            if (enemy.getHitFlashAlpha() > 0f) {
-                enemy.updateWhiteOverlay();
-                enemy.getWhiteOverlaySprite().setAlpha(enemy.getHitFlashAlpha());
-                enemy.getWhiteOverlaySprite().draw(spriteBatch);
             }
         }
 

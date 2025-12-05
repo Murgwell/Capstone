@@ -35,7 +35,6 @@ public class WeaponRenderer {
         float weaponCenterY = player.getSprite().getY() + player.getSprite().getHeight() / 2f
             + (float) Math.sin(weaponRad) * gap;
 
-        // Add Manny's punch animation offset if applicable
         if (player instanceof MannyPacquiao) {
             Vector2 animOffset = ((MannyPacquiao) player).getWeaponAnimationOffset();
             weaponCenterX += animOffset.x;

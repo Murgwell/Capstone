@@ -7,6 +7,8 @@ import capstone.main.Managers.SoundManager;
 import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Vector2;
@@ -27,6 +29,7 @@ public abstract class AbstractEnemy {
     protected float defaultChaseDistance = 3f;
     protected float aggroChaseDistance = 6f;
     protected float speed = 1.5f;
+    protected float baseSpeed = 1.5f;
     protected float hitboxRadius;
 
     private float hitFlashTimer = 0f;   // in seconds
@@ -34,7 +37,13 @@ public abstract class AbstractEnemy {
     protected Sprite whiteOverlaySprite;
     protected DirectionManager directionManager;
 
-    // Add these fields near the top with other fields
+    // Status effects
+    protected boolean isSlowed = false;
+    protected float slowTimer = 0f;
+    protected float slowMultiplier = 0.5f; // 50% speed when slowed
+    protected BitmapFont statusFont;
+    protected String statusText = "";
+
     private float attackCooldown = 0f;
     private static final float ATTACK_COOLDOWN_TIME = 1.0f; // 1 second between attacks
     private static final float MELEE_RANGE = 0.8f; // How close to attack
@@ -44,6 +53,7 @@ public abstract class AbstractEnemy {
         this.sprite = new Sprite(texture);
         this.sprite.setPosition(x, y);
         this.sprite.setSize(width, height);
+        this.baseSpeed = speed;
 
         this.maxHealth = maxHealth;
         this.health = maxHealth;
@@ -54,6 +64,10 @@ public abstract class AbstractEnemy {
         this.healthBar = new HealthBar(sprite, maxHealth, width, 3f / 32f, 0.05f);
 
         this.directionManager = new DirectionManager(sprite);
+
+        this.statusFont = new BitmapFont();
+        this.statusFont.getData().setScale(0.08f);
+        this.statusFont.setColor(com.badlogic.gdx.graphics.Color.CYAN);
 
         // --- Box2D body ---
         BodyDef bd = new BodyDef();
@@ -93,6 +107,9 @@ public abstract class AbstractEnemy {
             return;
         }
 
+        // Update status effects
+        updateStatusEffects(delta);
+
         // Update attack cooldown
         updateAttackCooldown(delta);
 
@@ -107,8 +124,11 @@ public abstract class AbstractEnemy {
 
         Vector2 velocity = new Vector2(0, 0);
 
+        // Use speed (which is already modified by slow effect)
+        // REMOVED: float currentSpeed = speed; - not needed, just use 'speed' directly
+
         if (isAggro) {
-            velocity.set(dx / dist * speed, dy / dist * speed);
+            velocity.set(dx / dist * speed, dy / dist * speed); // Changed from currentSpeed to speed
             if (!enteredClose && dist <= aggroChaseDistance) enteredClose = true;
             if (enteredClose && dist > aggroChaseDistance) {
                 isAggro = false;
@@ -116,7 +136,7 @@ public abstract class AbstractEnemy {
                 velocity.set(0,0);
             }
         } else {
-            if (dist <= defaultChaseDistance) velocity.set(dx / dist * speed, dy / dist * speed);
+            if (dist <= defaultChaseDistance) velocity.set(dx / dist * speed, dy / dist * speed); // Changed
         }
 
         body.setLinearVelocity(velocity);
@@ -126,6 +146,22 @@ public abstract class AbstractEnemy {
         directionManager.setFacingLeft(velocity.x < 0);
 
         if (healthBar != null) healthBar.update(delta);
+    }
+
+    protected void updateStatusEffects(float delta) {
+        if (isSlowed) {
+            slowTimer -= delta;
+            if (slowTimer <= 0) {
+                removeSlowEffect();
+            }
+        }
+    }
+
+    // Attack cooldown methods
+    public void updateAttackCooldown(float delta) {
+        if (attackCooldown > 0) {
+            attackCooldown -= delta;
+        }
     }
 
     public void takeHit(float damage) {
@@ -154,11 +190,29 @@ public abstract class AbstractEnemy {
         }
     }
 
-    // Add this method
-    public void updateAttackCooldown(float delta) {
-        if (attackCooldown > 0) {
-            attackCooldown -= delta;
+    // Slow effect methods
+    public void applySlowEffect(float duration, float slowAmount) {
+        if (!isSlowed) {
+            isSlowed = true;
+            slowMultiplier = slowAmount;
+            speed = baseSpeed * slowMultiplier;
+            statusText = "";
+
+            // Change sprite tint to indicate slow
+            sprite.setColor(0.5f, 0.5f, 1f, 1f); // Blue tint
+
+            Gdx.app.log("StatusEffect", "Enemy slowed! Speed: " + speed);
         }
+        slowTimer = duration; // Refresh duration
+    }
+
+    public void removeSlowEffect() {
+        isSlowed = false;
+        speed = baseSpeed;
+        statusText = "";
+        sprite.setColor(1f, 1f, 1f, 1f); // Reset color
+
+        Gdx.app.log("StatusEffect", "Slow effect removed. Speed: " + speed);
     }
 
     public boolean canAttack() {
@@ -175,6 +229,22 @@ public abstract class AbstractEnemy {
 
     public float getMeleeDamage() {
         return MELEE_DAMAGE;
+    }
+
+    public boolean isSlowed() {
+        return isSlowed;
+    }
+
+    public String getStatusText() {
+        return statusText;
+    }
+
+    public BitmapFont getStatusFont() {
+        return statusFont;
+    }
+
+    public float getSlowTimer() {
+        return slowTimer;
     }
 
     public boolean isDead() { return health <= 0; }

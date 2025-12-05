@@ -2,8 +2,10 @@ package capstone.main.Skills.MannyPacquiao;
 
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Enemies.AbstractEnemy;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Skills.Skill;
 import capstone.main.Sprites.DamageNumber;
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -15,6 +17,8 @@ public class ChampionsKnockout extends Skill {
     private static final float BASE_DAMAGE_MAX = 40f;
     private static final float HP_PERCENT = 0.20f; // 20% of enemy's base HP
     private static final float RANGE = 3f;
+    private static final float SLOW_DURATION = 3f; // 3 seconds of slow
+    private static final float SLOW_AMOUNT = 0.5f; // 50% speed reduction
 
     private AbstractPlayer player;
     private ArrayList<AbstractEnemy> enemies;
@@ -61,23 +65,33 @@ public class ChampionsKnockout extends Skill {
 
             closestEnemy.takeHit(totalDamage);
 
-            // Create damage number with special formatting
+            // APPLY SLOW EFFECT
+            closestEnemy.applySlowEffect(SLOW_DURATION, SLOW_AMOUNT);
+
             Vector2 enemyPos = closestEnemy.getBody().getPosition();
             damageNumbers.add(new DamageNumber(
-                String.format("%.0f!", totalDamage), // Exclamation for ultimate
+                String.format("%.0f!", totalDamage),
                 enemyPos.x,
                 enemyPos.y,
                 damageFont,
-                com.badlogic.gdx.graphics.Color.RED // Red for ultimate damage
+                Color.RED
             ));
 
+            // Create "SLOWED" status text
+            damageNumbers.add(new DamageNumber(
+                "SLOWED!",
+                enemyPos.x,
+                enemyPos.y + 0.3f, // Slightly higher than damage number
+                damageFont,
+                Color.CYAN
+            ));
+            startCooldown();
+            SoundManager.getInstance().playSound("manny_ult");
             com.badlogic.gdx.Gdx.app.log("ChampionsKnockout",
                 "KNOCKOUT! Dealt " + totalDamage + " damage! (" + percentDamage + " from HP + " + baseDamage + " base)");
         } else {
             com.badlogic.gdx.Gdx.app.log("ChampionsKnockout", "No enemy in range!");
         }
-
-        startCooldown();
     }
 
     @Override
