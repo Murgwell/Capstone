@@ -23,48 +23,54 @@ public class Greed extends AbstractEnemy {
     private float lastVX = 0f;
     private float lastVY = -1f; // default looking down
 
-    // Optional: keep refs to textures so they can be disposed later if needed
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
-    public Greed(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
-        // Initial placeholder texture (will be replaced by animation frames each update)
-        super(x, y, new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"), 5.0f, 5.0f, 100, screenShake, physics);
+    private final float spriteWidth;
+    private final float spriteHeight;
 
+    public Greed(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
+        super(x, y,
+            new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"),
+            1.0f, 1.0f, 100, screenShake, physics);
+
+        // Static size
+        this.spriteWidth = 2.0f;
+        this.spriteHeight = 2.0f;
+
+        // Load animations
         animDown = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Forward",
-            "Greed_Run-Forward.atlas", "orc1_walk_full-", 0.10f);  // Changed here
+            "Greed_Run-Forward.atlas", "orc1_walk_full-", 0.10f);
         if (animDown == null) animDown = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Forward",
             "Greed_Walk-", 0, 99, 0.10f);
 
         animUp = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Backward",
-            "Greed_Run-Backward.atlas", "orc1_walk_full-", 0.10f);  // Changed here
+            "Greed_Run-Backward.atlas", "orc1_walk_full-", 0.10f);
         if (animUp == null) animUp = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Backward",
             "Greed_Walk-", 0, 99, 0.10f);
 
         animLeft = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Left",
-            "Greed_Run-Left.atlas", "orc1_walk_full-", 0.10f);  // Changed here
+            "Greed_Run-Left.atlas", "orc1_walk_full-", 0.10f);
         if (animLeft == null) animLeft = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Left",
             "Greed_Walk-", 0, 99, 0.10f);
 
         animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right",
-            "Greed_Run-Right.atlas", "orc1_walk_full-", 0.10f);  // Changed here
-        if (animRight == null) animRight = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Right",
             "Greed_Run-Right.atlas", "orc1_walk_full-", 0.10f);
         if (animRight == null) animRight = loadFolderAnim("Textures/Enemies/World1/Greed/Run-Right",
             "Greed_Walk-", 0, 99, 0.10f);
 
-        // random initial facing
+        // Random initial facing
         boolean facingLeft = MathUtils.randomBoolean();
         directionManager.setFacingLeft(facingLeft);
 
-        // set an initial frame if available
+        // Set initial frame with static size
         TextureRegion initial = safeFrame(animDown);
         if (initial != null) {
             sprite.setRegion(initial);
-            sprite.setSize(1.0f, 1.0f);
+            sprite.setSize(spriteWidth, spriteHeight);
         }
 
-        this.speed = 1.5f; // optional per-enemy speed
+        this.speed = 1.5f;
     }
 
     @Override
@@ -74,37 +80,30 @@ public class Greed extends AbstractEnemy {
             return;
         }
 
-        // core behavior & hit flash
+        // Core behavior & hit flash
         updateHitFlash(delta);
         defaultChaseBehavior(delta, player);
 
         stateTime += delta;
 
-        // capture velocity for direction selection
+        // Capture velocity
         lastVX = body.getLinearVelocity().x;
         lastVY = body.getLinearVelocity().y;
 
-        // choose current frame and set on sprite
+        // Set current frame
         TextureRegion frame = selectFrame();
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f; // Your desired height
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            sprite.setSize(spriteWidth, spriteHeight); // static size
         }
     }
 
     private TextureRegion selectFrame() {
-        // If idle, show first frame of last direction
         if (Math.abs(lastVX) < 0.01f && Math.abs(lastVY) < 0.01f) {
             Animation<TextureRegion> idleAnim = animFromLastDir();
             return idleAnim != null ? idleAnim.getKeyFrame(0) : null;
         }
 
-        // Prefer the dominant axis of movement for selecting animation
         if (Math.abs(lastVX) > Math.abs(lastVY)) {
             return lastVX > 0 ? safeFrame(animRight) : safeFrame(animLeft);
         } else {
@@ -131,7 +130,7 @@ public class Greed extends AbstractEnemy {
             String path = folder + "/" + prefix + i + ".png";
             FileHandle fh = Gdx.files.internal(path);
             if (!fh.exists()) {
-                if (i == startIndex) return null; // no frames found
+                if (i == startIndex) return null;
                 break;
             }
             Texture tex = new Texture(fh);
@@ -151,7 +150,7 @@ public class Greed extends AbstractEnemy {
         for (int i = 0; i < 100; i++) {
             TextureRegion region = atlas.findRegion(frameBaseName + i);
             if (region == null) {
-                if (i == 0) return null; // no frames matched in this atlas
+                if (i == 0) return null;
                 break;
             }
             frames.add(region);

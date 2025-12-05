@@ -26,21 +26,27 @@ public class Discaya extends AbstractEnemy {
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
+    private final float spriteWidth;
+    private final float spriteHeight;
+
     public Discaya(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
 
         super(x, y,
             new Texture("Textures/Enemies/World2/Discaya/Run-Forward/Discaya_Walk-0.png"),
-            3.0f, 3.0f, 100, screenShake, physics);
+            1.0f, 1.0f, 100, screenShake, physics);
+
+        // static sprite size
+        this.spriteWidth = 3.0f;
+        this.spriteHeight = 3.0f;
 
         // -----------------------------
-        // Atlas or folder animations
+        // Load Animations
         // -----------------------------
         animDown = loadAtlasAnim(
             "Textures/Enemies/World2/Discaya/Run-Forward",
             "Discaya_Run-Forward.atlas",
             "Discaya_Walk-", 0.10f
         );
-
         if (animDown == null) animDown = loadFolderAnim(
             "Textures/Enemies/World2/Discaya/Run-Forward",
             "Discaya_Walk-", 0, 5, 0.10f
@@ -51,7 +57,6 @@ public class Discaya extends AbstractEnemy {
             "Discaya_Run-Backward.atlas",
             "Discaya_Walk-", 0.10f
         );
-
         if (animUp == null) animUp = loadFolderAnim(
             "Textures/Enemies/World2/Discaya/Run-Backward",
             "Discaya_Walk-", 0, 5, 0.10f
@@ -62,7 +67,6 @@ public class Discaya extends AbstractEnemy {
             "Discaya_Run-Left.atlas",
             "Discaya_Walk-", 0.10f
         );
-
         if (animLeft == null) animLeft = loadFolderAnim(
             "Textures/Enemies/World2/Discaya/Run-Left",
             "Discaya_Walk-", 0, 5, 0.10f
@@ -73,7 +77,6 @@ public class Discaya extends AbstractEnemy {
             "Discaya_Run-Right.atlas",
             "Discaya_Walk-", 0.10f
         );
-
         if (animRight == null) animRight = loadFolderAnim(
             "Textures/Enemies/World2/Discaya/Run-Right",
             "Discaya_Walk-", 0, 5, 0.10f
@@ -87,7 +90,7 @@ public class Discaya extends AbstractEnemy {
         TextureRegion initial = safeFrame(animDown);
         if (initial != null) {
             sprite.setRegion(initial);
-            sprite.setSize(1.0f, 1.0f);
+            sprite.setSize(spriteWidth, spriteHeight);
         }
 
         this.speed = 1.5f;
@@ -104,19 +107,13 @@ public class Discaya extends AbstractEnemy {
         defaultChaseBehavior(delta, player);
 
         stateTime += delta;
-
         lastVX = body.getLinearVelocity().x;
         lastVY = body.getLinearVelocity().y;
 
         TextureRegion frame = selectFrame();
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f;
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            sprite.setSize(spriteWidth, spriteHeight);  // static size
         }
     }
 

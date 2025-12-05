@@ -26,69 +26,35 @@ public class Security extends AbstractEnemy {
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
-    public Security(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
+    private final float spriteWidth;
+    private final float spriteHeight;
 
-        super(x, y,
-            new Texture("Textures/Enemies/World2/Security/Run-Forward/security_walk-0.png"),
+    public Security(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
+        super(x, y, new Texture("Textures/Enemies/World2/Security/Run-Forward/security_walk-0.png"),
             3.0f, 3.0f, 100, screenShake, physics);
 
-        // -----------------------------
-        // Atlas Loading
-        // -----------------------------
+        this.spriteWidth = 2.0f;
+        this.spriteHeight = 2.0f;
 
-        animDown = loadAtlasAnim(
-            "Textures/Enemies/World2/Security/Run-Forward",
-            "Security_Run-Forward.atlas",
-            "security_walk-", 0.10f
-        );
+        animDown = loadAtlasAnim("Textures/Enemies/World2/Security/Run-Forward", "Security_Run-Forward.atlas", "security_walk-", 0.10f);
+        if (animDown == null) animDown = loadFolderAnim("Textures/Enemies/World2/Security/Run-Forward", "security_walk-", 0, 99, 0.10f);
 
-        if (animDown == null) animDown = loadFolderAnim(
-            "Textures/Enemies/World2/Security/Run-Forward",
-            "security_walk-", 0, 99, 0.10f
-        );
+        animUp = loadAtlasAnim("Textures/Enemies/World2/Security/Run-Backward", "Security_Run-Backward.atlas", "security_walk-", 0.10f);
+        if (animUp == null) animUp = loadFolderAnim("Textures/Enemies/World2/Security/Run-Backward", "security_walk-", 0, 99, 0.10f);
 
-        animUp = loadAtlasAnim(
-            "Textures/Enemies/World2/Security/Run-Backward",
-            "Security_Run-Backward.atlas",
-            "security_walk-", 0.10f
-        );
+        animLeft = loadAtlasAnim("Textures/Enemies/World2/Security/Run-Left", "Security_Run-Left.atlas", "security_walk-", 0.10f);
+        if (animLeft == null) animLeft = loadFolderAnim("Textures/Enemies/World2/Security/Run-Left", "security_walk-", 0, 99, 0.10f);
 
-        if (animUp == null) animUp = loadFolderAnim(
-            "Textures/Enemies/World2/Security/Run-Backward",
-            "security_walk-", 0, 99, 0.10f
-        );
+        animRight = loadAtlasAnim("Textures/Enemies/World2/Security/Run-Right", "Security_Run-Right.atlas", "security_walk-", 0.10f);
+        if (animRight == null) animRight = loadFolderAnim("Textures/Enemies/World2/Security/Run-Right", "security_walk-", 0, 99, 0.10f);
 
-        animLeft = loadAtlasAnim(
-            "Textures/Enemies/World2/Security/Run-Left",
-            "Security_Run-Left.atlas",
-            "security_walk-", 0.10f
-        );
-
-        if (animLeft == null) animLeft = loadFolderAnim(
-            "Textures/Enemies/World2/Security/Run-Left",
-            "security_walk-", 0, 99, 0.10f
-        );
-
-        animRight = loadAtlasAnim(
-            "Textures/Enemies/World2/Security/Run-Right",
-            "Security_Run-Right.atlas",
-            "security_walk-", 0.10f
-        );
-
-        if (animRight == null) animRight = loadFolderAnim(
-            "Textures/Enemies/World2/Security/Run-Right",
-            "security_walk-", 0, 99, 0.10f
-        );
-
-        // Random starting facing direction
         boolean facingLeft = MathUtils.randomBoolean();
         directionManager.setFacingLeft(facingLeft);
 
-        // Apply initial sprite frame
         TextureRegion initial = safeFrame(animDown);
         if (initial != null) {
             sprite.setRegion(initial);
-            sprite.setSize(1.0f, 1.0f);
+            sprite.setSize(spriteWidth, spriteHeight);
         }
 
         this.speed = 1.5f;
@@ -112,12 +78,7 @@ public class Security extends AbstractEnemy {
         TextureRegion frame = selectFrame();
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f;
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            sprite.setSize(spriteWidth, spriteHeight); // Static size
         }
     }
 
@@ -127,12 +88,9 @@ public class Security extends AbstractEnemy {
             return idleAnim != null ? idleAnim.getKeyFrame(0) : null;
         }
 
-        // Horizontal movement
         if (Math.abs(lastVX) > Math.abs(lastVY)) {
             return lastVX > 0 ? safeFrame(animRight) : safeFrame(animLeft);
-        }
-        // Vertical movement
-        else {
+        } else {
             return lastVY > 0 ? safeFrame(animUp) : safeFrame(animDown);
         }
     }

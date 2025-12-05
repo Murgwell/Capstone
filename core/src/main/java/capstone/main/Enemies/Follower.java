@@ -26,16 +26,21 @@ public class Follower extends AbstractEnemy {
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
-    public Follower(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
+    private final float spriteWidth;
+    private final float spriteHeight;
 
+    public Follower(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
         super(x, y,
             new Texture("Textures/Enemies/World3/Follower/Run-Forward/follower_walk-0.png"),
             3.0f, 3.0f, 100, screenShake, physics);
 
+        // static size
+        this.spriteWidth = 3.0f;
+        this.spriteHeight = 3.0f;
+
         // -----------------------------
         // Load Animations
         // -----------------------------
-
         animDown = loadAtlasAnim(
             "Textures/Enemies/World3/Follower/Run-Forward",
             "Follower_Run-Forward.atlas",
@@ -84,7 +89,7 @@ public class Follower extends AbstractEnemy {
         TextureRegion initial = safeFrame(animDown);
         if (initial != null) {
             sprite.setRegion(initial);
-            sprite.setSize(1.0f, 1.0f);
+            sprite.setSize(spriteWidth, spriteHeight);
         }
 
         this.speed = 1.2f;
@@ -101,19 +106,13 @@ public class Follower extends AbstractEnemy {
         defaultChaseBehavior(delta, player);
 
         stateTime += delta;
-
         lastVX = body.getLinearVelocity().x;
         lastVY = body.getLinearVelocity().y;
 
         TextureRegion frame = selectFrame();
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f;
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            sprite.setSize(spriteWidth, spriteHeight);  // static size
         }
     }
 
