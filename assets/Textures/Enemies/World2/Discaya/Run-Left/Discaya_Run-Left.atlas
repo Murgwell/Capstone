@@ -1,12 +1,12 @@
-size: 2880,288
+size: 2880, 288
 format: RGBA8888
-filter: Linear,Linear
+filter: Linear, Linear
 repeat: none
 
-Discaya_Left.png
-  frame_0: 0,0,288,288
-  frame_1: 288,0,288,288
-  frame_2: 576,0,288,288
-  frame_3: 864,0,288,288
-  frame_4: 1152,0,288,288
-  frame_5: 1440,0,288,288
+Discaya_Walk.png
+  Discaya_Walk-0: 0, 0, 288, 288
+  Discaya_Walk-1: 288, 0, 288, 288
+  Discaya_Walk-2: 576, 0, 288, 288
+  Discaya_Walk-3: 864, 0, 288, 288
+  Discaya_Walk-4: 1152, 0, 288, 288
+  Discaya_Walk-5: 1440, 0, 288, 288
