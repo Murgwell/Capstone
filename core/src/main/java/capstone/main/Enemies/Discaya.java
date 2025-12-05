@@ -3,11 +3,13 @@ package capstone.main.Enemies;
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Pathfinding.NavMesh;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -28,12 +30,13 @@ public class Discaya extends AbstractEnemy {
 
     private final float spriteWidth;
     private final float spriteHeight;
+    private NavMesh navMesh;
 
-    public Discaya(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
+    public Discaya(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
 
         super(x, y,
             new Texture("Textures/Enemies/World2/Discaya/Run-Forward/Discaya_Walk-0.png"),
-            1.0f, 1.0f, 100, screenShake, physics);
+            1.0f, 1.0f, 100, screenShake, physics, navMesh);
 
         // static sprite size
         this.spriteWidth = 3.0f;
@@ -103,31 +106,53 @@ public class Discaya extends AbstractEnemy {
             return;
         }
 
+        // Core behavior & hit flash
         updateHitFlash(delta);
-        defaultChaseBehavior(delta, player);
+        pathfindingChaseBehavior(delta, player);
 
         stateTime += delta;
-        lastVX = body.getLinearVelocity().x;
-        lastVY = body.getLinearVelocity().y;
 
-        TextureRegion frame = selectFrame();
+        Vector2 velocity = body.getLinearVelocity();
+
+        if (velocity.len() > 0.01f) {
+            lastVX = velocity.x;
+            lastVY = velocity.y;
+        }
+
+        TextureRegion frame;
+        if (isAggro && velocity.len() > 0.01f) {
+            frame = selectFrame(); // movement animation
+        } else {
+            frame = idleFrameFromLastDir(); // idle frame
+        }
+
         if (frame != null) {
             sprite.setRegion(frame);
-            sprite.setSize(spriteWidth, spriteHeight);  // static size
+
+            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
+            float height = 1.0f;
+            float width = height * aspectRatio;
+
+            sprite.setSize(width, height);
         }
+
+    }
+
+    private TextureRegion idleFrameFromLastDir() {
+        Animation<TextureRegion> currentAnim = animFromLastDir();
+        if (currentAnim == null || currentAnim.getKeyFrames().length == 0) return null;
+        // Always show first frame of animation as "idle"
+        return currentAnim.getKeyFrames()[0];
     }
 
     private TextureRegion selectFrame() {
-        if (Math.abs(lastVX) < 0.01f && Math.abs(lastVY) < 0.01f) {
-            Animation<TextureRegion> idleAnim = animFromLastDir();
-            return idleAnim != null ? idleAnim.getKeyFrame(0) : null;
-        }
+        // Always use last direction, even if velocity is zero
+        Animation<TextureRegion> currentAnim = animFromLastDir();
 
-        if (Math.abs(lastVX) > Math.abs(lastVY)) {
-            return lastVX > 0 ? safeFrame(animRight) : safeFrame(animLeft);
-        } else {
-            return lastVY > 0 ? safeFrame(animUp) : safeFrame(animDown);
+        if (currentAnim != null) {
+            return currentAnim.getKeyFrame(stateTime, true); // continuous looping
         }
+        return null;
     }
 
     private Animation<TextureRegion> animFromLastDir() {

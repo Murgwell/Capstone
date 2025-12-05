@@ -102,7 +102,7 @@ public abstract class AbstractPlayer {
         body = physicsWorld.createBody(bodyDef);
 
         PolygonShape shape = new PolygonShape();
-        shape.setAsBox(getCollisionWidth() / 2f, getCollisionHeight() / 2f);
+        shape.setAsBox(0.5f, 0.5f);
         body.createFixture(shape, 1f);
         shape.dispose();
     }
@@ -236,20 +236,6 @@ public abstract class AbstractPlayer {
 
     public float getHeight() { return height; }
     public float getWidth() { return width; }
-
-    public float getCollisionWidth() {
-        float w = width - getCollisionInsetLeft() - getCollisionInsetRight();
-        return Math.max(0.01f, w / PPM);
-    }
-
-    public float getCollisionHeight() {
-        float h = height * 0.2f;
-        return Math.max(0.01f, h / PPM);
-    }
-
-    public float getCollisionInsetLeft() { return 0.5f; }
-    public float getCollisionInsetRight() { return 0.5f; }
-    public float getCollisionOffsetY() { return 0f; }
 
     public Vector2 getPosition() { return body.getPosition(); }
     public Body getBody() { return body; }

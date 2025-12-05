@@ -3,11 +3,13 @@ package capstone.main.Enemies;
 import capstone.main.Characters.AbstractPlayer;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.ScreenShake;
+import capstone.main.Pathfinding.NavMesh;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -19,19 +21,22 @@ public class Survivor extends AbstractEnemy {
     private Animation<TextureRegion> animLeft;
     private Animation<TextureRegion> animRight;
 
+    private NavMesh navMesh;
+
     private float stateTime = 0f;
     private float lastVX = 0f;
     private float lastVY = -1f; // default looking down
 
+    // Optional: keep refs to textures so they can be disposed later if needed
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
     private final float spriteWidth;
     private final float spriteHeight;
 
-    public Survivor(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
-        super(x, y, new Texture("Textures/Enemies/World1/Survivor/Run-Forward/Survivor_Walk-0.png"),
-            3.0f, 3.0f, 100, screenShake, physics);
+    public Survivor(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
+        // Initial placeholder texture (will be replaced by animation frames each update)
+        super(x, y, new Texture("enemyCharacter.png"), 1.0f, 1.0f, 100, screenShake, physics, navMesh);
 
         // store static size
         this.spriteWidth = 2.0f;
@@ -72,33 +77,53 @@ public class Survivor extends AbstractEnemy {
             return;
         }
 
+        // Core behavior & hit flash
         updateHitFlash(delta);
-        defaultChaseBehavior(delta, player);
+        pathfindingChaseBehavior(delta, player);
 
         stateTime += delta;
 
-        lastVX = body.getLinearVelocity().x;
-        lastVY = body.getLinearVelocity().y;
+        Vector2 velocity = body.getLinearVelocity();
 
-        TextureRegion frame = selectFrame();
+        if (velocity.len() > 0.01f) {
+            lastVX = velocity.x;
+            lastVY = velocity.y;
+        }
+
+        TextureRegion frame;
+        if (isAggro && velocity.len() > 0.01f) {
+            frame = selectFrame(); // movement animation
+        } else {
+            frame = idleFrameFromLastDir(); // idle frame
+        }
+
         if (frame != null) {
             sprite.setRegion(frame);
-            // Static size like Greed
-            sprite.setSize(spriteWidth, spriteHeight);
+
+            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
+            float height = 1.0f;
+            float width = height * aspectRatio;
+
+            sprite.setSize(width, height);
         }
+
+    }
+
+    private TextureRegion idleFrameFromLastDir() {
+        Animation<TextureRegion> currentAnim = animFromLastDir();
+        if (currentAnim == null || currentAnim.getKeyFrames().length == 0) return null;
+        // Always show first frame of animation as "idle"
+        return currentAnim.getKeyFrames()[0];
     }
 
     private TextureRegion selectFrame() {
-        if (Math.abs(lastVX) < 0.01f && Math.abs(lastVY) < 0.01f) {
-            Animation<TextureRegion> idleAnim = animFromLastDir();
-            return idleAnim != null ? idleAnim.getKeyFrame(0) : null;
-        }
+        // Always use last direction, even if velocity is zero
+        Animation<TextureRegion> currentAnim = animFromLastDir();
 
-        if (Math.abs(lastVX) > Math.abs(lastVY)) {
-            return lastVX > 0 ? safeFrame(animRight) : safeFrame(animLeft);
-        } else {
-            return lastVY > 0 ? safeFrame(animUp) : safeFrame(animDown);
+        if (currentAnim != null) {
+            return currentAnim.getKeyFrame(stateTime, true); // continuous looping
         }
+        return null;
     }
 
     private Animation<TextureRegion> animFromLastDir() {
@@ -120,7 +145,7 @@ public class Survivor extends AbstractEnemy {
             String path = folder + "/" + prefix + i + ".png";
             FileHandle fh = Gdx.files.internal(path);
             if (!fh.exists()) {
-                if (i == startIndex) return null;
+                if (i == startIndex) return null; // no frames found
                 break;
             }
             Texture tex = new Texture(fh);
@@ -140,7 +165,7 @@ public class Survivor extends AbstractEnemy {
         for (int i = 0; i < 100; i++) {
             TextureRegion region = atlas.findRegion(frameBaseName + i);
             if (region == null) {
-                if (i == 0) return null;
+                if (i == 0) return null; // no frames matched in this atlas
                 break;
             }
             frames.add(region);

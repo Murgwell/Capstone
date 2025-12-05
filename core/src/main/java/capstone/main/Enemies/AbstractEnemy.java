@@ -8,11 +8,19 @@ import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import capstone.main.Pathfinding.AStar;
+import capstone.main.Pathfinding.NavMesh;
+import capstone.main.Pathfinding.NavNode;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class AbstractEnemy {
 
@@ -44,12 +52,19 @@ public abstract class AbstractEnemy {
     protected BitmapFont statusFont;
     protected String statusText = "";
 
+    protected NavMesh navMesh;
+    protected List<NavNode> currentPath = new ArrayList<NavNode>();
+    protected int pathIndex = 0;
+
     private float attackCooldown = 0f;
     private static final float ATTACK_COOLDOWN_TIME = 1.0f; // 1 second between attacks
     private static final float MELEE_RANGE = 0.8f; // How close to attack
     private static final float MELEE_DAMAGE = 5f; // 5 HP = half a heart
 
-    public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, ScreenShake screenShake, PhysicsManager physics) {
+    private float pathUpdateTimer = 0f;
+    private final float PATH_UPDATE_INTERVAL = 0.25f; // recalc path every 0.25s
+
+    public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
         this.sprite = new Sprite(texture);
         this.sprite.setPosition(x, y);
         this.sprite.setSize(width, height);
@@ -58,6 +73,7 @@ public abstract class AbstractEnemy {
         this.maxHealth = maxHealth;
         this.health = maxHealth;
         this.screenShake = screenShake;
+        this.navMesh = navMesh;
 
         this.hitboxRadius = Math.min(width, height) / 2f;
 
@@ -101,51 +117,89 @@ public abstract class AbstractEnemy {
         return maxHealth;
     }
 
-    protected void defaultChaseBehavior(float delta, AbstractPlayer player) {
+    protected void pathfindingChaseBehavior(float delta, AbstractPlayer player) {
         if (isDead()) {
             body.setLinearVelocity(0, 0);
             return;
         }
 
-        // Update status effects
         updateStatusEffects(delta);
-
-        // Update attack cooldown
         updateAttackCooldown(delta);
 
-        float px = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
-        float py = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
-
         Vector2 enemyPos = body.getPosition();
-        float dx = px - enemyPos.x;
-        float dy = py - enemyPos.y;
-        float dist = (float)Math.sqrt(dx*dx + dy*dy);
-        if (dist < 0.0001f) dist = 0.0001f;
+        Vector2 playerPos = new Vector2(
+            player.getSprite().getX() + player.getSprite().getWidth()/2f,
+            player.getSprite().getY() + player.getSprite().getHeight()/2f
+        );
 
-        Vector2 velocity = new Vector2(0, 0);
+        float distanceToPlayer = enemyPos.dst(playerPos);
+        isAggro = distanceToPlayer <= aggroChaseDistance;
 
-        // Use speed (which is already modified by slow effect)
-        // REMOVED: float currentSpeed = speed; - not needed, just use 'speed' directly
+        if (!isAggro) {
+            body.setLinearVelocity(0, 0);
+            return;
+        }
 
-        if (isAggro) {
-            velocity.set(dx / dist * speed, dy / dist * speed); // Changed from currentSpeed to speed
-            if (!enteredClose && dist <= aggroChaseDistance) enteredClose = true;
-            if (enteredClose && dist > aggroChaseDistance) {
-                isAggro = false;
-                enteredClose = false;
-                velocity.set(0,0);
+        // --- Recalculate path periodically ---
+        pathUpdateTimer += delta;
+        if (pathUpdateTimer >= PATH_UPDATE_INTERVAL) {
+            pathUpdateTimer = 0f;
+            NavNode startNode = getNearestNode(enemyPos);
+            NavNode targetNode = getNearestNode(playerPos);
+
+            boolean shouldRecalculate = currentPath.isEmpty();
+            if (!shouldRecalculate && targetNode != null) {
+                NavNode lastNode = currentPath.get(currentPath.size() - 1);
+                if (lastNode == null || targetNode.x != lastNode.x || targetNode.y != lastNode.y) {
+                    shouldRecalculate = true;
+                }
             }
-        } else {
-            if (dist <= defaultChaseDistance) velocity.set(dx / dist * speed, dy / dist * speed); // Changed
+
+            if (shouldRecalculate) {
+                currentPath = AStar.findPath(navMesh, startNode, targetNode);
+                pathIndex = 0;
+            }
+        }
+
+        // --- Move along path ---
+        Vector2 velocity = new Vector2(0, 0);
+        float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.25f, hitboxRadius * 0.8f);
+
+        if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
+            NavNode nextNode = currentPath.get(pathIndex);
+            Vector2 nextPos = new Vector2(
+                nextNode.x + navMesh.getNodeSize()/2f,
+                nextNode.y + navMesh.getNodeSize()/2f
+            );
+            Vector2 direction = nextPos.cpy().sub(enemyPos);
+
+            if (direction.len() < nodeThreshold) {
+                pathIndex++; // skip node instantly if very close
+            } else {
+                velocity.set(direction.nor().scl(speed));
+                if (isSlowed) velocity.scl(slowMultiplier);
+
+                // prevent overshoot
+                if (velocity.len() * delta > direction.len()) {
+                    velocity.set(direction.scl(1f / delta));
+                }
+            }
         }
 
         body.setLinearVelocity(velocity);
-        sprite.setPosition(body.getPosition().x - sprite.getWidth()/2f,
-            body.getPosition().y - sprite.getHeight()/2f);
-
+        sprite.setPosition(
+            body.getPosition().x - sprite.getWidth()/2f,
+            body.getPosition().y - sprite.getHeight()/2f
+        );
         directionManager.setFacingLeft(velocity.x < 0);
 
         if (healthBar != null) healthBar.update(delta);
+    }
+
+    private NavNode getNearestNode(Vector2 pos) {
+        int x = (int) Math.floor(pos.x / navMesh.getNodeSize());
+        int y = (int) Math.floor(pos.y / navMesh.getNodeSize());
+        return navMesh.getNode(x, y);
     }
 
     protected void updateStatusEffects(float delta) {

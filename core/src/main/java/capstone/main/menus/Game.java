@@ -1,6 +1,7 @@
 
 package capstone.main.menus;
 
+import capstone.main.Pathfinding.NavMesh;
 import capstone.main.UI.HeartsHud;
 import capstone.main.UI.InventoryUI;
 import capstone.main.Corrupted;
@@ -21,6 +22,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -89,7 +91,7 @@ public class Game implements Screen {
     // HUD elements
     private HeartsHud heartsHud;
     private SkillHud skillHud;
-    
+
     // Inventory system
     private Inventory inventory;
     private InventoryUI inventoryUI;
@@ -139,12 +141,15 @@ public class Game implements Screen {
         damageNumbers = new ArrayList<>();
         damageFont = new BitmapFont();
         damageFont.getData().setScale(0.1f); // Reverted back to original 0.1f
-        
+
         // Set up damage number system for physics collisions (bullets/fireballs)
         physicsManager.setDamageNumberSystem(damageNumbers, damageFont);
 
+        NavMesh navMesh = new NavMesh((int) mapManager.getWorldWidth(), (int) mapManager.getWorldHeight(),
+            CollisionLoader.getCollisionRectangles(mapManager.getTiledMap(), "collisionLayer", 1 / 32f));
+
         // --- Create enemy spawner ---
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager, navMesh);
         enemySpawner.setCurrentWorld("Textures/World1.tmx"); // Set current world for world-specific spawning
         enemySpawner.setCollisionMap(mapManager.getTiledMap()); // Set collision map for proper spawn detection
         enemySpawner.spawnInitial(10);
@@ -369,16 +374,16 @@ public class Game implements Screen {
         if (player instanceof MannyPacquiao) {
             skillHud = new SkillHud(uiViewport, spriteBatch, player);
         }
-        
+
         // --- Inventory System ---
         inventory = new Inventory();
-        
+
         // Add some test items (only bandages now)
         inventory.addItem("Bandage", "Textures/UI/Inventory/Objects/Icon_Bandage.png", 5);
-        
+
         // Set up quick access slots
         inventory.setQuickAccessSlot(0, 0); // Bandages in slot 1
-        
+
         inventoryUI = new InventoryUI(uiViewport, spriteBatch, inventory);
         inventoryUI.setOnToggleCallback(() -> {
             isInventoryOpen = inventoryUI.isOpen();
@@ -388,7 +393,7 @@ public class Game implements Screen {
                 Gdx.input.setInputProcessor(gameplayInputs);
             }
         });
-        
+
         // Set item use callback
         inventoryUI.setOnItemUseCallback(item -> {
             if (item.getType() == Inventory.ItemType.HEALING) {
@@ -397,22 +402,22 @@ public class Game implements Screen {
                 player.heal(item.getHealAmount());
                 int newHp = player.getHp();
                 int actualHealing = newHp - oldHp;
-                
+
                 // Show healing feedback
                 Gdx.app.log("Inventory", "Used " + item.getName() + " - Healed for " + actualHealing + " HP (" + newHp + "/" + player.getMaxHp() + ")");
             }
         });
-        
+
         // Set health check callback
         inventoryUI.setHealthCheckCallback(() -> player.getHp() < player.getMaxHp());
-        
+
         // Set floating text callback
         inventoryUI.setFloatingTextCallback((text, r, g, b) -> {
             // Create floating text above the player
             float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
             float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
             Color textColor = new Color(r / 255f, g / 255f, b / 255f, 1f);
-            
+
             damageNumbers.add(new DamageNumber(text, playerX, playerY, damageFont, textColor));
         });
     }
@@ -425,18 +430,18 @@ public class Game implements Screen {
             if (item != null && item.getType() == Inventory.ItemType.HEALING) {
                 if (player.getHp() >= player.getMaxHp()) {
                     Gdx.app.log("Inventory", "Health is already full! Cannot use " + item.getName() + " from quick slot " + (quickSlotIndex + 1));
-                    
+
                     // Show floating text above player
                     float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
                     float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
                     Color textColor = new Color(1f, 0.4f, 0.4f, 1f); // Red color
                     damageNumbers.add(new DamageNumber("Health is full!", playerX, playerY, damageFont, textColor));
-                    
+
                     return; // Don't consume the item
                 }
             }
         }
-        
+
         Inventory.InventoryItem usedItem = inventory.useQuickAccessItem(quickSlotIndex);
         if (usedItem != null) {
             if (usedItem.getType() == Inventory.ItemType.HEALING) {
@@ -445,7 +450,7 @@ public class Game implements Screen {
                 player.heal(usedItem.getHealAmount());
                 int newHp = player.getHp();
                 int actualHealing = newHp - oldHp;
-                
+
                 // Show healing feedback
                 Gdx.app.log("Inventory", "Used " + usedItem.getName() + " from quick slot " + (quickSlotIndex + 1) + " - Healed for " + actualHealing + " HP (" + newHp + "/" + player.getMaxHp() + ")");
             }
@@ -533,7 +538,7 @@ public class Game implements Screen {
             skillHud.update(delta);
             skillHud.draw();
         }
-        
+
         // --- Inventory System ---
         inventoryUI.update(delta);
         inventoryUI.draw();
