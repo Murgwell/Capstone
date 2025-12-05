@@ -20,6 +20,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -135,8 +136,11 @@ public class Game implements Screen {
         damageFont.getData().setScale(0.1f);
 
         // --- Create enemy spawner ---
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
-        enemySpawner.spawnInitial(10);
+        ArrayList<Rectangle> collisionRects = CollisionLoader.getCollisionRectangles(
+            mapManager.getTiledMap(), "collisionLayer", 1 / 32f
+        );
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager, collisionRects);
+        enemySpawner.spawnInitial(100);
 
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
@@ -304,7 +308,7 @@ public class Game implements Screen {
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
-        worldRenderer = new WorldRenderer(mapManager.getRenderer());
+        worldRenderer = new WorldRenderer(mapManager.getRenderer(), mapManager.getTiledMap());
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
 
@@ -379,7 +383,7 @@ public class Game implements Screen {
         updateCamera();
         updateWeaponAiming();
         viewport.apply();
-        worldRenderer.renderGround(camera);
+        worldRenderer.render(camera);
         entityRenderer.render(camera);
 
         if (bulletLogic != null) {

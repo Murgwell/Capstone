@@ -189,14 +189,6 @@ public abstract class AbstractPlayer {
             sprite.setRegion(currentFrame);
         }
 
-        // --- Clamp position so we don't go past walls ---
-        Vector2 clamped = boundaryManager.clamp(
-            body.getPosition(),
-            width / 2f,
-            height / 2f
-        );
-        body.setTransform(clamped, 0);
-
         // --- Update sprite position ---
         sprite.setPosition(
             body.getPosition().x - width / 2f,

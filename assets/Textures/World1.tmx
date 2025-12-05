@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="192" height="64" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="204">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="192" height="64" tilewidth="32" tileheight="32" infinite="0" nextlayerid="11" nextobjectid="204">
  <tileset firstgid="1" source="Backgrounds/tilesets/terrain.tsx"/>
  <tileset firstgid="3277" source="Backgrounds/tilesets/water.tsx"/>
  <tileset firstgid="3515" source="Backgrounds/tilesets/buildings.tsx"/>
@@ -483,7 +483,7 @@
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="10" name="Object Layer 1">
+ <objectgroup id="10" name="collisionLayer">
   <object id="3" x="6" y="613" width="398" height="250"/>
   <object id="4" x="403" y="863" width="1" height="6"/>
   <object id="5" x="467" y="614" width="236" height="238"/>

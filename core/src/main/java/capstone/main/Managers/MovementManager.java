@@ -19,7 +19,7 @@ public class MovementManager {
 
     public float baseSpeed = 5f;
     public float sprintMultiplier = 1.8f;
-    public float dodgeSpeed = baseSpeed * 2f;
+    public float dodgeSpeed = baseSpeed * 3f;
     public float dodgeDuration = 0.15f;
     public float dodgeCooldownTime = 1f;
     public float dodgeThreshold = 0.2f;
@@ -63,13 +63,8 @@ public class MovementManager {
         // --- Force-based movement for natural friction ---
         if (!inputDir.isZero()) {
             lastMoveDir.set(inputDir.cpy());
-            Vector2 desiredVel = new Vector2(inputDir).scl(speed);
-
-            Vector2 velChange = desiredVel.cpy().sub(playerBody.getLinearVelocity());
-            // Calculate force to apply: F = m * Δv / Δt
-            Vector2 force = velChange.scl(playerBody.getMass() / delta);
-            playerBody.applyForceToCenter(force, true);
-
+            Vector2 targetVel = inputDir.cpy().nor().scl(speed);
+            playerBody.setLinearVelocity(targetVel);
             velocity.set(playerBody.getLinearVelocity());
         } else {
             velocity.set(playerBody.getLinearVelocity()); // naturally slows due to linear damping
