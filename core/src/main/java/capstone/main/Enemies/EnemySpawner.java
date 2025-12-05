@@ -44,7 +44,7 @@ public class EnemySpawner {
         float y = (float) Math.random() * worldHeight;
 
         // Randomly choose between Survivor and Greed
-        int enemyType = random.nextInt(2); // 0 or 1
+        int enemyType = random.nextInt(3); // 0 or 1
 
         switch (enemyType) {
             case 0:
@@ -52,6 +52,9 @@ public class EnemySpawner {
                 break;
             case 1:
                 enemies.add(new Greed(x, y, screenShake, physics));
+                break;
+            case 2:
+                enemies.add(new Security(x, y, screenShake, physics));
                 break;
         }
     }
@@ -67,6 +70,12 @@ public class EnemySpawner {
         float x = (float) Math.random() * worldWidth;
         float y = (float) Math.random() * worldHeight;
         enemies.add(new Greed(x, y, screenShake, physics));
+    }
+
+    public void spawnSecurity() {
+        float x = (float) Math.random() * worldWidth;
+        float y = (float) Math.random() * worldHeight;
+        enemies.add(new Security(x, y, screenShake, physics));
     }
 
     public ArrayList<AbstractEnemy> getEnemies() {
