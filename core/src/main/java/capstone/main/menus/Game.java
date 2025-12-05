@@ -20,7 +20,6 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -136,11 +135,8 @@ public class Game implements Screen {
         damageFont.getData().setScale(0.1f);
 
         // --- Create enemy spawner ---
-        ArrayList<Rectangle> collisionRects = CollisionLoader.getCollisionRectangles(
-            mapManager.getTiledMap(), "collisionLayer", 1 / 32f
-        );
-        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager, collisionRects);
-        enemySpawner.spawnInitial(100);
+        enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager);
+        enemySpawner.spawnInitial(10);
 
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
