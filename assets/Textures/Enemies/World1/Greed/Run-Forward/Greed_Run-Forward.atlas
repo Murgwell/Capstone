@@ -1,24 +1,23 @@
 Greed_Forward.png
-size: 1860, 265
+size: 3456, 576
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
-pma: false
-orc1_walk_full-0
-  bounds: 302, 1, 308, 254
-  offsets: 89, 179, 576, 576
-orc1_walk_full-1
-  bounds: 612, 1, 317, 263
-  offsets: 89, 197, 576, 576
-orc1_walk_full-2
-  bounds: 931, 1, 308, 263
-  offsets: 89, 188, 576, 576
-orc1_walk_full-3
-  bounds: 1, 1, 299, 245
-  offsets: 98, 188, 576, 576
-orc1_walk_full-4
-  bounds: 1241, 1, 308, 263
-  offsets: 98, 197, 576, 576
-orc1_walk_full-5
-  bounds: 1551, 1, 308, 263
-  offsets: 98, 188, 576, 576
+
+orc1_walk_full-0.png
+  bounds: 0, 0, 576, 576
+
+orc1_walk_full-1.png
+  bounds: 576, 0, 576, 576
+
+orc1_walk_full-2.png
+  bounds: 1152, 0, 576, 576
+
+orc1_walk_full-3.png
+  bounds: 1728, 0, 576, 576
+
+orc1_walk_full-4.png
+  bounds: 2304, 0, 576, 576
+
+orc1_walk_full-5.png
+  bounds: 2880, 0, 576, 576
