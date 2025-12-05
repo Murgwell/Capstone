@@ -1,8 +1,8 @@
-
 package capstone.main.menus;
 
 import capstone.main.Corrupted;
 import capstone.main.Managers.MusicManager;
+import capstone.main.Managers.SoundManager;
 import capstone.main.Managers.VideoSettings;
 
 import com.badlogic.gdx.Gdx;
@@ -24,8 +24,10 @@ import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.ImageButton;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider;
+import com.badlogic.gdx.scenes.scene2d.ui.Slider.SliderStyle;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
-
+import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.TimeUtils;
@@ -53,8 +55,14 @@ public class SettingsScreen implements Screen {
     private Texture musicUpTex, musicDownTex;
     private Texture fullscreenUpTex, fullscreenDownTex;
     private Texture backUpTex, backDownTex;
+    private Texture scrollbarTex, scrollboxTex;
 
     private MusicManager musicManager;
+    private SoundManager soundManager;
+
+    // UI elements that need updating
+    private Label musicVolumeLabel;
+    private Label soundVolumeLabel;
 
     // Input multiplexing so Stage + global keys (F11) both work
     private InputMultiplexer inputMux;
@@ -73,7 +81,10 @@ public class SettingsScreen implements Screen {
         VideoSettings.apply();
 
         batch = new SpriteBatch();
-        camera = new OrthographicCamera();
+        // Match MainMenuScreen viewport setup
+        camera = new OrthographicCamera(UI_W, UI_H);
+        camera.position.set(UI_W / 2f, UI_H / 2f, 0f);
+        camera.update();
         viewport = new FitViewport(UI_W, UI_H, camera);
         stage = new Stage(viewport, batch);
 
@@ -83,6 +94,8 @@ public class SettingsScreen implements Screen {
                 boolean newFs = !VideoSettings.isFullscreen();
                 VideoSettings.setFullscreen(newFs);
                 VideoSettings.apply();
+                showFloatingText(VideoSettings.isFullscreen() ? "Fullscreen" : "Windowed", 
+                    UI_W / 2f, UI_H / 2f + 100f);
                 return true;
             }
             return false;
@@ -95,6 +108,7 @@ public class SettingsScreen implements Screen {
 
         // Managers
         musicManager = MusicManager.getInstance();
+        soundManager = SoundManager.getInstance();
 
         // UI textures
         musicUpTex = new Texture("UI/Menu/music_button_normal.png");
@@ -103,33 +117,101 @@ public class SettingsScreen implements Screen {
         fullscreenDownTex = new Texture("UI/Menu/fullscreen_button_pressed.png");
         backUpTex = new Texture("UI/Menu/back_button_normal.png");
         backDownTex = new Texture("UI/Menu/back_button_pressed.png");
+        
+        // Slider textures
+        scrollbarTex = new Texture("Textures/UI/Menu/Scrollbar.png");
+        scrollboxTex = new Texture("Textures/UI/Menu/Scrollbar_Scrollbox.png");
+
+        // Create custom slider style - fix the knobBefore issue
+        SliderStyle sliderStyle = new SliderStyle();
+        sliderStyle.background = new TextureRegionDrawable(new TextureRegion(scrollbarTex));
+        sliderStyle.knob = new TextureRegionDrawable(new TextureRegion(scrollboxTex));
+        // Don't set knobBefore to avoid the duplicate scrollbar issue
+        sliderStyle.knobBefore = null;
 
         // Title
         Label titleLabel = new Label("SETTINGS", skin);
         titleLabel.setFontScale(3.5f);
         titleLabel.setColor(Color.WHITE);
 
-        // Layout
+        // Layout - restore original simple layout
         Table layout = new Table();
         layout.setFillParent(true);
         layout.center();
 
         layout.add(titleLabel).padBottom(60f).row();
 
-        // Music toggle
-        layout.add(createToggleButton(musicUpTex, musicDownTex, () -> {
+        // Music toggle button
+        ImageButton musicButton = createToggleButton(musicUpTex, musicDownTex, () -> {
             musicManager.setMusicEnabled(!musicManager.isMusicEnabled());
-            // Optionally: musicManager.ensurePlaying() / stop() depending on state
-        })).pad(12f).width(200f).height(60f).row();
+            String text = musicManager.isMusicEnabled() ? "Music is ON" : "Music is OFF";
+            Color color = musicManager.isMusicEnabled() ? Color.GREEN : Color.RED;
+            showFloatingText(text, UI_W / 2f, UI_H / 2f + 100f, color);
+        });
+        layout.add(musicButton).pad(12f).width(200f).height(60f).row();
 
-        // Fullscreen toggle via VideoSettings
-        layout.add(createToggleButton(fullscreenUpTex, fullscreenDownTex, () -> {
+        // Music volume slider
+        Table musicVolumeRow = new Table();
+        Label musicVolText = new Label("Music Volume:", skin);
+        musicVolText.setFontScale(1.2f);
+        musicVolText.setColor(Color.WHITE);
+        musicVolumeRow.add(musicVolText).padRight(15f);
+        
+        Slider musicSlider = new Slider(0f, 1f, 0.01f, false, sliderStyle);
+        musicSlider.setValue(musicManager.getVolume());
+        musicVolumeLabel = new Label(String.format("%.0f%%", musicManager.getVolume() * 100), skin);
+        musicVolumeLabel.setFontScale(1.2f);
+        musicVolumeLabel.setColor(Color.WHITE);
+        
+        musicSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float value = musicSlider.getValue();
+                musicManager.setVolume(value);
+                musicVolumeLabel.setText(String.format("%.0f%%", value * 100));
+            }
+        });
+        
+        musicVolumeRow.add(musicSlider).width(300f).padRight(15f);
+        musicVolumeRow.add(musicVolumeLabel).width(60f);
+        layout.add(musicVolumeRow).padBottom(20f).row();
+
+        // Sound volume slider
+        Table soundVolumeRow = new Table();
+        Label soundVolText = new Label("Sound Volume:", skin);
+        soundVolText.setFontScale(1.2f);
+        soundVolText.setColor(Color.WHITE);
+        soundVolumeRow.add(soundVolText).padRight(15f);
+        
+        Slider soundSlider = new Slider(0f, 1f, 0.01f, false, sliderStyle);
+        soundSlider.setValue(soundManager.getVolume());
+        soundVolumeLabel = new Label(String.format("%.0f%%", soundManager.getVolume() * 100), skin);
+        soundVolumeLabel.setFontScale(1.2f);
+        soundVolumeLabel.setColor(Color.WHITE);
+        
+        soundSlider.addListener(new ChangeListener() {
+            @Override
+            public void changed(ChangeEvent event, Actor actor) {
+                float value = soundSlider.getValue();
+                soundManager.setVolume(value);
+                soundVolumeLabel.setText(String.format("%.0f%%", value * 100));
+            }
+        });
+        
+        soundVolumeRow.add(soundSlider).width(300f).padRight(15f);
+        soundVolumeRow.add(soundVolumeLabel).width(60f);
+        layout.add(soundVolumeRow).padBottom(20f).row();
+
+        // Fullscreen toggle button
+        ImageButton fullscreenButton = createToggleButton(fullscreenUpTex, fullscreenDownTex, () -> {
             boolean newFs = !VideoSettings.isFullscreen();
-            VideoSettings.setFullscreen(newFs); // persist preference
-            VideoSettings.apply();              // apply immediately
-            // Optional: lock resizing while fullscreen
+            VideoSettings.setFullscreen(newFs);
+            VideoSettings.apply();
             Gdx.graphics.setResizable(!newFs);
-        })).pad(12f).width(200f).height(60f).row();
+            String text = newFs ? "Fullscreen" : "Windowed";
+            showFloatingText(text, UI_W / 2f, UI_H / 2f + 100f);
+        });
+        layout.add(fullscreenButton).pad(12f).width(200f).height(60f).row();
 
         // Back button
         layout.add(createImageButton(backUpTex, backDownTex, () -> {
@@ -141,6 +223,29 @@ public class SettingsScreen implements Screen {
 
         // If you always want a fixed window size in windowed mode:
         Gdx.graphics.setResizable(!VideoSettings.isFullscreen());
+    }
+
+    private void showFloatingText(String text, float x, float y) {
+        showFloatingText(text, x, y, Color.WHITE);
+    }
+
+    private void showFloatingText(String text, float x, float y, Color color) {
+        Label floatingLabel = new Label(text, skin);
+        floatingLabel.setFontScale(1.5f);
+        floatingLabel.setColor(color);
+        floatingLabel.setPosition(x - floatingLabel.getWidth() / 2f, y);
+        floatingLabel.getColor().a = 1f;
+        
+        // Float up and fade out
+        floatingLabel.addAction(Actions.sequence(
+            Actions.parallel(
+                Actions.moveBy(0f, 50f, 2f), // Move up 50 pixels over 2 seconds
+                Actions.fadeOut(2f) // Fade out over 2 seconds
+            ),
+            Actions.removeActor() // Remove from stage when done
+        ));
+        
+        stage.addActor(floatingLabel);
     }
 
     private ImageButton createToggleButton(Texture upTex, Texture downTex, Runnable onToggle) {
@@ -254,12 +359,16 @@ public class SettingsScreen implements Screen {
             VideoSettings.setFullscreen(newFs);
             VideoSettings.apply();
             Gdx.graphics.setResizable(!newFs);
+            showFloatingText(newFs ? "Fullscreen" : "Windowed", UI_W / 2f, UI_H / 2f + 100f);
         }
     }
 
     @Override
     public void resize(int width, int height) {
-        if (viewport != null) viewport.update(width, height, true);
+        if (viewport != null) {
+            viewport.update(width, height, true);
+            camera.update();
+        }
     }
 
     @Override
@@ -291,6 +400,8 @@ public class SettingsScreen implements Screen {
         if (fullscreenDownTex != null) fullscreenDownTex.dispose();
         if (backUpTex != null) backUpTex.dispose();
         if (backDownTex != null) backDownTex.dispose();
+        if (scrollbarTex != null) scrollbarTex.dispose();
+        if (scrollboxTex != null) scrollboxTex.dispose();
 
         stage = null;
         skin = null;
@@ -300,6 +411,7 @@ public class SettingsScreen implements Screen {
         musicUpTex = musicDownTex = null;
         fullscreenUpTex = fullscreenDownTex = null;
         backUpTex = backDownTex = null;
+        scrollbarTex = scrollboxTex = null;
     }
 
     // --- Small adapter so we can inline a one-method InputProcessor in the multiplexer ---
