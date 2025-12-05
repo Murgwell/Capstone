@@ -29,7 +29,7 @@ public class Greed extends AbstractEnemy {
 
     public Greed(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
         // Initial placeholder texture (will be replaced by animation frames each update)
-        super(x, y, new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"), 1.0f, 1.0f, 100, screenShake, physics);
+        super(x, y, new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"), 5.0f, 5.0f, 100, screenShake, physics);
 
         animDown = loadAtlasAnim("Textures/Enemies/World1/Greed/Run-Forward",
             "Greed_Run-Forward.atlas", "orc1_walk_full-", 0.10f);  // Changed here

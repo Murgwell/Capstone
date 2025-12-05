@@ -48,13 +48,16 @@ public class EnemySpawner {
         float[] pos = getValidPosition();
         if (pos == null) return; // No valid position found
 
-        int enemyType = random.nextInt(2); // 0 or 1
+        int enemyType = random.nextInt(3); // 0 or 1
         switch (enemyType) {
             case 0:
                 enemies.add(new Survivor(pos[0], pos[1], screenShake, physics));
                 break;
             case 1:
                 enemies.add(new Greed(pos[0], pos[1], screenShake, physics));
+                break;
+            case 2:
+                enemies.add(new Security(pos[0], pos[1], screenShake, physics));
                 break;
         }
     }
@@ -70,6 +73,13 @@ public class EnemySpawner {
         float[] pos = getValidPosition();
         if (pos != null) {
             enemies.add(new Greed(pos[0], pos[1], screenShake, physics));
+        }
+    }
+
+    public void spawnSecurity() {
+        float[] pos = getValidPosition();
+        if (pos != null) {
+            enemies.add(new Security(pos[0], pos[1], screenShake, physics));
         }
     }
 

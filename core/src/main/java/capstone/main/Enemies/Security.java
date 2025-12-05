@@ -12,7 +12,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
-public class Survivor extends AbstractEnemy {
+public class Security extends AbstractEnemy {
 
     private Animation<TextureRegion> animDown;
     private Animation<TextureRegion> animUp;
@@ -23,41 +23,75 @@ public class Survivor extends AbstractEnemy {
     private float lastVX = 0f;
     private float lastVY = -1f; // default looking down
 
-    // Optional: keep refs to textures so they can be disposed later if needed
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
-    public Survivor(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
-        // Initial placeholder texture (will be replaced by animation frames each update)
-        super(x, y, new Texture("enemyCharacter.png"), 3.0f, 3.0f, 100, screenShake, physics);
+    public Security(float x, float y, ScreenShake screenShake, PhysicsManager physics) {
 
-        // Load from per-direction atlases if available; fallback to PNG frames
-        animDown = loadAtlasAnim("Textures/Enemies/World1/Survivor/Run-Forward", "Survivor_Run-Forward.atlas", "Survivor_Walk-", 0.10f);
-        if (animDown == null) animDown = loadFolderAnim("Textures/Enemies/World1/Survivor/Run-Forward", "Survivor_Walk-", 0, 99, 0.10f);
+        super(x, y,
+            new Texture("Textures/Enemies/World2/Security/Run-Forward/security_walk-0.png"),
+            3.0f, 3.0f, 100, screenShake, physics);
 
-        animUp = loadAtlasAnim("Textures/Enemies/World1/Survivor/Run-Backward", "Survivor_Run-Backward.atlas", "Survivor_Walk-", 0.10f);
-        if (animUp == null) animUp = loadFolderAnim("Textures/Enemies/World1/Survivor/Run-Backward", "Survivor_Walk-", 0, 99, 0.10f);
+        // -----------------------------
+        // Atlas Loading
+        // -----------------------------
 
-        animLeft = loadAtlasAnim("Textures/Enemies/World1/Survivor/Run-Left", "Survivor_Run-Left.atlas", "Survivor_Walk-", 0.10f);
-        if (animLeft == null) animLeft = loadFolderAnim("Textures/Enemies/World1/Survivor/Run-Left", "Survivor_Walk-", 0, 99, 0.10f);
+        animDown = loadAtlasAnim(
+            "Textures/Enemies/World2/Security/Run-Forward",
+            "Security_Run-Forward.atlas",
+            "security_walk-", 0.10f
+        );
 
-        animRight = loadAtlasAnim("Textures/Enemies/World1/Survivor/Run-Right", "Survivor_Run-Right.atlas", "Survivor_Walk-", 0.10f);
-        // Handle possible misnamed atlas in right folder
-        if (animRight == null) animRight = loadAtlasAnim("Textures/Enemies/World1/Survivor/Run-Right", "Survivor_Run-Right.atlas", "Survivor_Walk-", 0.10f);
-        if (animRight == null) animRight = loadFolderAnim("Textures/Enemies/World1/Survivor/Run-Right", "Survivor_Walk-", 0, 99, 0.10f);
+        if (animDown == null) animDown = loadFolderAnim(
+            "Textures/Enemies/World2/Security/Run-Forward",
+            "security_walk-", 0, 99, 0.10f
+        );
 
-        // random initial facing
+        animUp = loadAtlasAnim(
+            "Textures/Enemies/World2/Security/Run-Backward",
+            "Security_Run-Backward.atlas",
+            "security_walk-", 0.10f
+        );
+
+        if (animUp == null) animUp = loadFolderAnim(
+            "Textures/Enemies/World2/Security/Run-Backward",
+            "security_walk-", 0, 99, 0.10f
+        );
+
+        animLeft = loadAtlasAnim(
+            "Textures/Enemies/World2/Security/Run-Left",
+            "Security_Run-Left.atlas",
+            "security_walk-", 0.10f
+        );
+
+        if (animLeft == null) animLeft = loadFolderAnim(
+            "Textures/Enemies/World2/Security/Run-Left",
+            "security_walk-", 0, 99, 0.10f
+        );
+
+        animRight = loadAtlasAnim(
+            "Textures/Enemies/World2/Security/Run-Right",
+            "Security_Run-Right.atlas",
+            "security_walk-", 0.10f
+        );
+
+        if (animRight == null) animRight = loadFolderAnim(
+            "Textures/Enemies/World2/Security/Run-Right",
+            "security_walk-", 0, 99, 0.10f
+        );
+
+        // Random starting facing direction
         boolean facingLeft = MathUtils.randomBoolean();
         directionManager.setFacingLeft(facingLeft);
 
-        // set an initial frame if available
+        // Apply initial sprite frame
         TextureRegion initial = safeFrame(animDown);
         if (initial != null) {
             sprite.setRegion(initial);
             sprite.setSize(1.0f, 1.0f);
         }
 
-        this.speed = 1.5f; // optional per-enemy speed
+        this.speed = 1.5f;
     }
 
     @Override
@@ -67,35 +101,38 @@ public class Survivor extends AbstractEnemy {
             return;
         }
 
-        // core behavior & hit flash
         updateHitFlash(delta);
         defaultChaseBehavior(delta, player);
 
         stateTime += delta;
 
-        // capture velocity for direction selection
         lastVX = body.getLinearVelocity().x;
         lastVY = body.getLinearVelocity().y;
 
-        // choose current frame and set on sprite
         TextureRegion frame = selectFrame();
         if (frame != null) {
             sprite.setRegion(frame);
-            sprite.setSize(1.0f, 1.0f);
+
+            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
+            float height = 1.0f;
+            float width = height * aspectRatio;
+
+            sprite.setSize(width, height);
         }
     }
 
     private TextureRegion selectFrame() {
-        // If idle, show first frame of last direction
         if (Math.abs(lastVX) < 0.01f && Math.abs(lastVY) < 0.01f) {
             Animation<TextureRegion> idleAnim = animFromLastDir();
             return idleAnim != null ? idleAnim.getKeyFrame(0) : null;
         }
 
-        // Prefer the dominant axis of movement for selecting animation
+        // Horizontal movement
         if (Math.abs(lastVX) > Math.abs(lastVY)) {
             return lastVX > 0 ? safeFrame(animRight) : safeFrame(animLeft);
-        } else {
+        }
+        // Vertical movement
+        else {
             return lastVY > 0 ? safeFrame(animUp) : safeFrame(animDown);
         }
     }
@@ -119,7 +156,7 @@ public class Survivor extends AbstractEnemy {
             String path = folder + "/" + prefix + i + ".png";
             FileHandle fh = Gdx.files.internal(path);
             if (!fh.exists()) {
-                if (i == startIndex) return null; // no frames found
+                if (i == startIndex) return null;
                 break;
             }
             Texture tex = new Texture(fh);
@@ -133,17 +170,21 @@ public class Survivor extends AbstractEnemy {
     private Animation<TextureRegion> loadAtlasAnim(String folder, String atlasFile, String frameBaseName, float frameDuration) {
         FileHandle fh = Gdx.files.internal(folder + "/" + atlasFile);
         if (!fh.exists()) return null;
+
         TextureAtlas atlas = new TextureAtlas(fh);
         ownedAtlases.add(atlas);
+
         Array<TextureRegion> frames = new Array<>(TextureRegion.class);
+
         for (int i = 0; i < 100; i++) {
             TextureRegion region = atlas.findRegion(frameBaseName + i);
             if (region == null) {
-                if (i == 0) return null; // no frames matched in this atlas
+                if (i == 0) return null;
                 break;
             }
             frames.add(region);
         }
+
         if (frames.size == 0) return null;
         return new Animation<>(frameDuration, frames, Animation.PlayMode.LOOP);
     }
