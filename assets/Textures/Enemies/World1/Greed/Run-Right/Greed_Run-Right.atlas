@@ -1,24 +1,23 @@
 Greed_Right.png
-size: 182, 1542
+size: 3456, 576
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
-pma: false
-orc1_walk_full-0
-  bounds: 0, 1297, 173, 245
-  offsets: 206, 197, 576, 576
-orc1_walk_full-1
-  bounds: 0, 798, 164, 254
-  offsets: 224, 197, 576, 576
-orc1_walk_full-2
-  bounds: 0, 272, 173, 263
-  offsets: 224, 197, 576, 576
-orc1_walk_full-3
-  bounds: 0, 1052, 182, 245
-  offsets: 224, 197, 576, 576
-orc1_walk_full-4
-  bounds: 0, 0, 164, 272
-  offsets: 224, 188, 576, 576
-orc1_walk_full-5
-  bounds: 0, 535, 155, 263
-  offsets: 224, 197, 576, 576
+
+orc1_walk_full-0.png
+  bounds: 0, 0, 576, 576
+
+orc1_walk_full-1.png
+  bounds: 576, 0, 576, 576
+
+orc1_walk_full-2.png
+  bounds: 1152, 0, 576, 576
+
+orc1_walk_full-3.png
+  bounds: 1728, 0, 576, 576
+
+orc1_walk_full-4.png
+  bounds: 2304, 0, 576, 576
+
+orc1_walk_full-5.png
+  bounds: 2880, 0, 576, 576
