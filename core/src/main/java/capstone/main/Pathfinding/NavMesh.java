@@ -27,7 +27,7 @@ public class NavMesh {
                         break;
                     }
                 }
-                nodes[x][y] = new NavNode(x, y, walkable);
+                nodes[x][y] = new NavNode(x, y, walkable, nodeSize);
             }
         }
 
@@ -74,6 +74,38 @@ public class NavMesh {
             }
         }
         return allNodes;
+    }
+
+    public NavNode getNearestNode(com.badlogic.gdx.math.Vector2 pos) {
+        return getNearestNode(pos.x, pos.y);
+    }
+
+    public NavNode getNearestNode(float worldX, float worldY) {
+        // Convert world coordinates to tile-space
+        int x = (int) Math.floor(worldX / nodeSize);
+        int y = (int) Math.floor(worldY / nodeSize);
+
+        // If direct node is valid and walkable, return it
+        NavNode node = getNode(x, y);
+        if (node != null && node.walkable) {
+            return node;
+        }
+
+        // Otherwise search outward (spiral) for the nearest walkable node
+        int maxRadius = 3; // search up to 3 tiles around (expand if needed)
+
+        for (int r = 1; r <= maxRadius; r++) {
+            for (int dx = -r; dx <= r; dx++) {
+                for (int dy = -r; dy <= r; dy++) {
+                    NavNode candidate = getNode(x + dx, y + dy);
+                    if (candidate != null && candidate.walkable) {
+                        return candidate;
+                    }
+                }
+            }
+        }
+
+        return null; // no valid node found within search radius
     }
 
 }

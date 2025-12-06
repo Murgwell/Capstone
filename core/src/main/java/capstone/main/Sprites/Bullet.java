@@ -15,7 +15,7 @@ public class Bullet {
     public Sprite sprite;
     public Body body;
     private float damage;
-    private float lifetime = 3f;
+    private float lifetime = 1f;
     private float speed = 75f; // faster speed
     private float knockbackForce = 10f;
 

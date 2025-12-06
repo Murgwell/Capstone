@@ -36,6 +36,7 @@ public abstract class AbstractEnemy {
     protected boolean enteredClose = false;
     protected float defaultChaseDistance = 3f;
     protected float aggroChaseDistance = 6f;
+
     protected float speed = 1.5f;
     protected float baseSpeed = 1.5f;
     protected float hitboxRadius;
@@ -49,12 +50,16 @@ public abstract class AbstractEnemy {
     protected boolean isSlowed = false;
     protected float slowTimer = 0f;
     protected float slowMultiplier = 0.5f; // 50% speed when slowed
-    protected BitmapFont statusFont;
+    protected BitmapFont statusFont = new BitmapFont();;
     protected String statusText = "";
-
-    protected NavMesh navMesh;
     protected List<NavNode> currentPath = new ArrayList<NavNode>();
     protected int pathIndex = 0;
+
+    protected NavMesh navMesh;
+    private final Vector2 tmpVelocity = new Vector2();
+    private final Vector2 tmpDirection = new Vector2();
+    private final Vector2 tmpNextPos = new Vector2();
+    private final Vector2 tmpPlayerPos = new Vector2();
 
     private float attackCooldown = 0f;
     private static final float ATTACK_COOLDOWN_TIME = 1.0f; // 1 second between attacks
@@ -81,7 +86,6 @@ public abstract class AbstractEnemy {
 
         this.directionManager = new DirectionManager(sprite);
 
-        this.statusFont = new BitmapFont();
         this.statusFont.getData().setScale(0.08f);
         this.statusFont.setColor(com.badlogic.gdx.graphics.Color.CYAN);
 
@@ -126,26 +130,43 @@ public abstract class AbstractEnemy {
         updateStatusEffects(delta);
         updateAttackCooldown(delta);
 
-        Vector2 enemyPos = body.getPosition();
-        Vector2 playerPos = new Vector2(
-            player.getSprite().getX() + player.getSprite().getWidth()/2f,
-            player.getSprite().getY() + player.getSprite().getHeight()/2f
+        // --- Get positions ---
+        tmpPlayerPos.set(
+            player.getSprite().getX() + player.getSprite().getWidth() / 2f,
+            player.getSprite().getY() + player.getSprite().getHeight() / 2f
         );
 
-        float distanceToPlayer = enemyPos.dst(playerPos);
-        isAggro = distanceToPlayer <= aggroChaseDistance;
+        Vector2 enemyPos = body.getPosition();
+        float distanceToPlayer = enemyPos.dst(tmpPlayerPos);
 
-        if (!isAggro) {
-            body.setLinearVelocity(0, 0);
-            return;
+        // --- AGGRO LOGIC ---
+        if (isAggro) {
+            if (!enteredClose && distanceToPlayer <= aggroChaseDistance)
+                enteredClose = true;
+
+            if (enteredClose && distanceToPlayer > aggroChaseDistance) {
+                isAggro = false;
+                enteredClose = false;
+                body.setLinearVelocity(0, 0);
+                return;
+            }
+        } else {
+            if (distanceToPlayer <= defaultChaseDistance) {
+                enteredClose = false;
+                isAggro = false;
+            } else {
+                body.setLinearVelocity(0, 0);
+                return;
+            }
         }
 
-        // --- Recalculate path periodically ---
+        // --- PATHFINDING ---
         pathUpdateTimer += delta;
         if (pathUpdateTimer >= PATH_UPDATE_INTERVAL) {
             pathUpdateTimer = 0f;
+
             NavNode startNode = getNearestNode(enemyPos);
-            NavNode targetNode = getNearestNode(playerPos);
+            NavNode targetNode = getNearestNode(tmpPlayerPos);
 
             boolean shouldRecalculate = currentPath.isEmpty();
             if (!shouldRecalculate && targetNode != null) {
@@ -161,40 +182,44 @@ public abstract class AbstractEnemy {
             }
         }
 
-        // --- Move along path ---
-        Vector2 velocity = new Vector2(0, 0);
+        // --- MOVE ALONG PATH ---
+        tmpVelocity.set(0, 0);
         float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.25f, hitboxRadius * 0.8f);
 
         if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
             NavNode nextNode = currentPath.get(pathIndex);
-            Vector2 nextPos = new Vector2(
-                nextNode.x + navMesh.getNodeSize()/2f,
-                nextNode.y + navMesh.getNodeSize()/2f
-            );
-            Vector2 direction = nextPos.cpy().sub(enemyPos);
 
-            if (direction.len() < nodeThreshold) {
-                pathIndex++; // skip node instantly if very close
+            tmpNextPos.set(nextNode.worldPos); // use precomputed world position
+            tmpDirection.set(tmpNextPos).sub(enemyPos);
+
+            if (tmpDirection.len() < nodeThreshold) {
+                pathIndex++;
             } else {
-                velocity.set(direction.nor().scl(speed));
-                if (isSlowed) velocity.scl(slowMultiplier);
+                tmpVelocity.set(tmpDirection.nor().scl(speed));
+                if (isSlowed) tmpVelocity.scl(slowMultiplier);
 
                 // prevent overshoot
-                if (velocity.len() * delta > direction.len()) {
-                    velocity.set(direction.scl(1f / delta));
+                if (tmpVelocity.len() * delta > tmpDirection.len()) {
+                    tmpVelocity.set(tmpDirection.scl(1f / delta));
                 }
             }
         }
 
-        body.setLinearVelocity(velocity);
-        sprite.setPosition(
-            body.getPosition().x - sprite.getWidth()/2f,
-            body.getPosition().y - sprite.getHeight()/2f
-        );
-        directionManager.setFacingLeft(velocity.x < 0);
+        // --- APPLY VELOCITY ---
+        body.setLinearVelocity(tmpVelocity);
 
-        if (healthBar != null) healthBar.update(delta);
+        sprite.setPosition(
+            body.getPosition().x - sprite.getWidth() / 2f,
+            body.getPosition().y - sprite.getHeight() / 2f
+        );
+
+        directionManager.setFacingLeft(tmpVelocity.x < 0);
+
+        if (healthBar != null)
+            healthBar.update(delta);
     }
+
+
 
     private NavNode getNearestNode(Vector2 pos) {
         int x = (int) Math.floor(pos.x / navMesh.getNodeSize());

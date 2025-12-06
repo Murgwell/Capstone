@@ -4,8 +4,10 @@ import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.ScreenShake;
 import capstone.main.Pathfinding.NavMesh;
 import capstone.main.Managers.CollisionLoader;
+import capstone.main.Pathfinding.NavNode;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -21,6 +23,10 @@ public class EnemySpawner {
     private final float worldHeight;
     private Random random;
     private NavMesh navMesh;
+    private final Vector2 tmpVec = new Vector2();
+
+    private float enemySpawnRadius = 1.0f; // adjust based on your enemy hitbox
+
 
     private String currentWorld = "World1"; // Default to World1
 
@@ -84,25 +90,34 @@ public class EnemySpawner {
      * Check if a position is walkable (not on collision layer)
      */
     private boolean isWalkablePosition(float x, float y) {
-        // Avoid map edges
-        if (x < 1f || x > worldWidth - 1f || y < 1f || y > worldHeight - 1f) {
+        // Avoid edges
+        if (x < enemySpawnRadius || x > worldWidth - enemySpawnRadius ||
+            y < enemySpawnRadius || y > worldHeight - enemySpawnRadius) {
             return false;
         }
 
-        // Check if position overlaps with any collision rectangle
+        // Check navmesh walkability
+        if (navMesh != null) {
+            tmpVec.set(x, y);
+            NavNode node = navMesh.getNearestNode(tmpVec);
+            if (node == null || !node.walkable) return false;
+        }
+
+        // Check collision rectangles with enemy radius
         if (collisionRectangles != null) {
-            // Create a small rectangle around the spawn point to check for collision
-            Rectangle spawnRect = new Rectangle(x - 0.5f, y - 0.5f, 1f, 1f);
+            float r = enemySpawnRadius;
+            Rectangle spawnRect = new Rectangle(x - r, y - r, r * 2f, r * 2f);
 
             for (Rectangle collisionRect : collisionRectangles) {
                 if (spawnRect.overlaps(collisionRect)) {
-                    return false; // Position overlaps with collision (water/wall)
+                    return false;
                 }
             }
         }
 
         return true;
     }
+
 
     /**
      * Set the current world for world-specific enemy spawning
