@@ -3,57 +3,104 @@ package capstone.main.Pathfinding;
 import java.util.*;
 
 public class AStar {
+    // Reusable collections to prevent garbage creation
+    private static final Map<NavNode, PathNode> REUSABLE_NODES = new HashMap<>();
+    private static final PriorityQueue<PathNode> REUSABLE_OPEN_SET = new PriorityQueue<>(Comparator.comparingDouble(PathNode::fCost));
+    private static final Set<NavNode> REUSABLE_CLOSED_SET = new HashSet<>();
+    private static final List<NavNode> REUSABLE_PATH = new ArrayList<>();
+    
+    // Object pool for PathNodes to avoid constant allocation
+    private static final Queue<PathNode> PATH_NODE_POOL = new ArrayDeque<>();
+    private static final int MAX_POOL_SIZE = 1000;
 
     public static List<NavNode> findPath(NavMesh navMesh, NavNode start, NavNode target) {
-        if (start == null || target == null || !start.walkable || !target.walkable) return Collections.emptyList();
+        if (start == null || target == null || !start.walkable || !target.walkable) {
+            return Collections.emptyList();
+        }
 
-        Map<NavNode, PathNode> allNodes = new HashMap<>();
-        PriorityQueue<PathNode> openSet = new PriorityQueue<>(Comparator.comparingDouble(PathNode::fCost));
-        Set<NavNode> closedSet = new HashSet<>();
+        // Clear and reuse collections
+        REUSABLE_NODES.clear();
+        REUSABLE_OPEN_SET.clear();
+        REUSABLE_CLOSED_SET.clear();
+        REUSABLE_PATH.clear();
 
-        PathNode startNode = new PathNode(start);
+        // Get or create start node
+        PathNode startNode = getPooledPathNode();
+        startNode.reset(start);
         startNode.gCost = 0;
         startNode.hCost = heuristic(start, target);
-        allNodes.put(start, startNode);
-        openSet.add(startNode);
+        
+        REUSABLE_NODES.put(start, startNode);
+        REUSABLE_OPEN_SET.add(startNode);
 
-        while (!openSet.isEmpty()) {
-            PathNode current = openSet.poll();
-            if (current.navNode == target) return reconstructPath(current);
+        while (!REUSABLE_OPEN_SET.isEmpty()) {
+            PathNode current = REUSABLE_OPEN_SET.poll();
+            
+            if (current.navNode == target) {
+                List<NavNode> result = reconstructPath(current);
+                // Return nodes to pool AFTER path reconstruction
+                returnNodesToPool();
+                return result;
+            }
 
-            closedSet.add(current.navNode);
+            REUSABLE_CLOSED_SET.add(current.navNode);
 
             for (NavNode neighbor : current.navNode.neighbors) {
-                if (closedSet.contains(neighbor)) continue;
+                if (REUSABLE_CLOSED_SET.contains(neighbor)) continue;
 
                 float tentativeG = current.gCost + distance(current.navNode, neighbor);
 
-                PathNode neighborNode = allNodes.getOrDefault(neighbor, new PathNode(neighbor));
-                if (tentativeG < neighborNode.gCost || !allNodes.containsKey(neighbor)) {
+                PathNode neighborNode = REUSABLE_NODES.get(neighbor);
+                if (neighborNode == null) {
+                    neighborNode = getPooledPathNode();
+                    neighborNode.reset(neighbor);
+                    REUSABLE_NODES.put(neighbor, neighborNode);
+                }
+
+                if (tentativeG < neighborNode.gCost || neighborNode.gCost == Float.MAX_VALUE) {
                     neighborNode.gCost = tentativeG;
                     neighborNode.hCost = heuristic(neighbor, target);
                     neighborNode.parent = current;
-                    allNodes.put(neighbor, neighborNode);
 
-                    if (!openSet.contains(neighborNode)) {
-                        openSet.add(neighborNode);
+                    if (!REUSABLE_OPEN_SET.contains(neighborNode)) {
+                        REUSABLE_OPEN_SET.add(neighborNode);
                     }
                 }
             }
         }
 
-        return Collections.emptyList(); // no path found
+        // No path found - return nodes to pool
+        returnNodesToPool();
+        return Collections.emptyList();
+    }
+
+    private static PathNode getPooledPathNode() {
+        PathNode node = PATH_NODE_POOL.poll();
+        if (node == null) {
+            node = new PathNode(null);
+        }
+        return node;
+    }
+
+    private static void returnNodesToPool() {
+        for (PathNode node : REUSABLE_NODES.values()) {
+            if (PATH_NODE_POOL.size() < MAX_POOL_SIZE) {
+                PATH_NODE_POOL.offer(node);
+            }
+        }
     }
 
     private static List<NavNode> reconstructPath(PathNode endNode) {
-        List<NavNode> path = new ArrayList<>();
+        REUSABLE_PATH.clear();
         PathNode current = endNode;
         while (current != null) {
-            path.add(current.navNode);
+            REUSABLE_PATH.add(current.navNode);
             current = current.parent;
         }
-        Collections.reverse(path);
-        return path;
+        Collections.reverse(REUSABLE_PATH);
+        
+        // Create a copy since we're reusing REUSABLE_PATH
+        return new ArrayList<>(REUSABLE_PATH);
     }
 
     private static float heuristic(NavNode a, NavNode b) {

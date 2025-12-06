@@ -1,5 +1,6 @@
 package capstone.main.Pathfinding;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.math.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,26 +11,34 @@ public class NavMesh {
     private final float nodeSize;    // size of each node in world units (1 tile = 1 unit)
     private NavNode[][] nodes;
 
+    int generatedCount = 0;
+
     public NavMesh(int tilesWide, int tilesHigh, ArrayList<Rectangle> obstacles) {
         this.nodeSize = 1.0f;  // each node is 1x1 world unit
         this.width = tilesWide;
         this.height = tilesHigh;
         nodes = new NavNode[width][height];
 
-        // Generate nodes
+        // Generate nodes with proper collision detection
         for (int x = 0; x < width; x++) {
             for (int y = 0; y < height; y++) {
                 boolean walkable = true;
+                
+                // Create rectangle for this tile (full tile area, not just center point)
+                Rectangle tileRect = new Rectangle(x, y, nodeSize, nodeSize);
+                
                 for (Rectangle r : obstacles) {
-                    // check collision using world coords
-                    if (r.contains(x + 0.5f, y + 0.5f)) {
+                    // Check if tile overlaps with any obstacle (not just center point)
+                    if (tileRect.overlaps(r)) {
                         walkable = false;
                         break;
                     }
                 }
                 nodes[x][y] = new NavNode(x, y, walkable, nodeSize);
+                generatedCount++;
             }
         }
+        Gdx.app.log("NavMesh", "Generated nodes: " + generatedCount);
 
         // Connect neighbors
         for (int x = 0; x < width; x++) {

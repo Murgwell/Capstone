@@ -145,7 +145,19 @@ public class Game implements Screen {
         // Set up damage number system for physics collisions (bullets/fireballs)
         physicsManager.setDamageNumberSystem(damageNumbers, damageFont);
 
-        NavMesh navMesh = new NavMesh((int) mapManager.getWorldWidth(), (int) mapManager.getWorldHeight(),
+        // MEMORY FIX: Create smaller, more efficient NavMesh
+        // Instead of using full map size, use a reasonable maximum
+        int maxNavMeshSize = 200; // Limit to 200x200 = 40k nodes max (vs potentially millions)
+        int navWidth = Math.min(maxNavMeshSize, (int) mapManager.getWorldWidth());
+        int navHeight = Math.min(maxNavMeshSize, (int) mapManager.getWorldHeight());
+        
+        System.out.println("========== NAVMESH DEBUG ==========");
+        System.out.println("Original Map Size: " + mapManager.getWorldWidth() + " x " + mapManager.getWorldHeight());
+        System.out.println("NavMesh Size: " + navWidth + " x " + navHeight + " = " + (navWidth * navHeight) + " nodes");
+        System.out.println("Memory estimate: ~" + ((navWidth * navHeight * 200) / 1024 / 1024) + " MB");
+        System.out.println("===================================");
+        
+        NavMesh navMesh = new NavMesh(navWidth, navHeight,
             CollisionLoader.getCollisionRectangles(mapManager.getTiledMap(), "collisionLayer", 1 / 32f));
 
         // --- Create enemy spawner ---
@@ -459,6 +471,16 @@ public class Game implements Screen {
 
     @Override
     public void render(float delta) {
+        // MEMORY DEBUG: Monitor memory usage every 5 seconds
+        if (System.currentTimeMillis() % 5000 < 16) {
+            Runtime runtime = Runtime.getRuntime();
+            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+            System.out.println("=== MEMORY DEBUG ===");
+            System.out.println("Used Memory: " + usedMemory + " MB");
+            System.out.println("Total Enemies: " + enemySpawner.getEnemies().size());
+            System.out.println("==================");
+        }
+        
         // --- Update logic ---
         if (!isPaused && !isGameOver) {
             inputManager.update();

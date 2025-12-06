@@ -8,16 +8,14 @@ import capstone.main.UI.HealthBar;
 import capstone.main.Managers.PhysicsManager;
 import capstone.main.Managers.DirectionManager;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
-import capstone.main.Pathfinding.AStar;
 import capstone.main.Pathfinding.NavMesh;
 import capstone.main.Pathfinding.NavNode;
+import capstone.main.Pathfinding.PathfindingCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +32,8 @@ public abstract class AbstractEnemy {
 
     protected boolean isAggro = false;
     protected boolean enteredClose = false;
-    protected float defaultChaseDistance = 3f;
-    protected float aggroChaseDistance = 6f;
+    protected float defaultChaseDistance = 5f;
+    protected float aggroChaseDistance = 10f;
 
     protected float speed = 1.5f;
     protected float baseSpeed = 1.5f;
@@ -50,7 +48,8 @@ public abstract class AbstractEnemy {
     protected boolean isSlowed = false;
     protected float slowTimer = 0f;
     protected float slowMultiplier = 0.5f; // 50% speed when slowed
-    protected BitmapFont statusFont = new BitmapFont();;
+    protected BitmapFont statusFont = new BitmapFont();
+    ;
     protected String statusText = "";
     protected List<NavNode> currentPath = new ArrayList<NavNode>();
     protected int pathIndex = 0;
@@ -60,6 +59,7 @@ public abstract class AbstractEnemy {
     private final Vector2 tmpDirection = new Vector2();
     private final Vector2 tmpNextPos = new Vector2();
     private final Vector2 tmpPlayerPos = new Vector2();
+
 
     private float attackCooldown = 0f;
     private static final float ATTACK_COOLDOWN_TIME = 1.0f; // 1 second between attacks
@@ -92,13 +92,13 @@ public abstract class AbstractEnemy {
         // --- Box2D body ---
         BodyDef bd = new BodyDef();
         bd.type = BodyDef.BodyType.DynamicBody;
-        bd.position.set(x + width/2f, y + height/2f);
+        bd.position.set(x + width / 2f, y + height / 2f);
         bd.fixedRotation = true;
 
         body = physics.getWorld().createBody(bd);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(Math.min(width, height)/4f);
+        shape.setRadius(Math.min(width, height) / 4f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
@@ -160,7 +160,7 @@ public abstract class AbstractEnemy {
             }
         }
 
-        // --- PATHFINDING ---
+        // --- OPTIMIZED PATHFINDING ---
         pathUpdateTimer += delta;
         if (pathUpdateTimer >= PATH_UPDATE_INTERVAL) {
             pathUpdateTimer = 0f;
@@ -168,22 +168,32 @@ public abstract class AbstractEnemy {
             NavNode startNode = getNearestNode(enemyPos);
             NavNode targetNode = getNearestNode(tmpPlayerPos);
 
-            boolean shouldRecalculate = currentPath.isEmpty();
-            if (!shouldRecalculate && targetNode != null) {
+            // Only recalculate if target changed significantly or path is empty
+            boolean shouldRecalculate = false;
+
+            if (currentPath.isEmpty()) {
+                shouldRecalculate = true;
+            } else if (targetNode != null) {
                 NavNode lastNode = currentPath.get(currentPath.size() - 1);
-                if (lastNode == null || targetNode.x != lastNode.x || targetNode.y != lastNode.y) {
+                if (lastNode == null ||
+                    Math.abs(targetNode.x - lastNode.x) > 1 ||
+                    Math.abs(targetNode.y - lastNode.y) > 1) {
                     shouldRecalculate = true;
                 }
             }
 
-            if (shouldRecalculate) {
-                currentPath = AStar.findPath(navMesh, startNode, targetNode);
+            if (shouldRecalculate && startNode != null && targetNode != null) {
+                // MEMORY FIX: Clear old path before getting new one
+                currentPath.clear();
+
+                // Use cached pathfinding to avoid recalculating same paths
+                currentPath = PathfindingCache.getCachedPath(navMesh, startNode, targetNode);
                 pathIndex = 0;
             }
         }
 
         // --- MOVE ALONG PATH ---
-        tmpVelocity.set(0, 0);
+        tmpVelocity.setZero(); // More efficient than set(0, 0)
         float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.25f, hitboxRadius * 0.8f);
 
         if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
@@ -192,18 +202,21 @@ public abstract class AbstractEnemy {
             tmpNextPos.set(nextNode.worldPos); // use precomputed world position
             tmpDirection.set(tmpNextPos).sub(enemyPos);
 
-            if (tmpDirection.len() < nodeThreshold) {
+            if (tmpDirection.len2() < nodeThreshold * nodeThreshold) { // Use len2() for performance
                 pathIndex++;
             } else {
                 tmpVelocity.set(tmpDirection.nor().scl(speed));
                 if (isSlowed) tmpVelocity.scl(slowMultiplier);
 
                 // prevent overshoot
-                if (tmpVelocity.len() * delta > tmpDirection.len()) {
+                float velocityLen = tmpVelocity.len();
+                float directionLen = tmpDirection.len();
+                if (velocityLen * delta > directionLen) {
                     tmpVelocity.set(tmpDirection.scl(1f / delta));
                 }
             }
         }
+
 
         // --- APPLY VELOCITY ---
         body.setLinearVelocity(tmpVelocity);
@@ -220,12 +233,12 @@ public abstract class AbstractEnemy {
     }
 
 
-
     private NavNode getNearestNode(Vector2 pos) {
         int x = (int) Math.floor(pos.x / navMesh.getNodeSize());
         int y = (int) Math.floor(pos.y / navMesh.getNodeSize());
         return navMesh.getNode(x, y);
     }
+
 
     protected void updateStatusEffects(float delta) {
         if (isSlowed) {
@@ -257,8 +270,10 @@ public abstract class AbstractEnemy {
         // PLAY ENEMY HIT SOUND
         SoundManager.getInstance().playSound("enemy_hit");
 
-        if (health <= 0 && !pendingRemoval)
+        if (health <= 0 && !pendingRemoval) {
             pendingRemoval = true;
+            System.out.println("ENEMY MARKED FOR DEATH - Health: " + health + " (Memory Debug)");
+        }
     }
 
     // Call every frame in update
@@ -326,11 +341,25 @@ public abstract class AbstractEnemy {
         return slowTimer;
     }
 
-    public boolean isDead() { return health <= 0; }
-    public Sprite getSprite() { return sprite; }
-    public HealthBar getHealthBar() { return healthBar; }
-    public boolean isPendingRemoval() { return pendingRemoval; }
-    public Body getBody() { return body; }
+    public boolean isDead() {
+        return health <= 0;
+    }
+
+    public Sprite getSprite() {
+        return sprite;
+    }
+
+    public HealthBar getHealthBar() {
+        return healthBar;
+    }
+
+    public boolean isPendingRemoval() {
+        return pendingRemoval;
+    }
+
+    public Body getBody() {
+        return body;
+    }
 
     public float getHitFlashAlpha() {
         // returns 0..1
@@ -350,5 +379,34 @@ public abstract class AbstractEnemy {
 
         // Keep origin same as sprite
         whiteOverlaySprite.setOrigin(sprite.getOriginX(), sprite.getOriginY());
+    }
+
+    // MEMORY FIX: Add cleanup method to call when enemy is destroyed
+    public void dispose() {
+        // Clear pathfinding data to prevent memory leaks
+        if (currentPath != null) {
+            currentPath.clear();
+            currentPath = null;
+        }
+
+        // Dispose of physics body
+        if (body != null && body.getWorld() != null) {
+            body.getWorld().destroyBody(body);
+            body = null;
+        }
+
+        // Clean up sprites (DO NOT dispose shared textures!)
+        // Textures are shared between enemies and managed by LibGDX AssetManager
+        sprite = null;
+        whiteOverlaySprite = null;
+
+        // Clean up other resources
+        if (healthBar != null) {
+            healthBar = null;
+        }
+        if (statusFont != null) {
+            statusFont.dispose();
+            statusFont = null;
+        }
     }
 }

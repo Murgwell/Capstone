@@ -37,7 +37,9 @@ public class EnemyLogic {
         for (int i = enemies.size() - 1; i >= 0; i--) {
             AbstractEnemy e = enemies.get(i);
             if (e.isPendingRemoval()) {
-                e.getBody().getWorld().destroyBody(e.getBody());
+                // MEMORY FIX: Call dispose() before removing enemy
+                System.out.println("DISPOSING ENEMY - Remaining: " + (enemies.size() - 1) + " (Memory Debug)");
+                e.dispose();
                 enemies.remove(i);
             }
         }
