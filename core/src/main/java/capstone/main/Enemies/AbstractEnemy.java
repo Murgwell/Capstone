@@ -94,7 +94,7 @@ public abstract class AbstractEnemy {
         body = physics.getWorld().createBody(bd);
 
         CircleShape shape = new CircleShape();
-        shape.setRadius(Math.min(width, height)/2f);
+        shape.setRadius(Math.min(width, height)/4f);
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;

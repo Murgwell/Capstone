@@ -29,19 +29,16 @@ public class Greed extends AbstractEnemy {
     private final Array<Texture> ownedTextures = new Array<>();
     private final Array<TextureAtlas> ownedAtlases = new Array<>();
 
-    private final float spriteWidth;
-    private final float spriteHeight;
+    private final float spriteWidth = 5.0f;
+    private final float spriteHeight = 5.0f;
 
     public Greed(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
         super(
             x, y,
             new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"),
-            3.0f, 3.0f, 100,
+            5.0f, 5.0f, 100,
             screenShake, physics, navMesh
         );
-
-        this.spriteWidth = 5.0f;
-        this.spriteHeight = 5.0f;
 
         // -----------------------------
         // Load Animations
@@ -129,12 +126,7 @@ public class Greed extends AbstractEnemy {
 
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f;
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            sprite.setSize(spriteWidth, spriteHeight);
         }
 
     }
