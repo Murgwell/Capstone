@@ -248,5 +248,9 @@ public abstract class AbstractPlayer {
         if (useAnimations && animationManager != null) {
             animationManager.dispose();
         }
+
+
     }
+
+
 }

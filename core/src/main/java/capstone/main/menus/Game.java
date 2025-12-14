@@ -381,6 +381,18 @@ public class Game implements Screen {
                         return true;
                     }
                 }
+
+                //Quiboloy Skills
+                if (!isPaused && player instanceof Quiboloy) {
+                    Quiboloy quiboloy = (Quiboloy) player;
+
+                    if (keycode ==  com.badlogic.gdx.Input.Keys.Q) { // Divine Healing
+                        quiboloy.useDivineHealing();
+                        return true;
+                    }
+                }
+
+
                 return false;
             }
 
@@ -680,6 +692,10 @@ public class Game implements Screen {
             if (player instanceof MannyPacquiao) {
                 ((MannyPacquiao) player).updateSkills(delta);
                 ((MannyPacquiao) player).updatePunchAnimation(delta);
+            }
+
+            if (player instanceof Quiboloy) {
+                ((Quiboloy) player).updateSkills(delta);
             }
         } else if (isPaused) {
             if (pauseStage.getActors().size == 0) createPauseMenu();

@@ -4,6 +4,10 @@ import capstone.main.Managers.ScreenShake;
 import capstone.main.Managers.SoundManager;
 import capstone.main.Sprites.Fireball;
 import com.badlogic.gdx.physics.box2d.World;
+import capstone.main.Skills.Quiboloy.DivineHealing;
+import capstone.main.Sprites.DamageNumber;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+
 
 import java.util.ArrayList;
 
@@ -11,6 +15,8 @@ public class Quiboloy extends AbstractPlayer implements MagicRanged {
 
     private final ArrayList<Fireball> fireballs;
     private final ScreenShake screenShake;
+    private DivineHealing divineHealing;
+
 
     // Animation-based constructor
     public Quiboloy(float healthPoints, float manaPoints, float baseDamage, float maxDamage,
@@ -56,5 +62,22 @@ public class Quiboloy extends AbstractPlayer implements MagicRanged {
     // New getter for FireballLogic
     public ArrayList<Fireball> getFireballs() {
         return fireballs;
+    }
+
+    public void initializeSkills(ArrayList<DamageNumber> damageNumbers,
+                                 BitmapFont damageFont) {
+        this.divineHealing = new DivineHealing(this, damageNumbers, damageFont);
+    }
+
+    public void updateSkills(float delta) {
+        if (divineHealing != null) {
+            divineHealing.update(delta);
+        }
+    }
+
+    public void useDivineHealing() {
+        if (divineHealing != null) {
+            divineHealing.activate();
+        }
     }
 }
