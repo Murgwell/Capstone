@@ -14,7 +14,27 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
-public class QuiboloyBoss extends AbstractEnemy {
+public class QuiboloyBoss extends AbstractEnemy implements BossEntity, TelegraphProvider {
+
+    // BossEntity minimal implementation
+    @Override
+    public boolean isBoss() { return true; }
+    @Override
+    public float getCurrentHealth() { return this.health; }
+    @Override
+    public String getSkillWarning() { return ""; }
+
+    // TelegraphProvider defaults (no telegraphing yet)
+    @Override
+    public boolean isTelegraphing() { return false; }
+    @Override
+    public String getTelegraphSkill() { return null; }
+    @Override
+    public float getTelegraphOriginX() { return getBody().getPosition().x; }
+    @Override
+    public float getTelegraphOriginY() { return getBody().getPosition().y; }
+    @Override
+    public float getTelegraphAngleDegrees() { return 0f; }
 
     private Animation<TextureRegion> animDown;
     private Animation<TextureRegion> animUp;

@@ -36,6 +36,8 @@ import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import java.util.ArrayList;
 
 public class Game implements Screen {
+    // Logs player world coordinates every 0.5s to console
+    private float playerPosLogTimer = 0f;
     private final Corrupted game;
     private final int selectedCharacterIndex;
 
@@ -91,6 +93,7 @@ public class Game implements Screen {
     // HUD elements
     private HeartsHud heartsHud;
     private SkillHud skillHud;
+    private capstone.main.Managers.UIManager uiManager;
 
     // Inventory system
     private Inventory inventory;
@@ -112,6 +115,65 @@ public class Game implements Screen {
     private boolean isPaused = false;
     private boolean isGameOver = false;
 
+    // World transitions
+    private WorldMapManager worldMapManager;
+    private java.util.List<PortalRect> portals = new java.util.ArrayList<>();
+    private float portalCooldown = 0f;
+    private boolean bossSpawnedInCurrentWorld = false;
+    private boolean bossDefeatedInCurrentWorld = false;
+    private boolean bossClearedToastShown = false;
+
+    // Debug
+    private boolean debugPortals = false;
+
+    // Teleportation FX
+    private boolean teleportFxActive = false;
+    private float teleportFxTimer = 0f;
+    private final float teleportFxDuration = 1.2f; // seconds, more dramatic
+
+    private boolean teleportFxUseBlack = true; // set to true for simple black transition
+
+    // Teleport FX particles
+    private static class TeleportParticle {
+        float x, y, vx, vy, life, maxLife, size, r, g, b, a;
+    }
+    private final java.util.ArrayList<TeleportParticle> teleportFxParticles = new java.util.ArrayList<>();
+
+    private void spawnTeleportFxBurst() {
+        teleportFxParticles.clear();
+        float cx = Gdx.graphics.getWidth() / 2f;
+        float cy = Gdx.graphics.getHeight() / 2f;
+        java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
+        int count = 140;
+        for (int i = 0; i < count; i++) {
+            TeleportParticle p = new TeleportParticle();
+            double ang = rng.nextDouble() * Math.PI * 2;
+            double speed = 220 + rng.nextDouble() * 880; // px/s
+            p.vx = (float)(Math.cos(ang) * speed);
+            p.vy = (float)(Math.sin(ang) * speed);
+            p.x = cx + (float)(Math.cos(ang) * 6);
+            p.y = cy + (float)(Math.sin(ang) * 6);
+            p.maxLife = 0.45f + rng.nextFloat() * 0.65f;
+            p.life = p.maxLife;
+            p.size = 2.5f + rng.nextFloat() * 3.5f;
+            // cool cyan-magenta palette
+            float huePick = rng.nextFloat();
+            if (huePick < 0.5f) { p.r = 0.3f; p.g = 1.0f; p.b = 0.95f; } else { p.r = 1.0f; p.g = 0.3f; p.b = 0.8f; }
+            p.a = 1f;
+            teleportFxParticles.add(p);
+        }
+    }
+
+    private static class PortalRect {
+        com.badlogic.gdx.math.Rectangle rect;
+        String targetMap;
+        Float spawnX; // optional override
+        Float spawnY; // optional override
+        PortalRect(com.badlogic.gdx.math.Rectangle r, String targetMap, Float spawnX, Float spawnY) {
+            this.rect = r; this.targetMap = targetMap; this.spawnX = spawnX; this.spawnY = spawnY;
+        }
+    }
+
 
     public Game(Corrupted game, int selectedCharacterIndex) {
         this.game = game;
@@ -123,7 +185,14 @@ public class Game implements Screen {
         // --- Physics & Map ---
         physicsManager = new PhysicsManager();
         mapManager = new MapManager(physicsManager);
-        mapManager.load("Textures/World1.tmx");
+
+        // --- World Map Manager ---
+        worldMapManager = new WorldMapManager();
+        worldMapManager.setCurrentWorld(WorldMapManager.WorldMap.WORLD_1);
+        bossSpawnedInCurrentWorld = false;
+        bossDefeatedInCurrentWorld = false;
+        bossClearedToastShown = false;
+        mapManager.load(worldMapManager.getCurrentWorldPath());
         mapRenderer = mapManager.getRenderer();
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
@@ -150,21 +219,22 @@ public class Game implements Screen {
         int maxNavMeshSize = 200; // Limit to 200x200 = 40k nodes max (vs potentially millions)
         int navWidth = Math.min(maxNavMeshSize, (int) mapManager.getWorldWidth());
         int navHeight = Math.min(maxNavMeshSize, (int) mapManager.getWorldHeight());
-        
+
         System.out.println("========== NAVMESH DEBUG ==========");
         System.out.println("Original Map Size: " + mapManager.getWorldWidth() + " x " + mapManager.getWorldHeight());
         System.out.println("NavMesh Size: " + navWidth + " x " + navHeight + " = " + (navWidth * navHeight) + " nodes");
         System.out.println("Memory estimate: ~" + ((navWidth * navHeight * 200) / 1024 / 1024) + " MB");
         System.out.println("===================================");
-        
+
         NavMesh navMesh = new NavMesh(navWidth, navHeight,
             CollisionLoader.getCollisionRectangles(mapManager.getTiledMap(), "collisionLayer", 1 / 32f));
 
         // --- Create enemy spawner ---
         enemySpawner = new EnemySpawner(mapWidth, mapHeight, screenShake, physicsManager, navMesh);
-        enemySpawner.setCurrentWorld("Textures/World1.tmx"); // Set current world for world-specific spawning
+        enemySpawner.setWorldSize(mapWidth, mapHeight); // ensure spawner knows world bounds
+        enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath()); // Set current world for world-specific spawning
         enemySpawner.setCollisionMap(mapManager.getTiledMap()); // Set collision map for proper spawn detection
-        enemySpawner.spawnInitial(10);
+        enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
 
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
@@ -177,7 +247,7 @@ public class Game implements Screen {
         // --- STOP MENU MUSIC AND START WORLD 1 MUSIC ---
         musicManager.stop(); // Stop the menu/character selection music
         musicManager.dispose(); // Clear the old music
-        musicManager.loadMusic("Music/world1_music.mp3"); // Load World 1 music
+        musicManager.loadMusic("Music/World1_Music.mp3"); // Load World 1 music (corrected filename)
         musicManager.play(); // Start playing
 
         // --- LOAD CHARACTER SOUNDS ---
@@ -237,6 +307,34 @@ public class Game implements Screen {
                 if (keycode == com.badlogic.gdx.Input.Keys.I) {
                     if (!isPaused && !isGameOver) {
                         inventoryUI.toggle();
+                        return true;
+                    }
+                }
+                if (keycode == com.badlogic.gdx.Input.Keys.F9) {
+                    // Debug: log player position for choosing spawn points
+                    float sx = player.getSprite().getX();
+                    float sy = player.getSprite().getY();
+                    float cx = player.getBody().getPosition().x;
+                    float cy = player.getBody().getPosition().y;
+                    int px = Math.round(sx * 32f);
+                    int py = Math.round(sy * 32f);
+                    Gdx.app.log("SpawnDebug", String.format("sprite=(%.2f,%.2f) center=(%.2f,%.2f) pixels=(%d,%d)", sx, sy, cx, cy, px, py));
+                    return true;
+                }
+                if (keycode == com.badlogic.gdx.Input.Keys.F7) {
+                        // Toggle portal debug overlay
+                        debugPortals = !debugPortals;
+                        Gdx.app.log("Portals", "debugPortals=" + debugPortals);
+                        return true;
+                    }
+                    if (keycode == com.badlogic.gdx.Input.Keys.F8) {
+                    if (!isPaused && !isGameOver) {
+                        // Trigger portal-like FX and jump to World1_Boss immediately
+                        teleportFxActive = true;
+                        teleportFxTimer = 0f;
+                        teleportFxUseBlack = true; // use black transition on F8
+                        teleportFxParticles.clear();
+                        transitionToMap(WorldMapManager.WorldMap.WORLD_1_BOSS.getFilePath(), null, null);
                         return true;
                     }
                 }
@@ -362,14 +460,30 @@ public class Game implements Screen {
         // --- Batches & renderers ---
         spriteBatch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        backBtnTexture = new Texture("ui/Menu/back_button.png");
+        // Ensure back button texture is available; create a fallback if asset missing
+        if (backBtnTexture == null) {
+            try {
+                backBtnTexture = new Texture(Gdx.files.internal("ui/back_button.png"));
+            } catch (Exception ex) {
+                Pixmap pm = new Pixmap(32, 32, Pixmap.Format.RGBA8888);
+                pm.setColor(1, 1, 1, 1);
+                pm.fillRectangle(0, 0, 32, 32);
+                backBtnTexture = new Texture(pm);
+                pm.dispose();
+            }
+        }
         backBtnSprite = new Sprite(backBtnTexture);
         backBtnSprite.setSize(1.5f, 1.5f);
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
         worldRenderer = new WorldRenderer(mapManager.getRenderer(), mapManager.getTiledMap());
+        // Load any portal rectangles from the current map
+        loadPortalsFromMap();
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
+
+        // --- UI Manager (Boss UI, etc.) ---
+        uiManager = new UIManager(uiViewport, spriteBatch, damageFont);
 
         // --- Pause UI ---
         pauseSkin = new Skin(Gdx.files.internal("uiskin.json"));
@@ -471,6 +585,10 @@ public class Game implements Screen {
 
     @Override
     public void render(float delta) {
+        // Throttled player position logger (every 0.5s)
+        if (playerPosLogTimer == Float.NaN) { // ensure initialized
+            playerPosLogTimer = 0f;
+        }
         // MEMORY DEBUG: Monitor memory usage every 5 seconds
         if (System.currentTimeMillis() % 5000 < 16) {
             Runtime runtime = Runtime.getRuntime();
@@ -480,8 +598,23 @@ public class Game implements Screen {
             System.out.println("Total Enemies: " + enemySpawner.getEnemies().size());
             System.out.println("==================");
         }
-        
+
         // --- Update logic ---
+        if (teleportFxActive) {
+            teleportFxTimer += delta;
+            // particles update
+            for (int i = teleportFxParticles.size() - 1; i >= 0; i--) {
+                TeleportParticle p = teleportFxParticles.get(i);
+                p.life -= delta;
+                if (p.life <= 0f) { teleportFxParticles.remove(i); continue; }
+                p.x += p.vx * delta;
+                p.y += p.vy * delta;
+            }
+            if (teleportFxTimer >= teleportFxDuration) {
+                teleportFxActive = false;
+                teleportFxParticles.clear();
+            }
+        }
         if (!isPaused && !isGameOver) {
             inputManager.update();
             physicsManager.step(delta);
@@ -499,6 +632,50 @@ public class Game implements Screen {
             enemyLogic.update(delta);
             screenShake.update(delta);
             entityRenderer.update(delta);
+            // Decrease portal cooldown if active
+            if (portalCooldown > 0f) {
+                portalCooldown = Math.max(0f, portalCooldown - delta);
+            }
+            // Accumulate time and print player position every 0.5s
+            playerPosLogTimer += delta;
+            if (playerPosLogTimer >= 0.5f) {
+                float px = player.getSprite().getX();
+                float py = player.getSprite().getY();
+                com.badlogic.gdx.math.Vector2 bc = player.getBody().getPosition();
+                System.out.println(String.format("PLAYER POSITION: sprite=(%.3f, %.3f) bodyCenter=(%.3f, %.3f)", px, py, bc.x, bc.y));
+                playerPosLogTimer = 0f;
+            }
+
+            // Check for portal overlap after movement update
+            // Keep boss reference fresh before gating portals
+            uiManager.updateBossReference(enemySpawner.getEnemies());
+            // Update boss spawn/death flags robustly
+            capstone.main.Enemies.BossEntity bossRef = uiManager.getBossManager().getCurrentBoss();
+            if (bossRef != null) {
+                bossSpawnedInCurrentWorld = true;
+                if (bossRef.isDead()) bossDefeatedInCurrentWorld = true;
+            } else {
+                // If a boss had spawned earlier but is now gone, consider it defeated
+                // as BossManager likely cleared the reference upon death/removal
+                if (bossSpawnedInCurrentWorld) {
+                    // Double-check enemy list has no remaining bosses
+                    boolean anyBossLeft = false;
+                    for (Object e : enemySpawner.getEnemies()) {
+                        if (e instanceof capstone.main.Enemies.BossEntity) { anyBossLeft = true; break; }
+                    }
+                    if (!anyBossLeft) bossDefeatedInCurrentWorld = true;
+                }
+            }
+            // Show a one-time cleared toast once boss is defeated in boss worlds
+            capstone.main.Managers.WorldMapManager.WorldMap curWorldTmp = worldMapManager.getCurrentWorld();
+            boolean isBossWorldTmp = (curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1_BOSS
+                || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2_BOSS
+                || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS);
+            if (isBossWorldTmp && bossDefeatedInCurrentWorld && !bossClearedToastShown) {
+                uiManager.showToast("Area cleared! Portal unlocked.", 1.6f);
+                bossClearedToastShown = true;
+            }
+            checkPortalsAndMaybeTransition();
 
             if (player instanceof MannyPacquiao) {
                 ((MannyPacquiao) player).updateSkills(delta);
@@ -529,11 +706,69 @@ public class Game implements Screen {
         }
 
         // --- World rendering ---
+        // Teleportation FX: black transition (cinematic fade with vignette)
+        if (teleportFxActive) {
+            float t = Math.min(1f, teleportFxTimer / teleportFxDuration);
+            float w = Gdx.graphics.getWidth();
+            float h = Gdx.graphics.getHeight();
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            // ease in/out to make it feel smoother
+            float k = (float)(1.0 - Math.cos(Math.PI * t)) * 0.5f; // 0..1
+            float alpha = Math.min(1f, 1.2f * k);
+            // full-screen black
+            shapeRenderer.setColor(0f, 0f, 0f, alpha);
+            shapeRenderer.rect(0, 0, w, h);
+
+            // subtle inward vignette near the end
+            float cx = w / 2f;
+            float cy = h / 2f;
+            float ringR = (0.25f + 0.75f * k) * Math.max(w, h);
+            float ringAlpha = 0.35f * (1f - k);
+            shapeRenderer.setColor(0f, 0f, 0f, ringAlpha);
+            int steps = 42;
+            for (int i = 0; i < steps; i++) {
+                float ang0 = (i / (float)steps) * 6.2831853f;
+                float ang1 = ((i + 1) / (float)steps) * 6.2831853f;
+                float x0 = cx + (float)Math.cos(ang0) * ringR;
+                float y0 = cy + (float)Math.sin(ang0) * ringR;
+                float x1 = cx + (float)Math.cos(ang1) * ringR;
+                float y1 = cy + (float)Math.sin(ang1) * ringR;
+                shapeRenderer.triangle(cx, cy, x0, y0, x1, y1);
+            }
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
         updateCamera();
         updateWeaponAiming();
         viewport.apply();
         worldRenderer.render(camera);
         entityRenderer.render(camera);
+        // Debug draw portal rectangles
+        if (debugPortals && portals != null) {
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapeRenderer.setProjectionMatrix(camera.combined);
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(0f, 1f, 0f, 0.25f);
+            for (PortalRect p : portals) {
+                // Draw inflated portal rect to match overlap logic
+                float x = p.rect.x - 0.1f;
+                float y = p.rect.y - 0.1f;
+                float w = p.rect.width + 0.2f;
+                float h = p.rect.height + 0.6f;
+                shapeRenderer.rect(x, y, w, h);
+            }
+            shapeRenderer.end();
+            Gdx.gl.glDisable(GL20.GL_BLEND);
+        }
+        // Update and render boss UI (Scene2D, screen-space)
+        uiManager.updateBossReference(enemySpawner.getEnemies());
+        uiManager.actAndDraw(delta);
 
         if (bulletLogic != null) {
             bulletLogic.render(spriteBatch, camera);
@@ -608,6 +843,7 @@ public class Game implements Screen {
     }
 
     private void updateCamera() {
+
         float targetX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
         float targetY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
         Vector3 mouseWorld = viewport.getCamera().unproject(new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f));
@@ -615,6 +851,193 @@ public class Game implements Screen {
         targetX += (mouseWorld.x - targetX) * panFactor;
         targetY += (mouseWorld.y - targetY) * panFactor;
         cameraManager.update(Gdx.graphics.getDeltaTime(), targetX, targetY, mouseWorld);
+    }
+
+    private void loadPortalsFromMap() {
+        portals.clear();
+        com.badlogic.gdx.maps.MapLayer layer = mapManager.getTiledMap().getLayers().get("portals");
+        if (layer == null) {
+            Gdx.app.log("Portals", "No 'portals' layer found in map " + worldMapManager.getCurrentWorldPath());
+            return;
+        }
+        float scale = 1 / 32f;
+        for (com.badlogic.gdx.maps.MapObject obj : layer.getObjects()) {
+            if (obj instanceof com.badlogic.gdx.maps.objects.RectangleMapObject) {
+                com.badlogic.gdx.math.Rectangle r = ((com.badlogic.gdx.maps.objects.RectangleMapObject) obj).getRectangle();
+                com.badlogic.gdx.math.Rectangle worldRect = new com.badlogic.gdx.math.Rectangle(r.x * scale, r.y * scale, r.width * scale, r.height * scale);
+                // Inflate upward to make portals more forgiving
+                worldRect.y -= 0.1f;
+                worldRect.height += 0.9f;
+                String target = obj.getProperties().get("target", String.class);
+                Float sx = obj.getProperties().containsKey("spawnX") ? Float.parseFloat(obj.getProperties().get("spawnX").toString()) : null;
+                Float sy = obj.getProperties().containsKey("spawnY") ? Float.parseFloat(obj.getProperties().get("spawnY").toString()) : null;
+                if (target != null && !target.isEmpty()) {
+                    // Disable reverse portal from World1_Boss -> World1
+                    String currentPath = worldMapManager.getCurrentWorldPath();
+                    if (currentPath != null && currentPath.contains("World1_Boss") && target.contains("Textures/World1.tmx")) {
+                        Gdx.app.log("Portals", "Skipping reverse portal back to World1 from World1_Boss");
+                    } else {
+                        portals.add(new PortalRect(worldRect, target, sx, sy));
+                        String trimmed = target.trim();
+                        if (!trimmed.equals(target)) {
+                            Gdx.app.log("Portals", "WARNING: target has trailing/leading whitespace: '" + target + "' -> '" + trimmed + "'");
+                        }
+                        Gdx.app.log("Portals", "Loaded portal -> target=" + target + ", spawnX=" + sx + ", spawnY=" + sy + ", rect=" + worldRect);
+                    }
+                }
+            }
+        }
+        Gdx.app.log("Portals", "Total portals loaded: " + portals.size());
+    }
+
+    private void checkPortalsAndMaybeTransition() {
+        // Block portal usage if a boss exists and is not dead
+        BossEntity boss = uiManager.getBossManager().getCurrentBoss();
+        // Gate portals only in boss worlds (e.g., World1_Boss)
+        capstone.main.Managers.WorldMapManager.WorldMap curWorld = worldMapManager.getCurrentWorld();
+        boolean isBossWorld = (curWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1_BOSS
+            || curWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2_BOSS
+            || curWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS);
+
+        // Determine spawn/clear state from live enemies each frame (source of truth)
+        boolean anyBossPresent = false;
+        boolean anyBossAlive = false;
+        for (Object e : enemySpawner.getEnemies()) {
+            if (e instanceof capstone.main.Enemies.BossEntity) {
+                anyBossPresent = true;
+                if (!((capstone.main.Enemies.BossEntity)e).isDead()) anyBossAlive = true;
+            }
+        }
+        boolean bossSpawned = anyBossPresent || bossSpawnedInCurrentWorld; // remember if we saw one earlier
+        boolean bossCleared = bossSpawned && !anyBossAlive; // spawned at some point and no alive bosses now
+        // Persist flags
+        if (bossSpawned) bossSpawnedInCurrentWorld = true;
+        if (bossCleared) bossDefeatedInCurrentWorld = true;
+
+        // If in a boss world and boss either not spawned yet OR spawned but not dead, block with toast when entering portal area
+        if (isBossWorld && (!bossSpawned || !bossCleared)) {
+            // Only show toast if player is attempting to walk into any portal area
+            float sx = player.getSprite().getX();
+            float sy = player.getSprite().getY();
+            float sw = player.getSprite().getWidth();
+            float sh = player.getSprite().getHeight();
+            com.badlogic.gdx.math.Rectangle playerRect = new com.badlogic.gdx.math.Rectangle(sx, sy, sw, sh);
+            for (PortalRect p : portals) {
+                com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
+                    p.rect.x - 0.1f, p.rect.y - 0.1f, p.rect.width + 0.2f, p.rect.height + 0.6f
+                );
+                com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
+                    playerRect.x, playerRect.y - 0.15f, playerRect.width, playerRect.height + 0.3f
+                );
+                if (expandedPortal.overlaps(expandedPlayer)) {
+                    uiManager.showToast("Area locked: Defeat the boss to proceed", 1.2f);
+                    return; // Block transition
+                }
+            }
+        }
+        if (portalCooldown > 0f || portals.isEmpty()) return;
+        // Use player's full hitbox instead of only center point for overlap detection
+        float sx = player.getSprite().getX();
+        float sy = player.getSprite().getY();
+        float sw = player.getSprite().getWidth();
+        float sh = player.getSprite().getHeight();
+        com.badlogic.gdx.math.Rectangle playerRect = new com.badlogic.gdx.math.Rectangle(sx, sy, sw, sh);
+        for (PortalRect p : portals) {
+            // Expand portal slightly to be more forgiving
+            com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
+                p.rect.x - 0.1f, p.rect.y - 0.1f, p.rect.width + 0.2f, p.rect.height + 0.6f
+            );
+            // Also expand player rect slightly downward (feet)
+            com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
+                playerRect.x, playerRect.y - 0.15f, playerRect.width, playerRect.height + 0.3f
+            );
+            if (expandedPortal.overlaps(expandedPlayer)) {
+                Gdx.app.log("Portals", "Player overlapped portal -> " + p.targetMap + " playerRect=" + playerRect + " portalRect=" + p.rect + " expandedPortal=" + expandedPortal + " expandedPlayer=" + expandedPlayer);
+                transitionToMap(p.targetMap, p.spawnX, p.spawnY);
+                break;
+            }
+        }
+    }
+
+    private void transitionToMap(String targetMapPath, Float overrideSpawnX, Float overrideSpawnY) {
+        // Avoid retrigger
+        portalCooldown = 1.0f;
+
+        // Start teleport FX for any transition
+        teleportFxActive = true;
+        teleportFxTimer = 0f;
+
+        // Load target world
+        worldMapManager.setCurrentWorld(targetMapPath);
+        // Reset boss state when entering a new world
+        bossSpawnedInCurrentWorld = false;
+        bossDefeatedInCurrentWorld = false;
+        bossClearedToastShown = false;
+
+        // Pause player movement
+        player.getBody().setLinearVelocity(0, 0);
+
+        // Load new map and renderer
+        mapManager.load(targetMapPath);
+        mapRenderer = mapManager.getRenderer();
+        mapWidth = mapManager.getWorldWidth();
+        mapHeight = mapManager.getWorldHeight();
+
+        // update spawner after map load
+        if (enemySpawner != null) {
+            enemySpawner.setWorldSize(mapWidth, mapHeight);
+            enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath());
+            enemySpawner.setCollisionMap(mapManager.getTiledMap());
+        }
+
+        // Rebuild camera constraints
+        cameraManager = new CameraManager((OrthographicCamera) viewport.getCamera(), screenShake, mapWidth, mapHeight);
+
+        // Rebuild NavMesh and update spawner
+        int maxNavMeshSize = 200;
+        int navWidth = Math.min(maxNavMeshSize, (int) mapManager.getWorldWidth());
+        int navHeight = Math.min(maxNavMeshSize, (int) mapManager.getWorldHeight());
+        NavMesh navMesh = new NavMesh(navWidth, navHeight,
+            CollisionLoader.getCollisionRectangles(mapManager.getTiledMap(), "collisionLayer", 1 / 32f));
+        enemySpawner.setNavMesh(navMesh);
+        enemySpawner.setCurrentWorld(targetMapPath);
+        enemySpawner.setCollisionMap(mapManager.getTiledMap());
+        // Apply world-specific spawn policy and handle boss spawning
+        capstone.main.Managers.WorldMapManager.WorldMap wm = worldMapManager.getCurrentWorld();
+        capstone.main.Managers.WorldSpawnPolicy policy = capstone.main.Managers.SpawnPolicies.getPolicy(wm);
+        enemySpawner.setPolicy(policy);
+        enemySpawner.clearEnemies();
+        if (policy != null) {
+            policy.onEnterWorld(enemySpawner, wm);
+        }
+        // Only do periodic initial spawns if allowed by policy
+        if (policy == null || policy.allowPeriodicSpawns()) {
+            enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
+        }
+
+        // Rebuild world renderer
+        worldRenderer = new WorldRenderer(mapManager.getRenderer(), mapManager.getTiledMap());
+
+        // Re-read portals from new map
+        loadPortalsFromMap();
+
+        // Determine spawn
+        float sx, sy;
+        if (overrideSpawnX != null && overrideSpawnY != null) {
+            sx = overrideSpawnX;
+            sy = overrideSpawnY;
+        } else {
+            WorldMapManager.SpawnPoint sp = worldMapManager.getSpawnPoint(worldMapManager.getCurrentWorld());
+            sx = sp.x;
+            sy = sp.y;
+        }
+        // Teleport player (center is body position)
+        player.getBody().setTransform(sx + player.getWidth() / 2f, sy + player.getHeight() / 2f, 0);
+        player.getBody().setLinearVelocity(0, 0);
+        // Ensure sprite sync next update
+        player.getSprite().setPosition(sx, sy);
+
+        Gdx.app.log("Transition", "Moved to " + targetMapPath + " spawn=(" + sx + "," + sy + ")");
     }
 
     private void createPauseMenu() {
@@ -833,6 +1256,7 @@ public class Game implements Screen {
         if (width <= 0 || height <= 0) return;
         viewport.update(width, height, true);
         uiViewport.update(width, height, true);
+        if (uiManager != null) uiManager.resize(width, height);
         heartsHud.resize(width, height);
         if (skillHud != null) skillHud.resize(width, height);
         if (inventoryUI != null) inventoryUI.resize(width, height);
@@ -901,9 +1325,10 @@ public class Game implements Screen {
         if (player != null) player.dispose();
         if (skillHud != null) skillHud.dispose();
         if (inventoryUI != null) inventoryUI.dispose();
+       if (uiManager != null) uiManager.dispose();
 
-        // Stop World 1 music when leaving game screen
-        MusicManager.getInstance().stop();
+       // Stop World 1 music when leaving game screen
+       MusicManager.getInstance().stop();
     }
 
 
@@ -936,8 +1361,8 @@ public class Game implements Screen {
                 return new Quiboloy(
                     100,           // healthPoints (rebalanced: 90→100 - slightly less fragile)
                     120,           // manaPoints (highest - mage needs mana)
-                    10,            // baseDamage (rebalanced: 12→10)
-                    15,            // maxDamage (rebalanced: 18→15, now 10-15 damage range)
+                    1000,            // baseDamage (rebalanced: 12→10)
+                    1500,            // maxDamage (rebalanced: 18→15, now 10-15 damage range)
                     1.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y

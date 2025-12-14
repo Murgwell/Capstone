@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="28">
- <tileset firstgid="1" source="tilesets/floor.tsx"/>
- <tileset firstgid="221" source="tilesets/castle.tsx"/>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="32" height="32" tilewidth="32" tileheight="32" infinite="0" nextlayerid="4" nextobjectid="28">
+ <tileset firstgid="1" source="Backgrounds/tilesets/floor.tsx"/>
+ <tileset firstgid="221" source="Backgrounds/tilesets/castle.tsx"/>
  <layer id="1" name="Floor" width="32" height="32">
   <data encoding="csv">
 255,255,255,255,255,255,255,255,255,255,255,255,255,291,22,22,23,287,255,255,255,255,255,255,255,255,255,255,255,255,255,255,

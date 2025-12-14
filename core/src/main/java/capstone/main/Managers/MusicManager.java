@@ -3,6 +3,10 @@ package capstone.main.Managers;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Music;
 
+/**
+ * Singleton manager for handling background music throughout the game
+ * Provides volume control, enable/disable functionality, and error handling
+ */
 public class MusicManager {
     private static MusicManager instance;
     private Music backgroundMusic;
@@ -33,11 +37,23 @@ public class MusicManager {
             backgroundMusic.dispose();
         }
 
-        // Load new music
-        backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal(path));
-        backgroundMusic.setLooping(true);
-        backgroundMusic.setVolume(volume);
-        currentMusicPath = path;
+        try {
+            // Load new music with error handling
+            if (!Gdx.files.internal(path).exists()) {
+                Gdx.app.error("MusicManager", "Music file not found: " + path);
+                return;
+            }
+            
+            backgroundMusic = Gdx.audio.newMusic(Gdx.files.internal(path));
+            backgroundMusic.setLooping(true);
+            backgroundMusic.setVolume(volume);
+            currentMusicPath = path;
+            Gdx.app.log("MusicManager", "Successfully loaded music: " + path);
+        } catch (Exception e) {
+            Gdx.app.error("MusicManager", "Failed to load music: " + path + " - " + e.getMessage());
+            backgroundMusic = null;
+            currentMusicPath = null;
+        }
     }
 
     public void play() {

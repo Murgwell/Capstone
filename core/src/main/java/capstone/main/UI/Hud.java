@@ -220,27 +220,13 @@ public class Hud {
         if (barFill1x1 != null) barFill1x1.dispose();
     }
 
-    // --- Utility: adapt to your AbstractPlayer getters ---
+    // --- Utility: AbstractPlayer API integration ---
     private int getHp() {
-        // Replace with your actual health getter (e.g., player.getHp() or getCurrentHP())
-        // TODO: align with your AbstractPlayer API
-        try {
-            return player.getHp(); // if exists
-        } catch (Throwable t) {
-            // fallback or log
-            Gdx.app.log("HUD", "player.getHp() not found; defaulting to 10");
-            return 10;
-        }
+        return player.getHp();
     }
 
     private int getMaxHp() {
-        // Replace with your actual max health getter (e.g., player.getMaxHp())
-        try {
-            return player.getMaxHp(); // if exists
-        } catch (Throwable t) {
-            Gdx.app.log("HUD", "player.getMaxHp() not found; defaulting to 10");
-            return 10;
-        }
+        return player.getMaxHp();
     }
 
     /** Optional: change how many HP each heart represents at runtime. */

@@ -11,6 +11,10 @@ import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.physics.box2d.*;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+/**
+ * Abstract base class for all playable characters in the game
+ * Provides common functionality like health, movement, animations, and Box2D physics
+ */
 public abstract class AbstractPlayer {
     private static final float PPM = 32f;
     protected Body body;

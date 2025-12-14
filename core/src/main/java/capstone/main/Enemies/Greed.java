@@ -14,7 +14,41 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.files.FileHandle;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
-public class Greed extends AbstractEnemy {
+public class Greed extends AbstractEnemy implements BossEntity, TelegraphProvider {
+
+    // Boss-specific stats and skill system
+    private final float maxHealthBoss = GreedConfig.MAX_HP;
+    private float skillTimer = 0f;
+    private float skillCooldown = 3.5f;
+    private boolean telegraphing = false;
+    private String currentSkill = null; // for UI
+    private float castTime = 0f;
+    private float castTotalTime = 0f; // for UI progress
+
+
+    public boolean isBoss() { return true; }
+    public float getMaxHealth() { return maxHealthBoss; }
+    public float getCurrentHealth() { return this.health; }
+    public float getHealthRatio() { return Math.max(0f, Math.min(1f, health / maxHealthBoss)); }
+    public String getSkillWarning() { return telegraphing ? ("WARNING: " + currentSkill + " incoming!") : ""; }
+
+    // --- Telegraph info for rendering ---
+    public boolean isTelegraphing() { return telegraphing; }
+    public String getTelegraphSkill() { return currentSkill; }
+
+    // Telegraph origin and angle (fixed when telegraph starts)
+    private float telegraphX = 0f, telegraphY = 0f, telegraphAngleDeg = 0f;
+    public float getTelegraphOriginX() { return telegraphX; }
+    public float getTelegraphOriginY() { return telegraphY; }
+    public float getTelegraphAngleDegrees() { return telegraphAngleDeg; }
+
+    // UI: expose cast progress for telegraphing phase
+    public float getCastProgress() {
+        if (!telegraphing || castTotalTime <= 0f) return 0f;
+        float p = 1f - (castTime / castTotalTime);
+        if (p < 0f) p = 0f; if (p > 1f) p = 1f; return p;
+    }
+
 
     private Animation<TextureRegion> animDown;
     private Animation<TextureRegion> animUp;
@@ -36,7 +70,7 @@ public class Greed extends AbstractEnemy {
         super(
             x, y,
             new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"),
-            5.0f, 5.0f, 100,
+            5.0f, 5.0f, 1200, // boss HP
             screenShake, physics, navMesh
         );
 
@@ -95,6 +129,21 @@ public class Greed extends AbstractEnemy {
         }
 
         this.speed = 1.5f;
+        com.badlogic.gdx.Gdx.app.log("Greed", "Spawned at (" + x + ", " + y + ")");
+
+        // Reduce friction and collision size to avoid getting snagged on collision layer
+        for (com.badlogic.gdx.physics.box2d.Fixture fx : body.getFixtureList()) {
+            fx.setFriction(0f);
+            com.badlogic.gdx.physics.box2d.Shape.Type t = fx.getShape().getType();
+            if (t == com.badlogic.gdx.physics.box2d.Shape.Type.Circle) {
+                ((com.badlogic.gdx.physics.box2d.CircleShape) fx.getShape()).setRadius(0.6f); // narrower body for corridors
+            }
+        }
+        body.setSleepingAllowed(false);
+
+        // Boss should aggressively chase the player across the arena
+        this.defaultChaseDistance = 1000f; // effectively always aggro when spawned
+        this.aggroChaseDistance = 1000f;   // do not leash within the arena
     }
 
     @Override
@@ -107,6 +156,51 @@ public class Greed extends AbstractEnemy {
         // Core behavior & hit flash
         updateHitFlash(delta);
         pathfindingChaseBehavior(delta, player);
+
+        // Telegraph visuals (simple tint pulse while telegraphing)
+        if (telegraphing) {
+            float pulse = (MathUtils.sin(stateTime * 10f) * 0.25f) + 0.75f; // 0.5..1.0
+            sprite.setColor(1f, 0.6f, 0.1f, pulse); // orange-ish
+        } else {
+            sprite.setColor(1f, 1f, 1f, 1f);
+        }
+
+        // Boss skill state machine
+        skillTimer += delta;
+        if (!telegraphing && skillTimer >= skillCooldown) {
+            // Pick a skill to telegraph
+            int pick = MathUtils.random(0, 2);
+            switch (pick) {
+                case 0: currentSkill = "SLAM"; castTime = GreedConfig.SLAM_TELEGRAPH; castTotalTime = castTime; break;
+                case 1: currentSkill = "CONE BARRAGE"; castTime = GreedConfig.BARRAGE_TELEGRAPH; castTotalTime = castTime; break;
+                default: currentSkill = "RING WAVE"; castTime = GreedConfig.RING_TELEGRAPH; castTotalTime = castTime; break;
+            }
+            telegraphing = true;
+
+            // Fix telegraph origin and angle at start
+            Vector2 pos = getBody().getPosition();
+            telegraphX = pos.x;
+            telegraphY = pos.y;
+            // Freeze angle based on current facing (last velocity)
+            telegraphAngleDeg = (float) Math.toDegrees(Math.atan2(lastVY, lastVX));
+            if (Float.isNaN(telegraphAngleDeg)) telegraphAngleDeg = 0f;
+        } else if (telegraphing) {
+            castTime -= delta;
+            // If cone is being cast, halt movement during telegraph
+            if ("CONE BARRAGE".equals(currentSkill)) {
+                body.setLinearVelocity(0,0);
+            }
+            if (castTime <= 0f) {
+                // Execute skill
+                performSkill(currentSkill, player);
+                telegraphing = false;
+                currentSkill = null;
+                skillTimer = 0f;
+                castTotalTime = 0f;
+                // Slightly randomize cooldown for variety
+                skillCooldown = MathUtils.random(GreedConfig.COOLDOWN_MIN, GreedConfig.COOLDOWN_MAX);
+            }
+        }
 
         stateTime += delta;
 
@@ -126,9 +220,57 @@ public class Greed extends AbstractEnemy {
 
         if (frame != null) {
             sprite.setRegion(frame);
-            sprite.setSize(spriteWidth, spriteHeight);
+           // Slight size pulse when telegraphing
+           if (telegraphing) {
+               float s = 1f + 0.03f * MathUtils.sin(stateTime * 8f);
+               sprite.setSize(spriteWidth * s, spriteHeight * s);
+           } else {
+               sprite.setSize(spriteWidth, spriteHeight);
+           }
         }
 
+    }
+
+    private void performSkill(String skill, AbstractPlayer player) {
+        if (skill == null) return;
+        Vector2 bossPos = getBody().getPosition();
+        Vector2 playerCenter = new Vector2(
+                player.getSprite().getX() + player.getSprite().getWidth() / 2f,
+                player.getSprite().getY() + player.getSprite().getHeight() / 2f
+        );
+        float dx = playerCenter.x - bossPos.x;
+        float dy = playerCenter.y - bossPos.y;
+        float distance = (float)Math.sqrt(dx*dx + dy*dy);
+
+        switch (skill) {
+            case "SLAM":
+                if (distance <= GreedConfig.SLAM_RANGE) {
+                    player.damage(GreedConfig.SLAM_DAMAGE);
+                    screenShake.shake(0.25f, 0.1f);
+                }
+                break;
+            case "CONE BARRAGE":
+                float angleToPlayer = (float)Math.toDegrees(Math.atan2(dy, dx));
+                float facingAngle = lastVX >= 0 ? 0f : 180f; // crude facing
+                float deltaAngle = Math.abs(normalizeAngle(angleToPlayer - facingAngle));
+                if (deltaAngle <= GreedConfig.BARRAGE_CONE_HALF_ANGLE && distance <= GreedConfig.BARRAGE_RANGE) {
+                    player.damage(GreedConfig.BARRAGE_DAMAGE);
+                    screenShake.shake(0.2f, 0.1f);
+                }
+                break;
+            case "RING WAVE":
+                if (distance <= GreedConfig.RING_RANGE) {
+                    player.damage(GreedConfig.RING_DAMAGE);
+                    screenShake.shake(0.2f, 0.1f);
+                }
+                break;
+        }
+    }
+
+    private float normalizeAngle(float a) {
+        while (a > 180f) a -= 360f;
+        while (a < -180f) a += 360f;
+        return a;
     }
 
     private TextureRegion idleFrameFromLastDir() {

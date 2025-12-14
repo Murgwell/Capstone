@@ -4,6 +4,10 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
+/**
+ * Represents a floating damage/healing number that appears above entities
+ * Supports object pooling for performance optimization
+ */
 public class DamageNumber {
     private String text;
     private float x;
@@ -53,5 +57,21 @@ public class DamageNumber {
 
     public boolean isExpired() {
         return lifetime >= maxLifetime;
+    }
+    
+    /**
+     * Reset the damage number for reuse in object pooling
+     * @param newText The text to display
+     * @param newX The x position
+     * @param newY The y position
+     * @param newColor The color of the text
+     */
+    public void reset(String newText, float newX, float newY, Color newColor) {
+        this.text = newText;
+        this.x = newX;
+        this.y = newY;
+        this.color = newColor.cpy();
+        this.lifetime = 0f;
+        this.alpha = 1f;
     }
 }

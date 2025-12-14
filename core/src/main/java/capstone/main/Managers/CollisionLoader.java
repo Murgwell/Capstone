@@ -1,5 +1,6 @@
 package capstone.main.Managers;
 
+import capstone.main.CollisionBits;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
@@ -40,6 +41,10 @@ public class CollisionLoader {
 
             FixtureDef fix = new FixtureDef();
             fix.shape = shape;
+            fix.friction = 0.2f;
+            fix.filter.categoryBits = CollisionBits.WALL;
+            // Let bullets pass through walls: do NOT include BULLET in maskBits
+            fix.filter.maskBits = (short)(CollisionBits.PLAYER | CollisionBits.ENEMY);
             body.createFixture(fix).setUserData("solid");
             shape.dispose();
         }

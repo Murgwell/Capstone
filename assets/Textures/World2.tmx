@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.0" orientation="orthogonal" renderorder="right-down" width="64" height="92" tilewidth="32" tileheight="32" infinite="0" nextlayerid="14" nextobjectid="59">
- <tileset firstgid="1" source="tilesets/bridges and fences.tsx"/>
- <tileset firstgid="617" source="tilesets/terrain.tsx"/>
- <tileset firstgid="3893" source="tilesets/water.tsx"/>
- <tileset firstgid="4131" source="tilesets/buildings.tsx"/>
- <tileset firstgid="6735" source="tilesets/floor.tsx"/>
- <tileset firstgid="6955" source="tilesets/furnitures.tsx"/>
- <tileset firstgid="8395" source="tilesets/props.tsx"/>
- <tileset firstgid="9805" source="tilesets/trees.tsx"/>
- <tileset firstgid="11205" source="tilesets/basement.tsx"/>
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="64" height="92" tilewidth="32" tileheight="32" infinite="0" nextlayerid="16" nextobjectid="87">
+ <tileset firstgid="1" source="Backgrounds/tilesets/bridges and fences.tsx"/>
+ <tileset firstgid="617" source="Backgrounds/tilesets/terrain.tsx"/>
+ <tileset firstgid="3893" source="Backgrounds/tilesets/water.tsx"/>
+ <tileset firstgid="4131" source="Backgrounds/tilesets/buildings.tsx"/>
+ <tileset firstgid="6735" source="Backgrounds/tilesets/floor.tsx"/>
+ <tileset firstgid="6955" source="Backgrounds/tilesets/furnitures.tsx"/>
+ <tileset firstgid="8395" source="Backgrounds/tilesets/props.tsx"/>
+ <tileset firstgid="9805" source="Backgrounds/tilesets/trees.tsx"/>
+ <tileset firstgid="11205" source="Backgrounds/tilesets/basement.tsx"/>
  <layer id="7" name="Terrain" width="64" height="92">
   <data encoding="csv">
 1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,1263,1259,1260,1261,1262,
@@ -105,6 +105,30 @@
 1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340,1341,1337,1338,1339,1340
 </data>
  </layer>
+ <objectgroup id="14" name="portals">
+  <object id="59" x="769" y="192.75" width="33.25" height="57">
+   <properties>
+    <property name="stringX" type="float" value="0"/>
+    <property name="stringY" type="float" value="0"/>
+    <property name="target" value="Textures/World2_Boss.tmx"/>
+   </properties>
+  </object>
+ </objectgroup>
+ <objectgroup id="15" name="wallLayer">
+  <object id="63" x="1281" y="1762" width="776" height="59"/>
+  <object id="64" x="0" y="1761" width="774" height="59"/>
+  <object id="65" x="36" y="1007" width="778" height="42"/>
+  <object id="66" x="1228" y="986" width="796" height="60"/>
+  <object id="67" x="21" y="988" width="795" height="64"/>
+  <object id="68" x="26" y="481" width="161" height="63"/>
+  <object id="69" x="356" y="468" width="326" height="76"/>
+  <object id="81" x="1558" y="504.667" width="464.667" height="64.6667"/>
+  <object id="82" x="1558.67" y="88.6667" width="9.33333" height="263.333"/>
+  <object id="83" x="1556.67" y="385.333" width="11.3333" height="190.667"/>
+  <object id="84" x="674" y="38" width="11.3333" height="505.333"/>
+  <object id="85" x="354" y="486.667" width="329.333" height="57.3333"/>
+  <object id="86" x="30.303" y="42.4242" width="1984.85" height="148.485"/>
+ </objectgroup>
  <layer id="5" name="Floor" width="64" height="92">
   <data encoding="csv">
 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5931,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -327,7 +351,7 @@
 5991,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6003,
 6053,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6065,
 6115,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6127,
-6177,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5942,5943,5944,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,2351,5933,5934,5935,5931,5932,5931,5932,5933,5934,5935,5936,5937,5938,5939,5939,6189,
+6177,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5942,5943,5944,5935,5936,5937,5938,5939,5931,5932,5933,5934,5935,5936,5937,5938,5939,5931,5943,5933,5934,5935,5931,5932,5931,5932,5933,5934,5935,5936,5937,5938,5939,5939,6189,
 5992,5993,5994,5995,5996,5997,5998,5999,6000,6001,5993,5994,5995,5996,5997,5998,5999,6000,6001,5993,5994,5995,5996,5997,5998,6004,6005,6005,6005,6005,6005,6005,6005,6005,6005,6005,6005,6005,6006,5995,5996,5997,5998,5999,6000,6001,5993,5994,5995,5996,5997,5993,5994,5993,5994,5995,5996,5997,5998,5999,6000,6001,6001,6003,
 6054,6055,6056,6057,6058,6059,6060,6061,6062,6063,6055,6056,6057,6058,6059,6060,6061,6062,6063,6055,6056,6057,6058,6059,6060,6066,6067,6067,6067,6067,6067,6067,6067,6067,6067,6067,6067,6067,6068,6057,6058,6059,6060,6061,6062,6063,6055,6056,6057,6058,6059,6055,6056,6055,6056,6057,6058,6059,6060,6061,6062,6063,6063,6065,
 6116,6117,6118,6119,6120,6121,6122,6123,6124,6125,6117,6118,6119,6120,6121,6122,6123,6124,6125,6117,6118,6119,6120,6121,6122,6128,6129,6129,6129,6129,6129,6129,6067,6067,6067,6067,6129,6129,6130,6119,6120,6121,6122,6123,6124,6125,6117,6118,6119,6120,6121,6117,6118,6117,6118,6119,6120,6121,6122,6123,6124,6125,6125,6127,
@@ -777,7 +801,7 @@
 10999,11000,11001,11002,0,0,0,0,0,0,0,0,0,11027,11028,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,11116,11117,11118,0,0,0,0,0,0,0,10999,11000,0,0,0,0,0,0,0
 </data>
  </layer>
- <objectgroup id="13" name="Object Layer 1">
+ <objectgroup id="13" name="collisionLayer">
   <object id="1" x="463.721" y="2512.27" width="8.18331" height="5.45554"/>
   <object id="2" x="480.087" y="2520.46" width="43.6443" height="32.7332"/>
   <object id="3" x="158.211" y="2130.39" width="70.922" height="38.1888"/>
@@ -790,8 +814,7 @@
   <object id="13" x="1563.01" y="2547.74" width="106.383" height="43.6443"/>
   <object id="14" x="619.203" y="1827.61" width="79.1053" height="43.6443"/>
   <object id="17" x="561.92" y="1865.79" width="35.461" height="35.461"/>
-  <object id="18" x="-5.45554" y="1797.6" width="780.142" height="13.6388"/>
-  <object id="19" x="774.686" y="1797.6"/>
+  <object id="18" x="-5.45554" y="1805.6" width="780.142" height="15.6388"/>
   <object id="20" x="1284.78" y="1794.87" width="771.959" height="30.0055"/>
   <object id="21" x="1260.23" y="1898.53"/>
   <object id="22" x="782.87" y="1895.8"/>
@@ -801,9 +824,9 @@
   <object id="26" x="1262.96" y="2405.89"/>
   <object id="27" x="780.142" y="2695.04"/>
   <object id="28" x="1271.14" y="2697.76"/>
-  <object id="29" x="16.3666" y="1047.46" width="799.236" height="8.18331"/>
-  <object id="30" x="1246.59" y="1028.37" width="774.686" height="19.0944"/>
-  <object id="31" x="1571.19" y="559.193" width="441.899"/>
+  <object id="29" x="16.3666" y="1038.46" width="799.236" height="17.1833"/>
+  <object id="30" x="1229.59" y="1037.37" width="791.686" height="16.0944"/>
+  <object id="31" x="1558.52" y="559.193" width="460.566" height="14"/>
   <object id="32" x="1753.96" y="570.104" width="242.771" height="24.5499"/>
   <object id="33" x="1655.76" y="684.67" width="275.505" height="81.8331"/>
   <object id="34" x="851.064" y="545.554" width="43.6443" height="144.572"/>
@@ -817,18 +840,26 @@
   <object id="42" x="1928" y="137.333" width="86.6667" height="112"/>
   <object id="43" x="1926.67" y="325.333" width="84" height="72"/>
   <object id="44" x="1853.33" y="340" width="50.6667" height="69.3333"/>
-  <object id="45" x="456" y="225.333" width="152" height="58.6667"/>
+  <object id="45" x="449.667" y="225.333" width="158.333" height="58.6667"/>
   <object id="46" x="490.667" y="189.333" width="53.3333" height="38.6667"/>
   <object id="47" x="641.333" y="114.667" width="32" height="94.6667"/>
   <object id="48" x="617.333" y="169.333" width="16" height="34.6667"/>
   <object id="49" x="165.333" y="181.333" width="52" height="32"/>
   <object id="50" x="42.6667" y="188" width="82.6667" height="128"/>
-  <object id="51" x="22" y="536" width="155" height="11"/>
-  <object id="52" x="359" y="539" width="319" height="6"/>
+  <object id="51" x="22" y="530.667" width="167.667" height="16.3333"/>
+  <object id="52" x="355" y="529" width="323" height="16"/>
   <object id="54" x="674.667" y="69.3333" width="9.33333" height="474.667"/>
-  <object id="55" x="25" y="441" width="5" height="607"/>
+  <object id="55" x="21" y="441" width="9" height="607"/>
   <object id="56" x="30" y="48" width="1" height="408"/>
   <object id="57" x="32" y="40" width="980" height="148"/>
   <object id="58" x="1010" y="38" width="1006" height="154"/>
+  <object id="60" x="768" y="250" width="96" height="5.75"/>
+  <object id="61" x="857.75" y="188.75" width="6.5" height="67"/>
+  <object id="62" x="768" y="188.25" width="96.75" height="3.5"/>
+  <object id="70" x="2017" y="97" width="11" height="954.5"/>
+  <object id="73" x="-60.6061" y="2944.33" width="2154.55" height="122.333"/>
+  <object id="74" x="-145.455" y="-48.4848" width="151.515" height="3109.09"/>
+  <object id="75" x="-81.8182" y="-154.545" width="2266.67" height="154.545"/>
+  <object id="78" x="2046" y="0" width="180" height="3094"/>
  </objectgroup>
 </map>

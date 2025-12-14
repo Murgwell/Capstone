@@ -155,7 +155,7 @@ public class CharacterSelectionScreen implements Screen {
         confirmButton.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                System.out.println("Selected character: " + currentCharacterIndex + " - " + characterNames[currentCharacterIndex]);
+                Gdx.app.log("CharacterSelection", "Selected character: " + currentCharacterIndex + " - " + characterNames[currentCharacterIndex]);
                 // Stop music when entering game
                 MusicManager.getInstance().stop();
                 game.setScreen(new Game(game, currentCharacterIndex));

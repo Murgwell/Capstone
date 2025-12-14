@@ -152,21 +152,31 @@ public abstract class AbstractEnemy {
             }
         } else {
             if (distanceToPlayer <= defaultChaseDistance) {
-                enteredClose = false;
-                isAggro = false;
+                // Enter aggro when player is within default chase distance
+                isAggro = true;
+                // Track if we've been inside the close radius at least once
+                enteredClose = (distanceToPlayer <= aggroChaseDistance);
             } else {
+                // Too far to aggro; stay idle
                 body.setLinearVelocity(0, 0);
                 return;
             }
         }
 
         // --- OPTIMIZED PATHFINDING ---
+        if (navMesh == null) {
+            Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": navMesh is NULL");
+        }
         pathUpdateTimer += delta;
         if (pathUpdateTimer >= PATH_UPDATE_INTERVAL) {
             pathUpdateTimer = 0f;
 
             NavNode startNode = getNearestNode(enemyPos);
             NavNode targetNode = getNearestNode(tmpPlayerPos);
+            if (startNode == null || targetNode == null) {
+                Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": startNode=" + (startNode==null?"null":startNode.x+","+startNode.y) +
+                        " targetNode=" + (targetNode==null?"null":targetNode.x+","+targetNode.y));
+            }
 
             // Only recalculate if target changed significantly or path is empty
             boolean shouldRecalculate = false;
@@ -183,12 +193,14 @@ public abstract class AbstractEnemy {
             }
 
             if (shouldRecalculate && startNode != null && targetNode != null) {
+                Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": recalculating path. start=" + startNode.x+","+startNode.y + " target=" + targetNode.x+","+targetNode.y);
                 // MEMORY FIX: Clear old path before getting new one
                 currentPath.clear();
 
                 // Use cached pathfinding to avoid recalculating same paths
                 currentPath = PathfindingCache.getCachedPath(navMesh, startNode, targetNode);
                 pathIndex = 0;
+                Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": path size=" + (currentPath==null?0:currentPath.size()));
             }
         }
 
@@ -214,12 +226,23 @@ public abstract class AbstractEnemy {
                 if (velocityLen * delta > directionLen) {
                     tmpVelocity.set(tmpDirection.scl(1f / delta));
                 }
+                Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": moving toward node velLen=" + tmpVelocity.len());
             }
         }
 
 
         // --- APPLY VELOCITY ---
-        body.setLinearVelocity(tmpVelocity);
+        // Fallback: if no path movement, steer directly toward player to avoid navmesh gaps
+if (tmpVelocity.isZero()) {
+    tmpDirection.set(tmpPlayerPos).sub(enemyPos);
+    if (tmpDirection.len2() > 1e-6f) {
+        tmpVelocity.set(tmpDirection.nor().scl(speed));
+        if (isSlowed) tmpVelocity.scl(slowMultiplier);
+    }
+}
+
+body.setLinearVelocity(tmpVelocity);
+body.setAwake(true);
 
         sprite.setPosition(
             body.getPosition().x - sprite.getWidth() / 2f,

@@ -4,6 +4,10 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import java.util.HashMap;
 
+/**
+ * Singleton manager for handling sound effects throughout the game
+ * Manages a collection of sounds with volume control and enable/disable functionality
+ */
 public class SoundManager {
     private static SoundManager instance;
     private HashMap<String, Sound> sounds;
@@ -23,8 +27,18 @@ public class SoundManager {
 
     public void loadSound(String key, String path) {
         if (!sounds.containsKey(key)) {
-            Sound sound = Gdx.audio.newSound(Gdx.files.internal(path));
-            sounds.put(key, sound);
+            try {
+                if (!Gdx.files.internal(path).exists()) {
+                    Gdx.app.error("SoundManager", "Sound file not found: " + path);
+                    return;
+                }
+                
+                Sound sound = Gdx.audio.newSound(Gdx.files.internal(path));
+                sounds.put(key, sound);
+                Gdx.app.log("SoundManager", "Successfully loaded sound: " + key + " from " + path);
+            } catch (Exception e) {
+                Gdx.app.error("SoundManager", "Failed to load sound: " + key + " from " + path + " - " + e.getMessage());
+            }
         }
     }
 

@@ -20,6 +20,20 @@ public class EnemyLogic {
     public void update(float delta) {
         spawner.update(delta);
 
+        // Check deferred boss spawn trigger near center (or scheduled point)
+        if (spawner.hasScheduledBoss()) {
+            Gdx.app.log("EnemyLogic", "Scheduled boss present. Player checking trigger zone...");
+            float px = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
+            float py = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
+            float dx = px - spawner.getScheduledBossX();
+            float dy = py - spawner.getScheduledBossY();
+            float dist2 = dx*dx + dy*dy;
+            float r = spawner.getScheduledBossRadius();
+            if (dist2 <= r*r) {
+                spawner.executeScheduledBoss();
+            }
+        }
+
         // Update enemies and check for melee attacks
         for (AbstractEnemy e : enemies) {
             if (!e.isDead()) {
