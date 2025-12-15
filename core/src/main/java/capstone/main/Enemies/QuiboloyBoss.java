@@ -16,7 +16,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 
 /**
  * QuiboloyBoss - The final boss of World 3 representing corruption in the Philippines.
- * 
+ *
  * <p>Boss Mechanics:
  * <ul>
  *   <li>Phase-based combat (3 phases based on HP)</li>
@@ -25,7 +25,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
  *   <li>Summons Follower minions</li>
  *   <li>Teleportation and area attacks</li>
  * </ul>
- * 
+ *
  * <p>Skills:
  * <ul>
  *   <li><b>FIREBALL BARRAGE</b>: Launches multiple fireballs</li>
@@ -34,7 +34,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
  *   <li><b>SUMMON FOLLOWERS</b>: Spawns 3 Follower minions</li>
  *   <li><b>DEVASTATING WAVE</b>: Large AoE knockback attack</li>
  * </ul>
- * 
+ *
  * @author Capstone Team
  * @version 1.0
  */
@@ -46,7 +46,7 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
         public float duration;
         public float maxDuration;
         public float tickTimer;
-        
+
         public CorruptionZone(float x, float y, float radius, float duration) {
             this.x = x;
             this.y = y;
@@ -55,20 +55,20 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
             this.maxDuration = duration;
             this.tickTimer = 0f;
         }
-        
+
         public boolean isExpired() {
             return duration <= 0f;
         }
-        
+
         public float getAlpha() {
             // Fade out as it expires
             return Math.max(0f, duration / maxDuration);
         }
     }
-    
+
     // Active corruption zones
     private final java.util.List<CorruptionZone> activeCorruptionZones = new java.util.ArrayList<>();
-    
+
     public java.util.List<CorruptionZone> getActiveCorruptionZones() {
         return activeCorruptionZones;
     }
@@ -108,13 +108,6 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
     @Override
     public float getTelegraphAngleDegrees() { return telegraphAngleDeg; }
 
-    // UI: expose cast progress for telegraphing phase
-    public float getCastProgress() {
-        if (!telegraphing || castTotalTime <= 0f) return 0f;
-        float p = 1f - (castTime / castTotalTime);
-        if (p < 0f) p = 0f; if (p > 1f) p = 1f; return p;
-    }
-
     private Animation<TextureRegion> animDown;
     private Animation<TextureRegion> animUp;
     private Animation<TextureRegion> animLeft;
@@ -136,7 +129,7 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
         super(x, y,
             new Texture("Textures/Enemies/World3/Quiboloy/Run-Forward/quiboloy_walk-0.png"),
             5.0f, 5.0f, (int)QuiboloyConfig.MAX_HP, screenShake, physics, navMesh); // Final boss HP
-        
+
         this.navMesh = navMesh;
         this.enemySpawner = spawner;
 
@@ -184,7 +177,7 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
             fx.setFriction(0f);
             com.badlogic.gdx.physics.box2d.Shape.Type t = fx.getShape().getType();
             if (t == com.badlogic.gdx.physics.box2d.Shape.Type.Circle) {
-                ((com.badlogic.gdx.physics.box2d.CircleShape) fx.getShape()).setRadius(0.6f);
+                (fx.getShape()).setRadius(0.6f);
             }
         }
         body.setSleepingAllowed(false);
@@ -204,14 +197,13 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
         // Update active corruption zones
         updateCorruptionZones(delta, player);
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         // Telegraph visuals (golden/divine glow while telegraphing)
         if (telegraphing) {
             float pulse = (MathUtils.sin(stateTime * 10f) * 0.25f) + 0.75f; // 0.5..1.0
-            
+
             // Different visual feedback based on skill being charged
             if ("DIVINE JUDGMENT".equals(currentSkill)) {
                 // Golden glow for divine judgment
@@ -307,11 +299,11 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
             CorruptionZone zone = activeCorruptionZones.get(i);
             zone.duration -= delta;
             zone.tickTimer += delta;
-            
+
             // Deal damage at faster rate than poison (more aggressive)
             if (zone.tickTimer >= QuiboloyConfig.CORRUPTION_TICK_RATE) {
                 zone.tickTimer = 0f;
-                
+
                 // Check if player is in the zone
                 Vector2 playerCenter = new Vector2(
                     player.getSprite().getX() + player.getSprite().getWidth() / 2f,
@@ -320,14 +312,14 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 float dx = playerCenter.x - zone.x;
                 float dy = playerCenter.y - zone.y;
                 float distance = (float)Math.sqrt(dx*dx + dy*dy);
-                
+
                 if (distance <= zone.radius) {
                     player.damage(QuiboloyConfig.CORRUPTION_DAMAGE);
                     // Small shake for corruption tick
                     screenShake.shake(0.2f, 0.08f);
                 }
             }
-            
+
             // Remove expired zones
             if (zone.isExpired()) {
                 activeCorruptionZones.remove(i);
@@ -342,7 +334,7 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 player.getSprite().getX() + player.getSprite().getWidth() / 2f,
                 player.getSprite().getY() + player.getSprite().getHeight() / 2f
         );
-        
+
         // Get world bounds (with null safety)
         float worldWidth = 32.0f;  // Default World3_Boss size
         float worldHeight = 32.0f;
@@ -375,14 +367,14 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 }
                 Gdx.app.log("QuiboloyBoss", "Used DIVINE JUDGMENT! Divine light radiates across the arena!");
                 break;
-                
+
             case "FIREBALL BARRAGE":
                 // Shoot multiple fireballs in a spread pattern
                 // Note: Since we can't directly spawn Fireball objects without World reference,
                 // we'll simulate with multiple hit checks in a cone pattern
                 float angleToPlayer = (float)Math.toDegrees(Math.atan2(dy, dx));
                 float halfSpread = QuiboloyConfig.BARRAGE_SPREAD_ANGLE / 2f;
-                
+
                 // Check if player is hit by any of the fireballs (simplified collision check)
                 // In a real implementation, we'd spawn actual Fireball objects
                 boolean playerHit = false;
@@ -390,19 +382,18 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                     for (int i = 0; i < QuiboloyConfig.BARRAGE_FIREBALL_COUNT; i++) {
                         float offset = -halfSpread + (halfSpread * 2f * i / (QuiboloyConfig.BARRAGE_FIREBALL_COUNT - 1));
                         float fireballAngle = angleToPlayer + offset;
-                        float fireballAngleRad = (float)Math.toRadians(fireballAngle);
-                        
+
                         // Check if player is in this fireball's path (simplified)
                         float playerAngle = (float)Math.toDegrees(Math.atan2(dy, dx));
                         float angleDiff = Math.abs(normalizeAngle(fireballAngle - playerAngle));
-                        
+
                         if (angleDiff <= 15f) { // Hit tolerance
                             playerHit = true;
                             break;
                         }
                     }
                 }
-                
+
                 if (playerHit) {
                     player.damage(QuiboloyConfig.BARRAGE_DAMAGE);
                     screenShake.shake(0.35f, 0.15f);
@@ -410,27 +401,27 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 screenShake.shake(0.2f, 0.08f); // Visual feedback
                 Gdx.app.log("QuiboloyBoss", "Used FIREBALL BARRAGE! Multiple fireballs spread across the arena!");
                 break;
-                
+
             case "TELEPORT STRIKE":
                 // Teleport behind/near player and strike with AOE
                 float teleportAngle = (float)Math.atan2(dy, dx);
                 float teleportX = playerCenter.x - (float)Math.cos(teleportAngle) * QuiboloyConfig.TELEPORT_DISTANCE;
                 float teleportY = playerCenter.y - (float)Math.sin(teleportAngle) * QuiboloyConfig.TELEPORT_DISTANCE;
-                
+
                 // Clamp to world bounds
                 teleportX = Math.max(2f, Math.min(teleportX, worldWidth - 2f));
                 teleportY = Math.max(2f, Math.min(teleportY, worldHeight - 2f));
-                
+
                 // Teleport the boss
                 body.setTransform(teleportX, teleportY, 0);
-                
+
                 // Deal damage in AOE around new position
                 Vector2 newPos = body.getPosition();
                 float distAfterTeleport = (float)Math.sqrt(
-                    Math.pow(playerCenter.x - newPos.x, 2) + 
+                    Math.pow(playerCenter.x - newPos.x, 2) +
                     Math.pow(playerCenter.y - newPos.y, 2)
                 );
-                
+
                 if (distAfterTeleport <= QuiboloyConfig.TELEPORT_STRIKE_RANGE) {
                     player.damage(QuiboloyConfig.TELEPORT_DAMAGE);
                     screenShake.shake(0.5f, 0.2f);
@@ -438,16 +429,16 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 screenShake.shake(0.25f, 0.1f); // Teleport visual
                 Gdx.app.log("QuiboloyBoss", "Used TELEPORT STRIKE! The boss vanishes and reappears!");
                 break;
-                
+
             case "CORRUPTION ZONE":
                 // Create a lingering damage field
                 CorruptionZone newZone = new CorruptionZone(
-                    bossPos.x, bossPos.y, 
-                    QuiboloyConfig.CORRUPTION_RANGE, 
+                    bossPos.x, bossPos.y,
+                    QuiboloyConfig.CORRUPTION_RANGE,
                     QuiboloyConfig.CORRUPTION_DURATION
                 );
                 activeCorruptionZones.add(newZone);
-                
+
                 // Initial damage to player if in range
                 if (distance <= QuiboloyConfig.CORRUPTION_RANGE) {
                     player.damage(QuiboloyConfig.CORRUPTION_DAMAGE);
@@ -456,7 +447,7 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                 screenShake.shake(0.2f, 0.08f);
                 Gdx.app.log("QuiboloyBoss", "Used CORRUPTION ZONE! Dark energy spreads across the ground!");
                 break;
-                
+
             case "SUMMON FOLLOWERS":
                 // Summon multiple Follower minions around the boss
                 if (enemySpawner != null) {
@@ -465,11 +456,11 @@ public class QuiboloyBoss extends AbstractEnemy implements BossEntity, Telegraph
                         float angle = (float)(i * 2 * Math.PI / QuiboloyConfig.SUMMON_COUNT);
                         float spawnX = bossPos.x + (float)Math.cos(angle) * QuiboloyConfig.SUMMON_RADIUS;
                         float spawnY = bossPos.y + (float)Math.sin(angle) * QuiboloyConfig.SUMMON_RADIUS;
-                        
+
                         // Clamp to world bounds
                         spawnX = Math.max(2f, Math.min(spawnX, worldWidth - 2f));
                         spawnY = Math.max(2f, Math.min(spawnY, worldHeight - 2f));
-                        
+
                         // Spawn a Follower at this position
                         enemySpawner.spawnSpecific(Follower.class, spawnX, spawnY);
                     }

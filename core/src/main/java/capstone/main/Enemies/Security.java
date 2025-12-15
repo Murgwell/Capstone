@@ -31,8 +31,6 @@ public class Security extends AbstractEnemy {
     private final float spriteWidth;
     private final float spriteHeight;
 
-    private NavMesh navMesh;
-
     public Security(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
         super(x, y, new Texture("Textures/Enemies/World2/Security/Run-Forward/security_walk-0.png"),
             3.0f, 3.0f, 100, screenShake, physics, navMesh);
@@ -73,8 +71,7 @@ public class Security extends AbstractEnemy {
             return;
         }
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         stateTime += delta;

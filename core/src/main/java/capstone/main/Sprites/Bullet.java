@@ -1,23 +1,26 @@
 package capstone.main.Sprites;
 
 import capstone.main.Characters.AbstractPlayer;
+import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.CollisionBits;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.*;
+import java.util.HashSet;
 
 public class Bullet {
     private static final Texture DEFAULT_TEXTURE = new Texture("Textures/UI/Bullet Indicators/Pistol-Bullet.png");
     private final AbstractPlayer owner;
-
     public Sprite sprite;
     public Body body;
-    private float damage;
     private float lifetime = 1f;
-    private float speed = 75f; // faster speed
-    private float knockbackForce = 10f;
+    private final float speed = 75f; // faster speed
+    private final float knockbackForce = 10f;
+
+    // Penetration support: track enemies already hit (to avoid repeated damage)
+    private final HashSet<AbstractEnemy> hitEnemies = new HashSet<>();
 
     private final float baseWidth = 0.07f;
     private final float baseHeight = 0.5f;
@@ -26,9 +29,8 @@ public class Bullet {
     private float distanceTraveled = 0f;
     private Vector2 lastPosition;
 
-    public Bullet(float x, float y, Vector2 direction, AbstractPlayer owner, float damage, World world) {
+    public Bullet(float x, float y, Vector2 direction, AbstractPlayer owner, World world) {
         this.owner = owner;
-        this.damage = damage;
 
         // --- Sprite ---
         sprite = new Sprite(DEFAULT_TEXTURE);
@@ -53,7 +55,8 @@ public class Bullet {
 
         FixtureDef fd = new FixtureDef();
         fd.shape = shape;
-        fd.isSensor = false;  // physical, knockback
+        // Use sensor so bullets can pass through bodies (we manually handle damage/knockback)
+        fd.isSensor = true;
         fd.density = 1f;
         fd.restitution = 0f;
 
@@ -119,5 +122,17 @@ public class Bullet {
 
     public float getKnockbackForce() {
         return knockbackForce;
+    }
+
+    public AbstractPlayer getOwner() {
+        return owner;
+    }
+
+    public boolean hasHit(AbstractEnemy enemy) {
+        return hitEnemies.contains(enemy);
+    }
+
+    public void markHit(AbstractEnemy enemy) {
+        hitEnemies.add(enemy);
     }
 }

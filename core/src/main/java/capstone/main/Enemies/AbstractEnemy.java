@@ -39,9 +39,6 @@ public abstract class AbstractEnemy {
     protected float baseSpeed = 1.5f;
     protected float hitboxRadius;
 
-    private float hitFlashTimer = 0f;   // in seconds
-    private final float hitFlashDuration = 0.1f; // how long it stays white
-    protected Sprite whiteOverlaySprite;
     protected DirectionManager directionManager;
 
     // Status effects
@@ -49,9 +46,8 @@ public abstract class AbstractEnemy {
     protected float slowTimer = 0f;
     protected float slowMultiplier = 0.5f; // 50% speed when slowed
     protected BitmapFont statusFont = new BitmapFont();
-    ;
     protected String statusText = "";
-    protected List<NavNode> currentPath = new ArrayList<NavNode>();
+    protected List<NavNode> currentPath = new ArrayList<>();
     protected int pathIndex = 0;
 
     protected NavMesh navMesh;
@@ -110,9 +106,6 @@ public abstract class AbstractEnemy {
         fixture.setUserData(this);
 
         shape.dispose();
-
-        whiteOverlaySprite = new Sprite(new Texture("Textures/Enemies/World1/Greed/Run-Forward/orc1_walk_full-0.png"));
-        whiteOverlaySprite.setSize(width, height);
     }
 
     public abstract void update(float delta, AbstractPlayer player);
@@ -160,16 +153,16 @@ public abstract class AbstractEnemy {
             } else {
                 // Too far to aggro; stay idle
                 body.setLinearVelocity(0, 0);
-                
+
                 // CRITICAL: Update sprite position even when idle to prevent "snap" when aggro starts
                 Vector2 bodyPos = body.getPosition();
                 float centerX = bodyPos.x - sprite.getWidth() / 2f;
                 float centerY = bodyPos.y - sprite.getHeight() / 2f;
                 sprite.setPosition(centerX, centerY);
-                
+
                 if (healthBar != null)
                     healthBar.update(delta);
-                
+
                 return;
             }
         }
@@ -218,7 +211,7 @@ public abstract class AbstractEnemy {
 
         // --- MOVE ALONG PATH ---
         tmpVelocity.setZero(); // More efficient than set(0, 0)
-        
+
         // Larger threshold to prevent jittering when near waypoints
         float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.5f, hitboxRadius);
 
@@ -237,7 +230,7 @@ public abstract class AbstractEnemy {
                     tmpDirection.set(tmpNextPos).sub(enemyPos);
                 }
             }
-            
+
             // Move toward current waypoint
             if (tmpDirection.len2() > 0.01f) {
                 tmpVelocity.set(tmpDirection.nor().scl(speed));
@@ -308,9 +301,6 @@ body.setAwake(true);
         isAggro = true;
         enteredClose = false;
 
-        // Trigger hit flash
-        hitFlashTimer = hitFlashDuration;
-
         screenShake.shake(0.25f, 0.05f);
 
         // PLAY ENEMY HIT SOUND
@@ -319,14 +309,6 @@ body.setAwake(true);
         if (health <= 0 && !pendingRemoval) {
             pendingRemoval = true;
             System.out.println("ENEMY MARKED FOR DEATH - Health: " + health + " (Memory Debug)");
-        }
-    }
-
-    // Call every frame in update
-    protected void updateHitFlash(float delta) {
-        if (hitFlashTimer > 0f) {
-            hitFlashTimer -= delta;
-            if (hitFlashTimer < 0f) hitFlashTimer = 0f;
         }
     }
 
@@ -407,26 +389,6 @@ body.setAwake(true);
         return body;
     }
 
-    public float getHitFlashAlpha() {
-        // returns 0..1
-        return Math.max(0f, Math.min(1f, hitFlashTimer / hitFlashDuration));
-    }
-
-    public Sprite getWhiteOverlaySprite() {
-        return whiteOverlaySprite;
-    }
-
-    public void updateWhiteOverlay() {
-        whiteOverlaySprite.setPosition(sprite.getX(), sprite.getY());
-        whiteOverlaySprite.setSize(sprite.getWidth(), sprite.getHeight());
-
-        // Flip according to facing direction
-        whiteOverlaySprite.setFlip(directionManager.isFacingLeft(), false);
-
-        // Keep origin same as sprite
-        whiteOverlaySprite.setOrigin(sprite.getOriginX(), sprite.getOriginY());
-    }
-
     // MEMORY FIX: Add cleanup method to call when enemy is destroyed
     public void dispose() {
         // Clear pathfinding data to prevent memory leaks
@@ -444,7 +406,6 @@ body.setAwake(true);
         // Clean up sprites (DO NOT dispose shared textures!)
         // Textures are shared between enemies and managed by LibGDX AssetManager
         sprite = null;
-        whiteOverlaySprite = null;
 
         // Clean up other resources
         if (healthBar != null) {

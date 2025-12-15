@@ -22,7 +22,7 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
         public float duration;
         public float maxDuration;
         public float tickTimer;
-        
+
         public PoisonCloud(float x, float y, float radius, float duration) {
             this.x = x;
             this.y = y;
@@ -31,20 +31,20 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
             this.maxDuration = duration;
             this.tickTimer = 0f;
         }
-        
+
         public boolean isExpired() {
             return duration <= 0f;
         }
-        
+
         public float getAlpha() {
             // Fade out as it expires
             return Math.max(0f, duration / maxDuration);
         }
     }
-    
+
     // Active poison clouds
     private final java.util.List<PoisonCloud> activePoisonClouds = new java.util.ArrayList<>();
-    
+
     public java.util.List<PoisonCloud> getActivePoisonClouds() {
         return activePoisonClouds;
     }
@@ -95,7 +95,6 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
 
     private final float spriteWidth;
     private final float spriteHeight;
-    private NavMesh navMesh;
 
     public Discaya(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
 
@@ -172,7 +171,7 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
             fx.setFriction(0f);
             com.badlogic.gdx.physics.box2d.Shape.Type t = fx.getShape().getType();
             if (t == com.badlogic.gdx.physics.box2d.Shape.Type.Circle) {
-                ((com.badlogic.gdx.physics.box2d.CircleShape) fx.getShape()).setRadius(0.6f);
+                (fx.getShape()).setRadius(0.6f);
             }
         }
         body.setSleepingAllowed(false);
@@ -192,14 +191,13 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
         // Update active poison clouds
         updatePoisonClouds(delta, player);
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         // Telegraph visuals (dark purple pulse while telegraphing)
         if (telegraphing) {
             float pulse = (MathUtils.sin(stateTime * 10f) * 0.25f) + 0.75f; // 0.5..1.0
-            
+
             // Different visual feedback based on skill being charged
             if ("POISON CLOUD".equals(currentSkill)) {
                 // Green-purple for poison
@@ -287,11 +285,11 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
             PoisonCloud cloud = activePoisonClouds.get(i);
             cloud.duration -= delta;
             cloud.tickTimer += delta;
-            
+
             // Deal damage every 0.5 seconds
             if (cloud.tickTimer >= 0.5f) {
                 cloud.tickTimer = 0f;
-                
+
                 // Check if player is in the cloud
                 Vector2 playerCenter = new Vector2(
                     player.getSprite().getX() + player.getSprite().getWidth() / 2f,
@@ -300,14 +298,14 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
                 float dx = playerCenter.x - cloud.x;
                 float dy = playerCenter.y - cloud.y;
                 float distance = (float)Math.sqrt(dx*dx + dy*dy);
-                
+
                 if (distance <= cloud.radius) {
                     player.damage(DiscayaConfig.POISON_DAMAGE);
                     // Small shake for poison tick
                     screenShake.shake(0.15f, 0.05f);
                 }
             }
-            
+
             // Remove expired clouds
             if (cloud.isExpired()) {
                 activePoisonClouds.remove(i);
@@ -331,7 +329,7 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
                 // Spawn a lingering poison cloud at Discaya's position
                 PoisonCloud newCloud = new PoisonCloud(bossPos.x, bossPos.y, DiscayaConfig.POISON_RANGE, 5.0f);
                 activePoisonClouds.add(newCloud);
-                
+
                 // Initial damage to player if in range
                 if (distance <= DiscayaConfig.POISON_RANGE) {
                     player.damage(DiscayaConfig.POISON_DAMAGE);
@@ -342,13 +340,13 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
                 screenShake.shake(0.15f, 0.06f);
                 Gdx.app.log("Discaya", "Used POISON CLOUD! Purple mist spreads across the arena!");
                 break;
-                
+
             case "SHADOW DASH":
                 // Linear dash attack - check if player is in the dash path
                 float dashAngle = (float)Math.atan2(dy, dx);
                 float playerAngle = (float)Math.atan2(dy, dx);
                 float angleDiff = Math.abs(normalizeAngle((float)Math.toDegrees(dashAngle - playerAngle)));
-                
+
                 // Check if player is within the dash cone and range
                 if (distance <= DiscayaConfig.DASH_RANGE && angleDiff <= 15f) {
                     player.damage(DiscayaConfig.DASH_DAMAGE);
@@ -358,15 +356,15 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
                     // Smaller shake for dash impact even if missed
                     screenShake.shake(0.2f, 0.08f);
                 }
-                
+
                 // Actually move Discaya forward (dash effect)
                 float dashForceX = (float)Math.cos(dashAngle) * 15f;
                 float dashForceY = (float)Math.sin(dashAngle) * 15f;
                 body.applyLinearImpulse(dashForceX, dashForceY, bossPos.x, bossPos.y, true);
-                
+
                 Gdx.app.log("Discaya", "Used SHADOW DASH! Discaya charges forward!");
                 break;
-                
+
             case "CORRUPTION PULSE":
                 // Ring attack - damage between inner and outer radius (donut shape)
                 if (distance >= DiscayaConfig.PULSE_INNER_RANGE && distance <= DiscayaConfig.PULSE_OUTER_RANGE) {

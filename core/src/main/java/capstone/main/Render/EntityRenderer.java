@@ -39,13 +39,6 @@ public class EntityRenderer {
         for (AbstractEnemy enemy : enemies) {
             enemy.getSprite().draw(spriteBatch);
 
-            // Draw white overlay if hit
-            if (enemy.getHitFlashAlpha() > 0f) {
-                enemy.updateWhiteOverlay();
-                enemy.getWhiteOverlaySprite().setAlpha(enemy.getHitFlashAlpha());
-                enemy.getWhiteOverlaySprite().draw(spriteBatch);
-            }
-
             // Draw status text above enemy
             if (enemy.isSlowed() && !enemy.getStatusText().isEmpty()) {
                 float textX = enemy.getSprite().getX() + enemy.getSprite().getWidth() / 2f;
@@ -98,7 +91,7 @@ public class EntityRenderer {
                         float cy = boss.getTelegraphOriginY();
 
                         String skill = boss.getTelegraphSkill();
-                        
+
                         // Greed's skills (red color scheme)
                         if ("SLAM".equals(skill)) {
                             float r = capstone.main.Enemies.GreedConfig.SLAM_RANGE;
@@ -110,10 +103,10 @@ public class EntityRenderer {
                             float r = capstone.main.Enemies.GreedConfig.BARRAGE_RANGE;
                             float half = capstone.main.Enemies.GreedConfig.BARRAGE_CONE_HALF_ANGLE;
                             float facing = boss.getTelegraphAngleDegrees();
-                            drawSectorTelegraph(cx, cy, r, facing - half, facing + half, 
+                            drawSectorTelegraph(cx, cy, r, facing - half, facing + half,
                                 new Color(1f, 0f, 0f, 0.06f), new Color(1f, 0.2f, 0.2f, 0.5f));
                         }
-                        
+
                         // Discaya's skills (purple color scheme)
                         else if ("POISON CLOUD".equals(skill)) {
                             float r = capstone.main.Enemies.DiscayaConfig.POISON_RANGE;
@@ -124,16 +117,16 @@ public class EntityRenderer {
                             float width = capstone.main.Enemies.DiscayaConfig.DASH_WIDTH;
                             float facing = boss.getTelegraphAngleDegrees();
                             // Draw a rectangle showing the dash path
-                            drawDashTelegraph(cx, cy, length, width, facing, 
+                            drawDashTelegraph(cx, cy, length, width, facing,
                                 new Color(0.3f, 0f, 0.5f, 0.15f), new Color(0.6f, 0.1f, 0.9f, 0.7f));
                         } else if ("CORRUPTION PULSE".equals(skill)) {
                             float innerR = capstone.main.Enemies.DiscayaConfig.PULSE_INNER_RANGE;
                             float outerR = capstone.main.Enemies.DiscayaConfig.PULSE_OUTER_RANGE;
                             // Draw donut shape (ring between two circles)
-                            drawDonutTelegraph(cx, cy, innerR, outerR, 
+                            drawDonutTelegraph(cx, cy, innerR, outerR,
                                 new Color(0.4f, 0f, 0.7f, 0.1f), new Color(0.7f, 0.2f, 1f, 0.6f));
                         }
-                        
+
                         // QuiboloyBoss's skills (golden/divine color scheme)
                         else if ("DIVINE JUDGMENT".equals(skill)) {
                             // Draw three concentric rings showing damage zones
@@ -143,17 +136,17 @@ public class EntityRenderer {
                             // Inner ring (most dangerous) - bright gold
                             drawCircleTelegraph(cx, cy, innerR, new Color(1f, 0.8f, 0f, 0.2f), new Color(1f, 0.9f, 0.2f, 0.8f));
                             // Middle ring - medium gold
-                            drawDonutTelegraph(cx, cy, innerR, middleR, 
+                            drawDonutTelegraph(cx, cy, innerR, middleR,
                                 new Color(1f, 0.7f, 0f, 0.15f), new Color(1f, 0.85f, 0.3f, 0.7f));
                             // Outer ring - light gold
-                            drawDonutTelegraph(cx, cy, middleR, outerR, 
+                            drawDonutTelegraph(cx, cy, middleR, outerR,
                                 new Color(1f, 0.6f, 0f, 0.1f), new Color(1f, 0.8f, 0.4f, 0.6f));
                         } else if ("FIREBALL BARRAGE".equals(skill)) {
                             float r = 15f; // Fireball range
                             float half = capstone.main.Enemies.QuiboloyConfig.BARRAGE_SPREAD_ANGLE / 2f;
                             float facing = boss.getTelegraphAngleDegrees();
                             // Orange-red cone for fireball spread
-                            drawSectorTelegraph(cx, cy, r, facing - half, facing + half, 
+                            drawSectorTelegraph(cx, cy, r, facing - half, facing + half,
                                 new Color(1f, 0.3f, 0f, 0.12f), new Color(1f, 0.5f, 0.1f, 0.7f));
                         } else if ("TELEPORT STRIKE".equals(skill)) {
                             float strikeR = capstone.main.Enemies.QuiboloyConfig.TELEPORT_STRIKE_RANGE;
@@ -161,7 +154,7 @@ public class EntityRenderer {
                             // Show at player location since that's where boss will teleport near
                             float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
                             float playerY = player.getSprite().getY() + player.getSprite().getHeight() / 2f;
-                            drawCircleTelegraph(playerX, playerY, strikeR, 
+                            drawCircleTelegraph(playerX, playerY, strikeR,
                                 new Color(0.5f, 0f, 1f, 0.15f), new Color(0.8f, 0.3f, 1f, 0.7f));
                         } else if ("CORRUPTION ZONE".equals(skill)) {
                             float r = capstone.main.Enemies.QuiboloyConfig.CORRUPTION_RANGE;
@@ -180,14 +173,14 @@ public class EntityRenderer {
                 com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
                 spriteBatch.begin();
             }
-            
+
             // Draw lingering poison clouds from Discaya
             boolean drewPoisonClouds = false;
             for (AbstractEnemy enemy : enemies) {
                 if (enemy instanceof capstone.main.Enemies.Discaya) {
                     capstone.main.Enemies.Discaya discaya = (capstone.main.Enemies.Discaya) enemy;
                     java.util.List<capstone.main.Enemies.Discaya.PoisonCloud> clouds = discaya.getActivePoisonClouds();
-                    
+
                     if (!clouds.isEmpty()) {
                         if (!drewPoisonClouds) {
                             drewPoisonClouds = true;
@@ -199,35 +192,35 @@ public class EntityRenderer {
                             );
                             shapeRenderer.setProjectionMatrix(camera.combined);
                         }
-                        
+
                         // Draw each poison cloud with pulsing and fading effect
                         for (capstone.main.Enemies.Discaya.PoisonCloud cloud : clouds) {
                             float alpha = cloud.getAlpha() * 0.15f; // Base transparency
                             float pulse = (float)Math.sin(System.currentTimeMillis() * 0.003) * 0.05f + 0.1f;
                             alpha = Math.max(0f, alpha + pulse);
-                            
+
                             // Draw filled cloud with green-purple color
                             Color fillColor = new Color(0.4f, 0.8f, 0.3f, alpha);
                             Color outlineColor = new Color(0.5f, 1.0f, 0.4f, cloud.getAlpha() * 0.4f);
-                            
+
                             drawCircleTelegraph(cloud.x, cloud.y, cloud.radius, fillColor, outlineColor);
                         }
                     }
                 }
             }
-            
+
             if (drewPoisonClouds) {
                 com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
                 spriteBatch.begin();
             }
-            
+
             // Draw lingering corruption zones from QuiboloyBoss
             boolean drewCorruptionZones = false;
             for (AbstractEnemy enemy : enemies) {
                 if (enemy instanceof capstone.main.Enemies.QuiboloyBoss) {
                     capstone.main.Enemies.QuiboloyBoss quiboloy = (capstone.main.Enemies.QuiboloyBoss) enemy;
                     java.util.List<capstone.main.Enemies.QuiboloyBoss.CorruptionZone> zones = quiboloy.getActiveCorruptionZones();
-                    
+
                     if (!zones.isEmpty()) {
                         if (!drewCorruptionZones) {
                             drewCorruptionZones = true;
@@ -239,23 +232,23 @@ public class EntityRenderer {
                             );
                             shapeRenderer.setProjectionMatrix(camera.combined);
                         }
-                        
+
                         // Draw each corruption zone with pulsing and fading effect
                         for (capstone.main.Enemies.QuiboloyBoss.CorruptionZone zone : zones) {
                             float alpha = zone.getAlpha() * 0.2f; // Base transparency (darker than poison)
                             float pulse = (float)Math.sin(System.currentTimeMillis() * 0.004) * 0.08f + 0.12f;
                             alpha = Math.max(0f, alpha + pulse);
-                            
+
                             // Draw filled zone with dark purple color
                             Color fillColor = new Color(0.3f, 0.1f, 0.4f, alpha);
                             Color outlineColor = new Color(0.6f, 0.2f, 0.8f, zone.getAlpha() * 0.5f);
-                            
+
                             drawCircleTelegraph(zone.x, zone.y, zone.radius, fillColor, outlineColor);
                         }
                     }
                 }
             }
-            
+
             if (drewCorruptionZones) {
                 com.badlogic.gdx.Gdx.gl.glDisable(com.badlogic.gdx.graphics.GL20.GL_BLEND);
                 spriteBatch.begin();
@@ -371,17 +364,17 @@ public class EntityRenderer {
     private void drawDashTelegraph(float cx, float cy, float length, float width, float angleDeg, Color fill, Color outline) {
         float angleRad = (float) Math.toRadians(angleDeg);
         float halfWidth = width / 2f;
-        
+
         // Calculate the four corners of the rectangle
         float cosA = (float) Math.cos(angleRad);
         float sinA = (float) Math.sin(angleRad);
         float perpCosA = (float) Math.cos(angleRad + Math.PI / 2);
         float perpSinA = (float) Math.sin(angleRad + Math.PI / 2);
-        
+
         // Start at center, extend forward by length
         float endX = cx + cosA * length;
         float endY = cy + sinA * length;
-        
+
         // Four corners of the rectangle
         float x1 = cx + perpCosA * halfWidth;
         float y1 = cy + perpSinA * halfWidth;
@@ -391,14 +384,14 @@ public class EntityRenderer {
         float y3 = endY - perpSinA * halfWidth;
         float x4 = endX + perpCosA * halfWidth;
         float y4 = endY + perpSinA * halfWidth;
-        
+
         // Draw filled rectangle
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(fill);
         shapeRenderer.triangle(x1, y1, x2, y2, x3, y3);
         shapeRenderer.triangle(x1, y1, x3, y3, x4, y4);
         shapeRenderer.end();
-        
+
         // Draw outline
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(outline);
@@ -408,34 +401,34 @@ public class EntityRenderer {
         shapeRenderer.line(x4, y4, x1, y1);
         shapeRenderer.end();
     }
-    
+
     // Draw a donut-shaped telegraph (ring between two circles)
     private void drawDonutTelegraph(float cx, float cy, float innerRadius, float outerRadius, Color fill, Color outline) {
         int segments = 60;
-        
+
         // Draw filled donut using triangles
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(fill);
         for (int i = 0; i < segments; i++) {
             float angle1 = (float) (i * 2 * Math.PI / segments);
             float angle2 = (float) ((i + 1) * 2 * Math.PI / segments);
-            
+
             float innerX1 = cx + (float) Math.cos(angle1) * innerRadius;
             float innerY1 = cy + (float) Math.sin(angle1) * innerRadius;
             float innerX2 = cx + (float) Math.cos(angle2) * innerRadius;
             float innerY2 = cy + (float) Math.sin(angle2) * innerRadius;
-            
+
             float outerX1 = cx + (float) Math.cos(angle1) * outerRadius;
             float outerY1 = cy + (float) Math.sin(angle1) * outerRadius;
             float outerX2 = cx + (float) Math.cos(angle2) * outerRadius;
             float outerY2 = cy + (float) Math.sin(angle2) * outerRadius;
-            
+
             // Two triangles to form the ring segment
             shapeRenderer.triangle(innerX1, innerY1, outerX1, outerY1, innerX2, innerY2);
             shapeRenderer.triangle(innerX2, innerY2, outerX1, outerY1, outerX2, outerY2);
         }
         shapeRenderer.end();
-        
+
         // Draw outlines for both circles
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(outline);

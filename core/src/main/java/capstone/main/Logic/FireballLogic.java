@@ -16,18 +16,10 @@ import java.util.ArrayList;
 public class FireballLogic {
 
     private final MagicRanged player;
-    private final ArrayList<AbstractEnemy> enemies;
-    private final ArrayList<DamageNumber> damageNumbers;
-    private final BitmapFont damageFont;
     private final PhysicsManager physicsManager;
 
-    public FireballLogic(Quiboloy player, ArrayList<AbstractEnemy> enemies,
-                         ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
-                         PhysicsManager physicsManager) {
+    public FireballLogic(Quiboloy player, PhysicsManager physicsManager) {
         this.player = player;
-        this.enemies = enemies;
-        this.damageNumbers = damageNumbers;
-        this.damageFont = damageFont;
         this.physicsManager = physicsManager;
     }
 

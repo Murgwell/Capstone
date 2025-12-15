@@ -138,7 +138,7 @@ public class Greed extends AbstractEnemy implements BossEntity, TelegraphProvide
             fx.setFriction(0f);
             com.badlogic.gdx.physics.box2d.Shape.Type t = fx.getShape().getType();
             if (t == com.badlogic.gdx.physics.box2d.Shape.Type.Circle) {
-                ((com.badlogic.gdx.physics.box2d.CircleShape) fx.getShape()).setRadius(0.6f); // narrower body for corridors
+                (fx.getShape()).setRadius(0.6f); // narrower body for corridors
             }
         }
         body.setSleepingAllowed(false);
@@ -155,8 +155,7 @@ public class Greed extends AbstractEnemy implements BossEntity, TelegraphProvide
             return;
         }
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         // Telegraph visuals (simple tint pulse while telegraphing)

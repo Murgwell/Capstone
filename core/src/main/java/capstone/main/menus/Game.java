@@ -239,6 +239,9 @@ public class Game implements Screen {
         enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath()); // Set current world for world-specific spawning
         enemySpawner.setCollisionMap(mapManager.getTiledMap()); // Set collision map for proper spawn detection
         enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
+        // Provide enemy list to physics for AOE processing and set larger radius
+        physicsManager.setEnemies(enemySpawner.getEnemies());
+        physicsManager.setFireballAoeRadius(2.75f);
 
         // --- Create item spawner ---
         itemSpawner = new ItemSpawner(physicsManager.getWorld(), mapWidth, mapHeight);
@@ -451,14 +454,14 @@ public class Game implements Screen {
 
         // Initialize bullet logic for ranged characters
         if (player instanceof Ranged) {
-            bulletLogic = new BulletLogic((Ranged) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+            bulletLogic = new BulletLogic((Ranged) player, physicsManager);
         } else {
             bulletLogic = null;
         }
 
         // Initialize Fireball logic
         if (player instanceof Quiboloy) {
-            fireballLogic = new FireballLogic((Quiboloy) player, enemySpawner.getEnemies(), damageNumbers, damageFont, physicsManager);
+            fireballLogic = new FireballLogic((Quiboloy) player, physicsManager);
         } else {
             fireballLogic = null;
         }
@@ -1334,6 +1337,8 @@ public class Game implements Screen {
 
             // Spawn regular enemies
             enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
+            // Re-wire enemy list to physics after world change
+            physicsManager.setEnemies(enemySpawner.getEnemies());
         }
         // World entered: enemies cleared and spawn done.
 

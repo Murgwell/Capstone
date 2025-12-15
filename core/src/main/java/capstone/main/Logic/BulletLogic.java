@@ -14,18 +14,10 @@ import java.util.ArrayList;
 
 public class BulletLogic {
     private final Ranged player;
-    private final ArrayList<AbstractEnemy> enemies;
-    private final ArrayList<DamageNumber> damageNumbers;
-    private final BitmapFont damageFont;
     private final PhysicsManager physicsManager; // add this
 
-    public BulletLogic(Ranged player, ArrayList<AbstractEnemy> enemies,
-                       ArrayList<DamageNumber> damageNumbers, BitmapFont damageFont,
-                       PhysicsManager physicsManager) {
+    public BulletLogic(Ranged player, PhysicsManager physicsManager) {
         this.player = player;
-        this.enemies = enemies;
-        this.damageNumbers = damageNumbers;
-        this.damageFont = damageFont;
         this.physicsManager = physicsManager; // store reference
     }
 
@@ -72,7 +64,7 @@ public class BulletLogic {
         startX += offset.x;
         startY += offset.y;
 
-        bullets.add(new Bullet(startX, startY, dir, p, p.getDamage(), physicsManager.getWorld()));
+        bullets.add(new Bullet(startX, startY, dir, p, physicsManager.getWorld()));
 
         SoundManager.getInstance().playSound("vico_shoot");
     }

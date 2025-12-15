@@ -21,8 +21,6 @@ public class Survivor extends AbstractEnemy {
     private Animation<TextureRegion> animLeft;
     private Animation<TextureRegion> animRight;
 
-    private NavMesh navMesh;
-
     private float stateTime = 0f;
     private float lastVX = 0f;
     private float lastVY = -1f; // default looking down
@@ -79,8 +77,7 @@ public class Survivor extends AbstractEnemy {
             return;
         }
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         stateTime += delta;

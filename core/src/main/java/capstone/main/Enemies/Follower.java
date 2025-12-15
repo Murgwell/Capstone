@@ -31,8 +31,6 @@ public class Follower extends AbstractEnemy {
     private final float spriteWidth;
     private final float spriteHeight;
 
-    private NavMesh navMesh;
-
     public Follower(float x, float y, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
         super(x, y,
             new Texture("Textures/Enemies/World3/Follower/Run-Forward/follower_walk-0.png"),
@@ -108,8 +106,7 @@ public class Follower extends AbstractEnemy {
             return;
         }
 
-        // Core behavior & hit flash
-        updateHitFlash(delta);
+        // Core behavior
         pathfindingChaseBehavior(delta, player);
 
         stateTime += delta;
