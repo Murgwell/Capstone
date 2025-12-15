@@ -1,11 +1,8 @@
 package capstone.main.Managers;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.maps.MapLayer;
-import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.*;
 import com.badlogic.gdx.maps.tiled.*;
-import com.badlogic.gdx.maps.tiled.objects.TiledMapTileMapObject;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.*;
 import com.badlogic.gdx.physics.box2d.*;
@@ -79,7 +76,7 @@ public class MapManager {
             Gdx.app.log("MapManager", "Building collision...");
             CollisionLoader.buildCollision(physics.getWorld(), tiledMap, "collisionLayer", 32f, true);
             Gdx.app.log("MapManager", "✓ Collision layer built (blocks movement ONLY)");
-            
+
             // Build wall collision (for blocking bullets/fireballs/punches ONLY, not movement)
             CollisionLoader.buildCollision(physics.getWorld(), tiledMap, "wallLayer", 32f, false);
             Gdx.app.log("MapManager", "✓ Wall layer built (blocks projectiles ONLY)");
@@ -157,14 +154,6 @@ public class MapManager {
 
     public float getWorldHeight() {
         return worldHeight;
-    }
-
-    public String getCurrentMapPath() {
-        return currentMapPath;
-    }
-
-    public boolean isCurrentMap(String mapPath) {
-        return currentMapPath != null && currentMapPath.equals(mapPath);
     }
 
     public void dispose() {

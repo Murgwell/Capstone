@@ -1,6 +1,5 @@
 package capstone.main.Managers;
 
-import capstone.main.Characters.Quiboloy;
 import capstone.main.Enemies.AbstractEnemy;
 import capstone.main.Sprites.Bullet;
 import capstone.main.Sprites.Fireball;
@@ -72,7 +71,7 @@ public class PhysicsManager {
         enemy.takeHit(damage);
         Vector2 knockDir = projectileBody.getLinearVelocity().cpy().nor();
         enemy.getBody().applyLinearImpulse(knockDir.scl(knockback), enemy.getBody().getWorldCenter(), true);
-        
+
         // Create damage number if damage number system is available
         if (damageNumbers != null && damageFont != null) {
             Vector2 enemyPos = enemy.getBody().getPosition();
@@ -85,7 +84,7 @@ public class PhysicsManager {
             ));
         }
     }
-    
+
     /**
      * Set the damage number system for displaying projectile damage
      */
