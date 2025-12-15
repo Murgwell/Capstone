@@ -153,12 +153,23 @@ public abstract class AbstractEnemy {
         } else {
             if (distanceToPlayer <= defaultChaseDistance) {
                 // Enter aggro when player is within default chase distance
+                Gdx.app.log("AggroDebug", getClass().getSimpleName() + " entering AGGRO at pos: " + body.getPosition());
                 isAggro = true;
                 // Track if we've been inside the close radius at least once
                 enteredClose = (distanceToPlayer <= aggroChaseDistance);
             } else {
                 // Too far to aggro; stay idle
                 body.setLinearVelocity(0, 0);
+                
+                // CRITICAL: Update sprite position even when idle to prevent "snap" when aggro starts
+                Vector2 bodyPos = body.getPosition();
+                float centerX = bodyPos.x - sprite.getWidth() / 2f;
+                float centerY = bodyPos.y - sprite.getHeight() / 2f;
+                sprite.setPosition(centerX, centerY);
+                
+                if (healthBar != null)
+                    healthBar.update(delta);
+                
                 return;
             }
         }
@@ -185,9 +196,10 @@ public abstract class AbstractEnemy {
                 shouldRecalculate = true;
             } else if (targetNode != null) {
                 NavNode lastNode = currentPath.get(currentPath.size() - 1);
+                // Increase threshold to 3 nodes to reduce recalculation frequency
                 if (lastNode == null ||
-                    Math.abs(targetNode.x - lastNode.x) > 1 ||
-                    Math.abs(targetNode.y - lastNode.y) > 1) {
+                    Math.abs(targetNode.x - lastNode.x) > 3 ||
+                    Math.abs(targetNode.y - lastNode.y) > 3) {
                     shouldRecalculate = true;
                 }
             }
@@ -206,7 +218,9 @@ public abstract class AbstractEnemy {
 
         // --- MOVE ALONG PATH ---
         tmpVelocity.setZero(); // More efficient than set(0, 0)
-        float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.25f, hitboxRadius * 0.8f);
+        
+        // Larger threshold to prevent jittering when near waypoints
+        float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.5f, hitboxRadius);
 
         if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
             NavNode nextNode = currentPath.get(pathIndex);
@@ -216,7 +230,16 @@ public abstract class AbstractEnemy {
 
             if (tmpDirection.len2() < nodeThreshold * nodeThreshold) { // Use len2() for performance
                 pathIndex++;
-            } else {
+                // Continue to next node if available
+                if (pathIndex < currentPath.size()) {
+                    nextNode = currentPath.get(pathIndex);
+                    tmpNextPos.set(nextNode.worldPos);
+                    tmpDirection.set(tmpNextPos).sub(enemyPos);
+                }
+            }
+            
+            // Move toward current waypoint
+            if (tmpDirection.len2() > 0.01f) {
                 tmpVelocity.set(tmpDirection.nor().scl(speed));
                 if (isSlowed) tmpVelocity.scl(slowMultiplier);
 
@@ -226,17 +249,16 @@ public abstract class AbstractEnemy {
                 if (velocityLen * delta > directionLen) {
                     tmpVelocity.set(tmpDirection.scl(1f / delta));
                 }
-                Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": moving toward node velLen=" + tmpVelocity.len());
             }
         }
 
 
         // --- APPLY VELOCITY ---
-        // Fallback: if no path movement, steer directly toward player to avoid navmesh gaps
-if (tmpVelocity.isZero()) {
+        // Only use direct movement if very close to player (within melee range) or path is completely invalid
+if (tmpVelocity.isZero() && distanceToPlayer <= MELEE_RANGE * 2f) {
     tmpDirection.set(tmpPlayerPos).sub(enemyPos);
     if (tmpDirection.len2() > 1e-6f) {
-        tmpVelocity.set(tmpDirection.nor().scl(speed));
+        tmpVelocity.set(tmpDirection.nor().scl(speed * 0.5f)); // Move slower in direct mode
         if (isSlowed) tmpVelocity.scl(slowMultiplier);
     }
 }
@@ -244,10 +266,11 @@ if (tmpVelocity.isZero()) {
 body.setLinearVelocity(tmpVelocity);
 body.setAwake(true);
 
-        sprite.setPosition(
-            body.getPosition().x - sprite.getWidth() / 2f,
-            body.getPosition().y - sprite.getHeight() / 2f
-        );
+        // Position sprite centered on body - using consistent calculation
+        Vector2 bodyPos = body.getPosition();
+        float centerX = bodyPos.x - sprite.getWidth() / 2f;
+        float centerY = bodyPos.y - sprite.getHeight() / 2f;
+        sprite.setPosition(centerX, centerY);
 
         directionManager.setFacingLeft(tmpVelocity.x < 0);
 

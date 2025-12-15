@@ -7,6 +7,27 @@ import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
 
+/**
+ * Vico Sotto character class - A ranged fighter specializing in rapid-fire bullet attacks.
+ * 
+ * <p>Character Stats:
+ * <ul>
+ *   <li>Type: Ranged Gunner</li>
+ *   <li>Range: Long-distance</li>
+ *   <li>Damage: 15-22 per bullet</li>
+ *   <li>Attack Speed: 1.8 (high fire rate)</li>
+ * </ul>
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Fast-paced ranged combat</li>
+ *   <li>Bullet projectile management</li>
+ *   <li>Screen shake feedback on damage</li>
+ * </ul>
+ * 
+ * @author Capstone Team
+ * @version 1.0
+ */
 public class VicoSotto extends AbstractPlayer implements Ranged {
 
     private final ArrayList<Bullet> bullets;

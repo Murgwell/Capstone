@@ -38,7 +38,7 @@ public class PhysicsManager {
     }
 
     /**
-     * Handles collision between a projectile (Bullet/Fireball) and an enemy.
+     * Handles collision between a projectile (Bullet/Fireball) and an enemy or wall.
      */
     private void handleCollision(Object projObj, Object targetObj) {
         if (targetObj instanceof AbstractEnemy) {
@@ -51,6 +51,15 @@ public class PhysicsManager {
             } else if (projObj instanceof Fireball) {
                 Fireball fireball = (Fireball) projObj;
                 applyDamageAndKnockback(enemy, fireball.getDamage(), fireball.getBody(), fireball.getKnockbackForce());
+                fireball.setLifetime(0f); // remove fireball
+            }
+        } else if (targetObj instanceof String && "solid".equals(targetObj)) {
+            // Projectile hit a wall
+            if (projObj instanceof Bullet) {
+                Bullet bullet = (Bullet) projObj;
+                bullet.setLifetime(0f); // remove bullet
+            } else if (projObj instanceof Fireball) {
+                Fireball fireball = (Fireball) projObj;
                 fireball.setLifetime(0f); // remove fireball
             }
         }

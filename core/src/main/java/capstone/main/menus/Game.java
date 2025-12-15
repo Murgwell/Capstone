@@ -23,6 +23,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
@@ -59,6 +60,7 @@ public class Game implements Screen {
     private AbstractPlayer player;
     private MovementManager movementManager;
     private EnemySpawner enemySpawner;
+    private ItemSpawner itemSpawner;
     private PlayerLogic playerLogic;
     private BulletLogic bulletLogic;
     private EnemyLogic enemyLogic;
@@ -95,6 +97,10 @@ public class Game implements Screen {
     private SkillHud skillHud;
     private capstone.main.Managers.UIManager uiManager;
 
+    // Objectives
+    private capstone.main.Managers.ObjectiveManager objectiveManager;
+    private capstone.main.UI.ObjectiveHudActor objectiveHud;
+
     // Inventory system
     private Inventory inventory;
     private InventoryUI inventoryUI;
@@ -117,11 +123,14 @@ public class Game implements Screen {
 
     // World transitions
     private WorldMapManager worldMapManager;
-    private java.util.List<PortalRect> portals = new java.util.ArrayList<>();
+    private java.util.List<Portal> portals = new java.util.ArrayList<>();
     private float portalCooldown = 0f;
     private boolean bossSpawnedInCurrentWorld = false;
     private boolean bossDefeatedInCurrentWorld = false;
     private boolean bossClearedToastShown = false;
+
+    // World 3 Quiboloy hint trigger
+    private boolean world3QuiboloyHintShown = false;
 
     // Debug
     private boolean debugPortals = false;
@@ -129,7 +138,7 @@ public class Game implements Screen {
     // Teleportation FX
     private boolean teleportFxActive = false;
     private float teleportFxTimer = 0f;
-    private final float teleportFxDuration = 1.2f; // seconds, more dramatic
+    private final float teleportFxDuration = 2.0f; // seconds, smooth and dramatic
 
     private boolean teleportFxUseBlack = true; // set to true for simple black transition
 
@@ -164,15 +173,6 @@ public class Game implements Screen {
         }
     }
 
-    private static class PortalRect {
-        com.badlogic.gdx.math.Rectangle rect;
-        String targetMap;
-        Float spawnX; // optional override
-        Float spawnY; // optional override
-        PortalRect(com.badlogic.gdx.math.Rectangle r, String targetMap, Float spawnX, Float spawnY) {
-            this.rect = r; this.targetMap = targetMap; this.spawnX = spawnX; this.spawnY = spawnY;
-        }
-    }
 
 
     public Game(Corrupted game, int selectedCharacterIndex) {
@@ -209,7 +209,11 @@ public class Game implements Screen {
         // --- Initialize damage system first ---
         damageNumbers = new ArrayList<>();
         damageFont = new BitmapFont();
-        damageFont.getData().setScale(0.1f); // Reverted back to original 0.1f
+
+        // Use fixed font scale for damage numbers (they'll be rendered in screen-space)
+        damageFont.getData().setScale(0.1f); // Fixed scale for consistent size across all maps
+        Gdx.app.log("Font", "=== FONT INITIALIZATION ===");
+        Gdx.app.log("Font", "Using fixed font scale: 0.1f for consistent rendering");
 
         // Set up damage number system for physics collisions (bullets/fireballs)
         physicsManager.setDamageNumberSystem(damageNumbers, damageFont);
@@ -235,6 +239,13 @@ public class Game implements Screen {
         enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath()); // Set current world for world-specific spawning
         enemySpawner.setCollisionMap(mapManager.getTiledMap()); // Set collision map for proper spawn detection
         enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
+
+        // --- Create item spawner ---
+        itemSpawner = new ItemSpawner(physicsManager.getWorld(), mapWidth, mapHeight);
+        itemSpawner.setTiledMap(mapManager.getTiledMap());
+
+        // Spawn items based on current world (only in normal worlds, not boss maps)
+        spawnItemsForCurrentWorld();
 
         // --- Create player (with enemies available for Manny) ---
         player = createPlayer();
@@ -334,7 +345,7 @@ public class Game implements Screen {
                         teleportFxTimer = 0f;
                         teleportFxUseBlack = true; // use black transition on F8
                         teleportFxParticles.clear();
-                        transitionToMap(WorldMapManager.WorldMap.WORLD_1_BOSS.getFilePath(), null, null);
+                        transitionToMap(WorldMapManager.WorldMap.WORLD_3_BOSS.getFilePath(), null, null);
                         return true;
                     }
                 }
@@ -381,18 +392,6 @@ public class Game implements Screen {
                         return true;
                     }
                 }
-
-                //Quiboloy Skills
-                if (!isPaused && player instanceof Quiboloy) {
-                    Quiboloy quiboloy = (Quiboloy) player;
-
-                    if (keycode ==  com.badlogic.gdx.Input.Keys.Q) { // Divine Healing
-                        quiboloy.useDivineHealing();
-                        return true;
-                    }
-                }
-
-
                 return false;
             }
 
@@ -467,7 +466,16 @@ public class Game implements Screen {
 
         // Now construct playerLogic with movementManager and bulletLogic present
         playerLogic = new PlayerLogic(player, inputManager, viewport, movementManager, bulletLogic, fireballLogic);
-        enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player);
+        // Objective system: set map-specific objective
+        objectiveManager = new capstone.main.Managers.ObjectiveManager();
+        enemyLogic = new EnemyLogic(enemySpawner, enemySpawner.getEnemies(), player, objectiveManager);
+
+        // Configure objective per world
+        configureObjectiveForWorld(worldMapManager.getCurrentWorld());
+        if (objectiveHud != null) objectiveHud.setObjective(objectiveManager.getObjective());
+
+        // Objective HUD UI (create now; add to stage after UIManager is initialized)
+        objectiveHud = new capstone.main.UI.ObjectiveHudActor(damageFont);
 
         // --- Batches & renderers ---
         spriteBatch = new SpriteBatch();
@@ -489,13 +497,40 @@ public class Game implements Screen {
         backBtnSprite.setPosition(0.5f, viewport.getWorldHeight() - 2f);
 
         worldRenderer = new WorldRenderer(mapManager.getRenderer(), mapManager.getTiledMap());
+        worldRenderer.setCurrentWorld(worldMapManager.getCurrentWorldPath());
         // Load any portal rectangles from the current map
         loadPortalsFromMap();
         entityRenderer = new EntityRenderer(spriteBatch, shapeRenderer, player, enemySpawner.getEnemies(), damageNumbers);
         weaponRenderer = new WeaponRenderer(player, weaponSprite);
 
         // --- UI Manager (Boss UI, etc.) ---
-        uiManager = new UIManager(uiViewport, spriteBatch, damageFont);
+        uiManager = new UIManager(uiViewport, spriteBatch, damageFont, new capstone.main.UI.VictoryOverlay.VictoryCallback() {
+            @Override
+            public void onPlayAgain() {
+                // Restart the game from World 1
+                com.badlogic.gdx.Gdx.app.log("VictoryOverlay", "Play Again clicked");
+                uiManager.hideVictoryOverlay();
+                isPaused = false; // Unpause the game
+                // Restore input processor to gameplay controls
+                Gdx.input.setInputProcessor(gameplayInputs);
+                transitionToMap(WorldMapManager.WorldMap.WORLD_1.getFilePath(), null, null);
+            }
+
+            @Override
+            public void onExitToMainMenu() {
+                // Return to main menu
+                com.badlogic.gdx.Gdx.app.log("VictoryOverlay", "Exit to Main Menu clicked");
+                dispose();
+                Corrupted gameApp = (Corrupted) com.badlogic.gdx.Gdx.app.getApplicationListener();
+                gameApp.setScreen(new MainMenuScreen(gameApp));
+            }
+        });
+        // Now that UIManager is ready, attach Objective HUD and set initial objective
+        if (objectiveHud == null) {
+            objectiveHud = new capstone.main.UI.ObjectiveHudActor(damageFont);
+        }
+        uiManager.getStage().addActor(objectiveHud);
+        objectiveHud.setObjective(objectiveManager.getObjective());
 
         // --- Pause UI ---
         pauseSkin = new Skin(Gdx.files.internal("uiskin.json"));
@@ -556,7 +591,13 @@ public class Game implements Screen {
             float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
             Color textColor = new Color(r / 255f, g / 255f, b / 255f, 1f);
 
-            damageNumbers.add(new DamageNumber(text, playerX, playerY, damageFont, textColor));
+            // Shorten long messages for smaller maps (boss worlds) to avoid text overlap
+            String displayText = text;
+            if ((mapWidth < 100 || mapHeight < 100) && text.equals("Health is full!")) {
+                displayText = "MAX HP";
+            }
+
+            damageNumbers.add(new DamageNumber(displayText, playerX, playerY, damageFont, textColor));
         });
     }
 
@@ -573,7 +614,10 @@ public class Game implements Screen {
                     float playerX = player.getSprite().getX() + player.getSprite().getWidth() / 2f;
                     float playerY = player.getSprite().getY() + player.getSprite().getHeight() + 1f;
                     Color textColor = new Color(1f, 0.4f, 0.4f, 1f); // Red color
-                    damageNumbers.add(new DamageNumber("Health is full!", playerX, playerY, damageFont, textColor));
+
+                    // Use shorter message for smaller maps (boss worlds) to avoid text overlap
+                    String message = (mapWidth < 100 || mapHeight < 100) ? "MAX HP" : "Health is full!";
+                    damageNumbers.add(new DamageNumber(message, playerX, playerY, damageFont, textColor));
 
                     return; // Don't consume the item
                 }
@@ -601,15 +645,12 @@ public class Game implements Screen {
         if (playerPosLogTimer == Float.NaN) { // ensure initialized
             playerPosLogTimer = 0f;
         }
-        // MEMORY DEBUG: Monitor memory usage every 5 seconds
-        if (System.currentTimeMillis() % 5000 < 16) {
-            Runtime runtime = Runtime.getRuntime();
-            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
-            System.out.println("=== MEMORY DEBUG ===");
-            System.out.println("Used Memory: " + usedMemory + " MB");
-            System.out.println("Total Enemies: " + enemySpawner.getEnemies().size());
-            System.out.println("==================");
-        }
+        // MEMORY DEBUG: light-weight sampling every ~5s; comment out to remove noise
+        // if (System.currentTimeMillis() % 5000 < 16) {
+        //     Runtime runtime = Runtime.getRuntime();
+        //     long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+        //     Gdx.app.log("Perf", "Mem=" + usedMemory + "MB Enemies=" + enemySpawner.getEnemies().size());
+        // }
 
         // --- Update logic ---
         if (teleportFxActive) {
@@ -678,26 +719,47 @@ public class Game implements Screen {
                     if (!anyBossLeft) bossDefeatedInCurrentWorld = true;
                 }
             }
-            // Show a one-time cleared toast once boss is defeated in boss worlds
+            // Show a one-time cleared toast once objective is completed
             capstone.main.Managers.WorldMapManager.WorldMap curWorldTmp = worldMapManager.getCurrentWorld();
             boolean isBossWorldTmp = (curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1_BOSS
                 || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2_BOSS
                 || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS);
+            boolean isNormalWorldTmp = (curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1
+                || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2
+                || curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3);
+
+            // Boss worlds: show toast when boss is defeated
             if (isBossWorldTmp && bossDefeatedInCurrentWorld && !bossClearedToastShown) {
-                uiManager.showToast("Area cleared! Portal unlocked.", 1.6f);
+                // Special victory overlay for World 3 Boss (QuiboloyBoss)
+                if (curWorldTmp == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS) {
+                    uiManager.showVictoryOverlay();
+                    isPaused = true; // Pause the game to show victory screen
+                    // Set input processor to victory overlay stage for button interactions
+                    Gdx.input.setInputProcessor(uiManager.getStage());
+                } else {
+                    // Normal toast for other bosses
+                    uiManager.showToast("Area cleared! Portal unlocked.", 1.6f);
+                }
                 bossClearedToastShown = true;
             }
+
+            // Normal worlds: show toast when objective is completed
+            if (isNormalWorldTmp && objectiveManager != null && objectiveManager.consumeJustCompleted()) {
+                uiManager.showToast("Area cleared! Portal unlocked.", 1.6f);
+            }
+
             checkPortalsAndMaybeTransition();
+            checkWorld3QuiboloyHint();
 
             if (player instanceof MannyPacquiao) {
                 ((MannyPacquiao) player).updateSkills(delta);
                 ((MannyPacquiao) player).updatePunchAnimation(delta);
             }
 
-            if (player instanceof Quiboloy) {
-                ((Quiboloy) player).updateSkills(delta);
-            }
-        } else if (isPaused) {
+            // --- Update and check pickable items ---
+            itemSpawner.update(delta);
+            checkItemPickups();
+        } else if (isPaused && !uiManager.isVictoryOverlayVisible()) {
             if (pauseStage.getActors().size == 0) createPauseMenu();
             pauseStage.act(delta);
         }
@@ -723,47 +785,34 @@ public class Game implements Screen {
 
         // --- World rendering ---
         // Teleportation FX: black transition (cinematic fade with vignette)
-        if (teleportFxActive) {
-            float t = Math.min(1f, teleportFxTimer / teleportFxDuration);
-            float w = Gdx.graphics.getWidth();
-            float h = Gdx.graphics.getHeight();
-            Gdx.gl.glEnable(GL20.GL_BLEND);
-            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-            shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
-
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            // ease in/out to make it feel smoother
-            float k = (float)(1.0 - Math.cos(Math.PI * t)) * 0.5f; // 0..1
-            float alpha = Math.min(1f, 1.2f * k);
-            // full-screen black
-            shapeRenderer.setColor(0f, 0f, 0f, alpha);
-            shapeRenderer.rect(0, 0, w, h);
-
-            // subtle inward vignette near the end
-            float cx = w / 2f;
-            float cy = h / 2f;
-            float ringR = (0.25f + 0.75f * k) * Math.max(w, h);
-            float ringAlpha = 0.35f * (1f - k);
-            shapeRenderer.setColor(0f, 0f, 0f, ringAlpha);
-            int steps = 42;
-            for (int i = 0; i < steps; i++) {
-                float ang0 = (i / (float)steps) * 6.2831853f;
-                float ang1 = ((i + 1) / (float)steps) * 6.2831853f;
-                float x0 = cx + (float)Math.cos(ang0) * ringR;
-                float y0 = cy + (float)Math.sin(ang0) * ringR;
-                float x1 = cx + (float)Math.cos(ang1) * ringR;
-                float y1 = cy + (float)Math.sin(ang1) * ringR;
-                shapeRenderer.triangle(cx, cy, x0, y0, x1, y1);
-            }
-            shapeRenderer.end();
-
-            Gdx.gl.glDisable(GL20.GL_BLEND);
-        }
         updateCamera();
         updateWeaponAiming();
         viewport.apply();
+
+        // Update player position for opacity calculations
+        Vector2 playerPos = player.getBody().getPosition();
+        worldRenderer.setPlayerPosition(playerPos.x, playerPos.y);
+
         worldRenderer.render(camera);
         entityRenderer.render(camera);
+
+        // --- Render pickable items ---
+        spriteBatch.begin();
+        for (PickableItem item : itemSpawner.getItems()) {
+            item.render(spriteBatch);
+        }
+        spriteBatch.end();
+
+        // --- Render item glow indicators (when player is nearby) ---
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        for (PickableItem item : itemSpawner.getItems()) {
+            item.renderGlowIndicator(shapeRenderer);
+        }
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
         // Debug draw portal rectangles
         if (debugPortals && portals != null) {
             Gdx.gl.glEnable(GL20.GL_BLEND);
@@ -771,12 +820,13 @@ public class Game implements Screen {
             shapeRenderer.setProjectionMatrix(camera.combined);
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(0f, 1f, 0f, 0.25f);
-            for (PortalRect p : portals) {
+            for (Portal p : portals) {
                 // Draw inflated portal rect to match overlap logic
-                float x = p.rect.x - 0.1f;
-                float y = p.rect.y - 0.1f;
-                float w = p.rect.width + 0.2f;
-                float h = p.rect.height + 0.6f;
+                Rectangle bounds = p.getBounds();
+                float x = bounds.x - 0.1f;
+                float y = bounds.y - 0.1f;
+                float w = bounds.width + 0.2f;
+                float h = bounds.height + 0.6f;
                 shapeRenderer.rect(x, y, w, h);
             }
             shapeRenderer.end();
@@ -784,6 +834,10 @@ public class Game implements Screen {
         }
         // Update and render boss UI (Scene2D, screen-space)
         uiManager.updateBossReference(enemySpawner.getEnemies());
+        // Keep objective HUD in sync
+        if (objectiveHud != null && objectiveManager != null && objectiveManager.getObjective() != null) {
+            objectiveHud.updateTextOnly(objectiveManager.getObjective());
+        }
         uiManager.actAndDraw(delta);
 
         if (bulletLogic != null) {
@@ -794,6 +848,8 @@ public class Game implements Screen {
             fireballLogic.render(spriteBatch, camera);
         }
 
+        // Ensure weapon uses world projection and renders after entities
+        spriteBatch.setProjectionMatrix(camera.combined);
         weaponRenderer.update();
         weaponRenderer.render(spriteBatch);
 
@@ -817,7 +873,8 @@ public class Game implements Screen {
         inventoryUI.draw();
 
         // --- Draw pause overlay ---
-        if (isPaused) {
+        // Only draw pause menu if victory overlay is not showing
+        if (isPaused && !uiManager.isVictoryOverlayVisible()) {
             // Draw semi-transparent overlay
             Gdx.gl.glEnable(GL20.GL_BLEND);
             Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
@@ -831,6 +888,61 @@ public class Game implements Screen {
             Gdx.gl.glDisable(GL20.GL_BLEND);
 
             pauseStage.draw();
+        }
+
+        // --- Portal Transition Overlay (RENDER LAST, ON TOP OF EVERYTHING) ---
+        if (teleportFxActive) {
+            float t = Math.min(1f, teleportFxTimer / teleportFxDuration);
+            float w = Gdx.graphics.getWidth();
+            float h = Gdx.graphics.getHeight();
+            Gdx.gl.glEnable(GL20.GL_BLEND);
+            Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+            shapeRenderer.setProjectionMatrix(uiViewport.getCamera().combined);
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+            // Smooth dramatic transition with cinematic easing
+            // 3-phase: Fade in smoothly -> Hold at peak -> Fade out smoothly
+            float k;
+            if (t < 0.4f) {
+                // Fade in smoothly using ease-in curve (0 to 1)
+                float progress = t / 0.4f;
+                k = progress * progress; // Quadratic ease-in for smooth acceleration
+            } else if (t < 0.6f) {
+                // Hold at full black for dramatic effect
+                k = 1.0f;
+            } else {
+                // Fade out smoothly using ease-out curve (1 to 0)
+                float progress = (t - 0.6f) / 0.4f;
+                k = 1.0f - (progress * progress); // Quadratic ease-out for smooth deceleration
+            }
+
+            // Full-screen black overlay with buttery smooth easing
+            float alpha = Math.min(1f, k);
+            shapeRenderer.setColor(0f, 0f, 0f, alpha);
+            shapeRenderer.rect(0, 0, w, h);
+
+            // Smooth pulsing vignette that expands and contracts
+            float cx = w / 2f;
+            float cy = h / 2f;
+            // Smoother vignette progression using sine wave
+            float vignetteProgress = (float) Math.sin(t * Math.PI); // 0->1->0 smoothly
+            float ringR = (1.5f - vignetteProgress * 0.6f) * Math.max(w, h);
+            float ringAlpha = 0.4f * vignetteProgress;
+            shapeRenderer.setColor(0f, 0f, 0f, ringAlpha);
+            int steps = 60; // More steps for ultra-smooth circles
+            for (int i = 0; i < steps; i++) {
+                float ang0 = (i / (float)steps) * 6.2831853f;
+                float ang1 = ((i + 1) / (float)steps) * 6.2831853f;
+                float x0 = cx + (float)Math.cos(ang0) * ringR;
+                float y0 = cy + (float)Math.sin(ang0) * ringR;
+                float x1 = cx + (float)Math.cos(ang1) * ringR;
+                float y1 = cy + (float)Math.sin(ang1) * ringR;
+                shapeRenderer.triangle(cx, cy, x0, y0, x1, y1);
+            }
+            shapeRenderer.end();
+
+            Gdx.gl.glDisable(GL20.GL_BLEND);
         }
 
         // --- Back button click ---
@@ -893,7 +1005,7 @@ public class Game implements Screen {
                     if (currentPath != null && currentPath.contains("World1_Boss") && target.contains("Textures/World1.tmx")) {
                         Gdx.app.log("Portals", "Skipping reverse portal back to World1 from World1_Boss");
                     } else {
-                        portals.add(new PortalRect(worldRect, target, sx, sy));
+                        portals.add(new Portal(worldRect, target, sx, sy));
                         String trimmed = target.trim();
                         if (!trimmed.equals(target)) {
                             Gdx.app.log("Portals", "WARNING: target has trailing/leading whitespace: '" + target + "' -> '" + trimmed + "'");
@@ -906,7 +1018,93 @@ public class Game implements Screen {
         Gdx.app.log("Portals", "Total portals loaded: " + portals.size());
     }
 
+    private void checkItemPickups() {
+        // Check if player is close enough to pick up items
+        Vector2 playerPos = player.getBody().getPosition();
+        float pickupRange = 1.5f; // How close player needs to be
+        float indicatorRange = 2.5f; // Range for visual indicator (larger than pickup)
+
+        for (PickableItem item : itemSpawner.getItems()) {
+            if (!item.isPickedUp()) {
+                Vector2 itemPos = item.getPosition();
+                float distance = playerPos.dst(itemPos);
+
+                // Set visual indicator if player is nearby
+                item.setPlayerNearby(distance <= indicatorRange);
+
+                if (distance <= pickupRange) {
+                    // Pick up the item
+                    item.pickup();
+
+                    // Add to inventory
+                    inventory.addItem(item.getItemName(), item.getIconPath(), 1);
+
+                    // Show feedback
+                    uiManager.showToast("Picked up " + item.getItemName(), 1.0f);
+                    Gdx.app.log("ItemPickup", "Player picked up: " + item.getItemName());
+                }
+            }
+        }
+
+        // Remove picked up items from the world
+        itemSpawner.removePickedUpItems();
+    }
+
+    private void checkWorld3QuiboloyHint() {
+        // Only check in World 3
+        if (worldMapManager.getCurrentWorld() != WorldMapManager.WorldMap.WORLD_3) return;
+
+        // Only show once
+        if (world3QuiboloyHintShown) return;
+
+        // Check if player is near the specified location (160, 45.767)
+        Vector2 bodyCenter = player.getBody().getPosition();
+        float targetX = 160.0f;
+        float targetY = 45.767f;
+        float triggerRadius = 3.0f; // 3 unit radius trigger zone
+
+        float dx = bodyCenter.x - targetX;
+        float dy = bodyCenter.y - targetY;
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= triggerRadius && uiManager != null) {
+            uiManager.showToast("Quiboloy is not here... Maybe he is hiding somewhere else.", 3.0f);
+            world3QuiboloyHintShown = true;
+            Gdx.app.log("World3Hint", "Quiboloy hint triggered at distance: " + distance);
+        }
+    }
+
     private void checkPortalsAndMaybeTransition() {
+        // Ensure uiManager exists before referencing
+        if (uiManager == null) return;
+        // Objective gating: in normal worlds, require kill objective completion before allowing portal
+        if (objectiveManager != null && !objectiveManager.isObjectiveComplete()) {
+            // Only block in non-boss worlds
+            capstone.main.Managers.WorldMapManager.WorldMap cur = worldMapManager.getCurrentWorld();
+            boolean isBossWorld = (cur == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1_BOSS
+                || cur == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2_BOSS
+                || cur == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS);
+            if (!isBossWorld) {
+                float sxTmp = player.getSprite().getX();
+                float syTmp = player.getSprite().getY();
+                float swTmp = player.getSprite().getWidth();
+                float shTmp = player.getSprite().getHeight();
+                com.badlogic.gdx.math.Rectangle playerRectTmp = new com.badlogic.gdx.math.Rectangle(sxTmp, syTmp, swTmp, shTmp);
+                for (Portal p : portals) {
+                    com.badlogic.gdx.math.Rectangle bounds = p.getBounds();
+                    com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
+                        bounds.x - 0.1f, bounds.y - 0.1f, bounds.width + 0.2f, bounds.height + 0.6f
+                    );
+                    com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
+                        playerRectTmp.x, playerRectTmp.y - 0.15f, playerRectTmp.width, playerRectTmp.height + 0.3f
+                    );
+                    if (expandedPortal.overlaps(expandedPlayer)) {
+                        uiManager.showToast("Objective: eliminate enemies to unlock portal", 1.2f);
+                        return;
+                    }
+                }
+            }
+        }
         // Block portal usage if a boss exists and is not dead
         BossEntity boss = uiManager.getBossManager().getCurrentBoss();
         // Gate portals only in boss worlds (e.g., World1_Boss)
@@ -930,24 +1128,35 @@ public class Game implements Screen {
         if (bossSpawned) bossSpawnedInCurrentWorld = true;
         if (bossCleared) bossDefeatedInCurrentWorld = true;
 
-        // If in a boss world and boss either not spawned yet OR spawned but not dead, block with toast when entering portal area
-        if (isBossWorld && (!bossSpawned || !bossCleared)) {
-            // Only show toast if player is attempting to walk into any portal area
-            float sx = player.getSprite().getX();
-            float sy = player.getSprite().getY();
-            float sw = player.getSprite().getWidth();
-            float sh = player.getSprite().getHeight();
-            com.badlogic.gdx.math.Rectangle playerRect = new com.badlogic.gdx.math.Rectangle(sx, sy, sw, sh);
-            for (PortalRect p : portals) {
-                com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
-                    p.rect.x - 0.1f, p.rect.y - 0.1f, p.rect.width + 0.2f, p.rect.height + 0.6f
-                );
-                com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
-                    playerRect.x, playerRect.y - 0.15f, playerRect.width, playerRect.height + 0.3f
-                );
-                if (expandedPortal.overlaps(expandedPlayer)) {
-                    uiManager.showToast("Area locked: Defeat the boss to proceed", 1.2f);
-                    return; // Block transition
+        // If in a boss world, check both boss status AND objective completion
+        if (isBossWorld) {
+            boolean objectiveIncomplete = (objectiveManager != null && !objectiveManager.isObjectiveComplete());
+            boolean shouldBlock = (!bossSpawned || !bossCleared) || objectiveIncomplete;
+
+            if (shouldBlock) {
+                // Only show toast if player is attempting to walk into any portal area
+                float sx = player.getSprite().getX();
+                float sy = player.getSprite().getY();
+                float sw = player.getSprite().getWidth();
+                float sh = player.getSprite().getHeight();
+                com.badlogic.gdx.math.Rectangle playerRect = new com.badlogic.gdx.math.Rectangle(sx, sy, sw, sh);
+                for (Portal p : portals) {
+                    com.badlogic.gdx.math.Rectangle bounds = p.getBounds();
+                    com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
+                        bounds.x - 0.1f, bounds.y - 0.1f, bounds.width + 0.2f, bounds.height + 0.6f
+                    );
+                    com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
+                        playerRect.x, playerRect.y - 0.15f, playerRect.width, playerRect.height + 0.3f
+                    );
+                    if (expandedPortal.overlaps(expandedPlayer)) {
+                        // Show appropriate message based on what's incomplete
+                        if (!bossSpawned || !bossCleared) {
+                            uiManager.showToast("Area locked: Defeat the boss to proceed", 1.2f);
+                        } else if (objectiveIncomplete) {
+                            uiManager.showToast("Objective incomplete: Complete all objectives to proceed", 1.2f);
+                        }
+                        return; // Block transition
+                    }
                 }
             }
         }
@@ -958,30 +1167,111 @@ public class Game implements Screen {
         float sw = player.getSprite().getWidth();
         float sh = player.getSprite().getHeight();
         com.badlogic.gdx.math.Rectangle playerRect = new com.badlogic.gdx.math.Rectangle(sx, sy, sw, sh);
-        for (PortalRect p : portals) {
+        for (Portal p : portals) {
             // Expand portal slightly to be more forgiving
+            com.badlogic.gdx.math.Rectangle bounds = p.getBounds();
             com.badlogic.gdx.math.Rectangle expandedPortal = new com.badlogic.gdx.math.Rectangle(
-                p.rect.x - 0.1f, p.rect.y - 0.1f, p.rect.width + 0.2f, p.rect.height + 0.6f
+                bounds.x - 0.1f, bounds.y - 0.1f, bounds.width + 0.2f, bounds.height + 0.6f
             );
             // Also expand player rect slightly downward (feet)
             com.badlogic.gdx.math.Rectangle expandedPlayer = new com.badlogic.gdx.math.Rectangle(
                 playerRect.x, playerRect.y - 0.15f, playerRect.width, playerRect.height + 0.3f
             );
             if (expandedPortal.overlaps(expandedPlayer)) {
-                Gdx.app.log("Portals", "Player overlapped portal -> " + p.targetMap + " playerRect=" + playerRect + " portalRect=" + p.rect + " expandedPortal=" + expandedPortal + " expandedPlayer=" + expandedPlayer);
-                transitionToMap(p.targetMap, p.spawnX, p.spawnY);
+                Gdx.app.log("Portals", "Player overlapped portal -> " + p.getTargetMapPath() + " playerRect=" + playerRect + " portalRect=" + bounds + " expandedPortal=" + expandedPortal + " expandedPlayer=" + expandedPlayer);
+                transitionToMap(p.getTargetMapPath(), p.getSpawnX(), p.getSpawnY());
                 break;
             }
         }
     }
 
+    private void configureObjectiveForWorld(WorldMapManager.WorldMap world) {
+        if (objectiveManager == null) return;
+        // Defaults: W1=25, W2=35, W3=45; boss worlds are gated by boss kill and not shown
+        if (world == WorldMapManager.WorldMap.WORLD_1) {
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.AbstractEnemy.class,
+                "Survivor",
+                "Textures/Icons/icon_skull.png",
+                25
+            ));
+        } else if (world == WorldMapManager.WorldMap.WORLD_2) {
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.AbstractEnemy.class,
+                "Eliminate 20 Threats",
+                "Textures/Icons/icon_skull.png",
+                20
+            ));
+        } else if (world == WorldMapManager.WorldMap.WORLD_3) {
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.AbstractEnemy.class,
+                "Purge",
+                "Textures/Icons/icon_skull.png",
+                45
+            ));
+        } else if (world == WorldMapManager.WorldMap.WORLD_1_BOSS) {
+            // World 1 boss objective: Greed
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.Greed.class,
+                "Defeat the Boss",
+                "Textures/Icons/icon_boss_skull.png",
+                1
+            ));
+        } else if (world == WorldMapManager.WorldMap.WORLD_2_BOSS) {
+            // World 2 boss objective: Kill 20 Security guards AND defeat Discaya
+            java.util.List<capstone.main.Managers.ObjectiveManager.Objective> subObjectives = new java.util.ArrayList<>();
+            subObjectives.add(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.Security.class,
+                "Security",
+                "Textures/Icons/icon_skull.png",
+                20
+            ));
+            subObjectives.add(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.Discaya.class,
+                "Defeat the Boss",
+                "Textures/Icons/icon_boss_skull.png",
+                1
+            ));
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.CompositeObjective(
+                "World 2 Boss Objectives",
+                "Textures/Icons/icon_boss_skull.png",
+                subObjectives
+            ));
+        } else if (world == WorldMapManager.WorldMap.WORLD_3_BOSS) {
+            // World 3 boss objective: QuiboloyBoss
+            objectiveManager.setObjective(new capstone.main.Managers.ObjectiveManager.KillObjective(
+                capstone.main.Enemies.QuiboloyBoss.class,
+                "Defeat the Boss",
+                "Textures/Icons/icon_boss_skull.png",
+                1
+            ));
+        } else {
+            objectiveManager.setObjective(null);
+        }
+    }
+
     private void transitionToMap(String targetMapPath, Float overrideSpawnX, Float overrideSpawnY) {
+        // If transitioning to a boss world, clear objective and hide HUD
+        capstone.main.Managers.WorldMapManager.WorldMap targetWorld = capstone.main.Managers.WorldMapManager.getWorldByPath(targetMapPath);
+        boolean targetIsBossWorld = (targetWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_1_BOSS
+            || targetWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_2_BOSS
+            || targetWorld == capstone.main.Managers.WorldMapManager.WorldMap.WORLD_3_BOSS);
+        if (targetIsBossWorld) {
+            if (objectiveHud != null) objectiveHud.setObjective(null);
+            if (objectiveManager != null) objectiveManager.setObjective(null);
+        }
         // Avoid retrigger
         portalCooldown = 1.0f;
+
+        // Clear items when transitioning maps
+        if (itemSpawner != null) {
+            itemSpawner.clear();
+        }
 
         // Start teleport FX for any transition
         teleportFxActive = true;
         teleportFxTimer = 0f;
+        Gdx.app.log("PortalFX", "Portal transition effect activated for: " + targetMapPath);
 
         // Load target world
         worldMapManager.setCurrentWorld(targetMapPath);
@@ -990,52 +1280,97 @@ public class Game implements Screen {
         bossDefeatedInCurrentWorld = false;
         bossClearedToastShown = false;
 
+        // Reset World 3 hint when entering World 3
+        if (targetWorld == WorldMapManager.WorldMap.WORLD_3) {
+            world3QuiboloyHintShown = false;
+        }
+
         // Pause player movement
         player.getBody().setLinearVelocity(0, 0);
 
         // Load new map and renderer
+        // Dispose previous mapRenderer safely BEFORE loading new map to avoid disposing the new renderer accidentally
+        try { if (mapRenderer != null) mapRenderer.dispose(); } catch (Exception ignored) {}
         mapManager.load(targetMapPath);
         mapRenderer = mapManager.getRenderer();
         mapWidth = mapManager.getWorldWidth();
         mapHeight = mapManager.getWorldHeight();
 
-        // update spawner after map load
-        if (enemySpawner != null) {
-            enemySpawner.setWorldSize(mapWidth, mapHeight);
-            enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath());
-            enemySpawner.setCollisionMap(mapManager.getTiledMap());
-        }
-
         // Rebuild camera constraints
         cameraManager = new CameraManager((OrthographicCamera) viewport.getCamera(), screenShake, mapWidth, mapHeight);
 
-        // Rebuild NavMesh and update spawner
+        // Do NOT dispose mapRenderer here; it was just recreated above. Keep reference valid for WorldRenderer.
+        worldRenderer = null; // let GC reclaim; WorldRenderer has no explicit dispose
+
+        // Rebuild NavMesh and update spawner BEFORE spawning
         int maxNavMeshSize = 200;
         int navWidth = Math.min(maxNavMeshSize, (int) mapManager.getWorldWidth());
         int navHeight = Math.min(maxNavMeshSize, (int) mapManager.getWorldHeight());
         NavMesh navMesh = new NavMesh(navWidth, navHeight,
             CollisionLoader.getCollisionRectangles(mapManager.getTiledMap(), "collisionLayer", 1 / 32f));
-        enemySpawner.setNavMesh(navMesh);
-        enemySpawner.setCurrentWorld(targetMapPath);
-        enemySpawner.setCollisionMap(mapManager.getTiledMap());
-        // Apply world-specific spawn policy and handle boss spawning
-        capstone.main.Managers.WorldMapManager.WorldMap wm = worldMapManager.getCurrentWorld();
-        capstone.main.Managers.WorldSpawnPolicy policy = capstone.main.Managers.SpawnPolicies.getPolicy(wm);
-        enemySpawner.setPolicy(policy);
-        enemySpawner.clearEnemies();
-        if (policy != null) {
-            policy.onEnterWorld(enemySpawner, wm);
+
+        // Configure spawner and clear old enemies BEFORE applying spawn policy
+        if (enemySpawner != null) {
+            enemySpawner.setWorldSize(mapWidth, mapHeight);
+            enemySpawner.setCurrentWorld(worldMapManager.getCurrentWorldPath());
+            enemySpawner.setCollisionMap(mapManager.getTiledMap());
+            enemySpawner.setNavMesh(navMesh);
+            enemySpawner.setCurrentWorld(targetMapPath);
+
+            // Clear old enemies before spawning new ones
+            enemySpawner.clearEnemies();
         }
-        // Only do periodic initial spawns if allowed by policy
-        if (policy == null || policy.allowPeriodicSpawns()) {
+
+        // Apply world-specific spawn policy and objective
+        worldMapManager.setCurrentWorld(targetMapPath);
+        configureObjectiveForWorld(worldMapManager.getCurrentWorld());
+        if (objectiveHud != null) objectiveHud.setObjective(objectiveManager.getObjective());
+
+        // Now spawn enemies and bosses with proper NavMesh setup
+        if (enemySpawner != null) {
+            // Trigger spawn policy for the new world (this spawns bosses)
+            capstone.main.Managers.SpawnPolicies.applySpawnPolicy(targetWorld, enemySpawner);
+            Gdx.app.log("SpawnPolicy", "Applied spawn policy for " + targetWorld);
+
+            // Spawn regular enemies
             enemySpawner.spawnInitial(worldMapManager.getEnemyCount(worldMapManager.getCurrentWorld()));
         }
+        // World entered: enemies cleared and spawn done.
+
+        // Boss spawning is now handled by SpawnPolicies.java
+        // Legacy spawn code removed - SpawnPolicies controls all boss spawns
 
         // Rebuild world renderer
         worldRenderer = new WorldRenderer(mapManager.getRenderer(), mapManager.getTiledMap());
+        worldRenderer.setCurrentWorld(worldMapManager.getCurrentWorldPath());
 
         // Re-read portals from new map
         loadPortalsFromMap();
+
+        // Respawn items for the new world
+        if (itemSpawner != null) {
+            itemSpawner.setTiledMap(mapManager.getTiledMap());
+            spawnItemsForCurrentWorld();
+        }
+
+        // Load wall rectangles from wallLayer if present and publish to WallRegistry
+        try {
+            java.util.List<com.badlogic.gdx.math.Rectangle> walls = capstone.main.Managers.CollisionLoader.getCollisionRectangles(
+                mapManager.getTiledMap(), "wallLayer", 1/32f);
+            capstone.main.Managers.WallRegistry.setWalls(walls);
+            com.badlogic.gdx.Gdx.app.log("Walls", "Loaded " + (walls != null ? walls.size() : 0) + " rectangles from wallLayer");
+        } catch (Exception ex) {
+            capstone.main.Managers.WallRegistry.setWalls(java.util.Collections.emptyList());
+        }
+
+        // Hint GC by clearing damage numbers from previous map if they lingered
+        if (damageNumbers != null && !damageNumbers.isEmpty()) {
+            damageNumbers.clear();
+        }
+
+        // Font scale remains fixed for screen-space rendering
+        Gdx.app.log("Font", "=== WORLD CHANGED ===");
+        Gdx.app.log("Font", "Font scale remains fixed at 0.1f");
 
         // Determine spawn
         float sx, sy;
@@ -1047,8 +1382,24 @@ public class Game implements Screen {
             sx = sp.x;
             sy = sp.y;
         }
+        // Normalize spawn coordinates if provided in tiles/pixels or outside bounds
+        float pw = player.getWidth();
+        float ph = player.getHeight();
+        float maxX = Math.max(2f, mapWidth - 2f);
+        float maxY = Math.max(2f, mapHeight - 2f);
+        if (sx > maxX || sy > maxY) {
+            // If looks like pixel coords, convert to world units
+            if (sx > mapWidth * 1.5f || sy > mapHeight * 1.5f) { sx /= 32f; sy /= 32f; }
+            // If still too big (tile coords), convert again
+            if (sx > mapWidth * 1.5f || sy > mapHeight * 1.5f) { sx /= 32f; sy /= 32f; }
+        }
+        // Clamp to safe area inside bounds
+        sx = Math.max(1f, Math.min(maxX - pw, sx));
+        sy = Math.max(1f, Math.min(maxY - ph, sy));
+        Gdx.app.log("Spawn", String.format("Spawn normalized to (%.2f, %.2f) within map %.1fx%.1f", sx, sy, mapWidth, mapHeight));
+
         // Teleport player (center is body position)
-        player.getBody().setTransform(sx + player.getWidth() / 2f, sy + player.getHeight() / 2f, 0);
+        player.getBody().setTransform(sx + pw / 2f, sy + ph / 2f, 0);
         player.getBody().setLinearVelocity(0, 0);
         // Ensure sprite sync next update
         player.getSprite().setPosition(sx, sy);
@@ -1293,8 +1644,43 @@ public class Game implements Screen {
         Gdx.input.setInputProcessor(pauseStage);
     }
 
-    @Override
+
+    /**
+     * Calculate appropriate font scale based on map dimensions.
+     * Smaller maps (boss arenas) need smaller font to avoid oversized text.
+     *
+     * @param mapWidth Map width in world units
+     * @param mapHeight Map height in world units
+     * @return Font scale factor
+     */
+    private float calculateFontScale(float mapWidth, float mapHeight) {
+        // Reference: World1 (6144px = 192 units) uses 0.1f scale
+        // Boss maps are typically 1024px = 32 units or 2048px = 64 units
+
+        float referenceSize = 192f; // World1 width in world units
+        float currentSize = Math.max(mapWidth, mapHeight); // Use larger dimension
+
+        // Scale proportionally - smaller maps need MUCH smaller font
+        // Use a more aggressive scaling formula for small maps
+        float scale;
+        if (currentSize < 100f) {
+            // Boss worlds and small maps: use quadratic scaling for much smaller font
+            float ratio = currentSize / referenceSize;
+            scale = 0.1f * ratio * ratio; // Square the ratio for more aggressive scaling
+        } else {
+            // Normal worlds: use linear scaling
+            scale = 0.1f * (currentSize / referenceSize);
+        }
+
+        // Much lower minimum (0.005f) for extremely small maps
+        return Math.max(0.005f, Math.min(0.1f, scale));
+    }
+
     public void dispose() {
+        try {
+            if (itemSpawner != null) itemSpawner.dispose();
+        } catch (Exception ignored) {
+        }
         try {
             if (spriteBatch != null) spriteBatch.dispose();
         } catch (Exception ignored) {
@@ -1348,6 +1734,44 @@ public class Game implements Screen {
     }
 
 
+    private void spawnItemsForCurrentWorld() {
+        WorldMapManager.WorldMap currentWorld = worldMapManager.getCurrentWorld();
+
+        // Don't spawn items in boss worlds
+        if (currentWorld == WorldMapManager.WorldMap.WORLD_1_BOSS ||
+            currentWorld == WorldMapManager.WorldMap.WORLD_2_BOSS ||
+            currentWorld == WorldMapManager.WorldMap.WORLD_3_BOSS) {
+            Gdx.app.log("ItemSpawner", "Boss map detected - no items will spawn");
+            return;
+        }
+
+        // Spawn items near specific layers based on world
+        switch (currentWorld) {
+            case WORLD_1:
+                // Spawn near "props" layer in World 1
+                itemSpawner.spawnNearTileLayer("props", 8);
+                Gdx.app.log("ItemSpawner", "Spawning items near 'props' layer in World 1");
+                break;
+
+            case WORLD_2:
+                // Spawn near "smallProps" layer in World 2
+                itemSpawner.spawnNearTileLayer("smallProps", 8);
+                Gdx.app.log("ItemSpawner", "Spawning items near 'smallProps' layer in World 2");
+                break;
+
+            case WORLD_3:
+                // Spawn near "Decos" layer in World 3
+                itemSpawner.spawnNearTileLayer("Decos", 8);
+                Gdx.app.log("ItemSpawner", "Spawning items near 'Decos' layer in World 3");
+                break;
+
+            default:
+                // For INTRO and other unknown worlds, don't spawn items
+                Gdx.app.log("ItemSpawner", "No items spawned for: " + currentWorld);
+                break;
+        }
+    }
+
     private AbstractPlayer createPlayer() {
         switch (selectedCharacterIndex) {
             case 1:
@@ -1356,8 +1780,8 @@ public class Game implements Screen {
                 return new MannyPacquiao(
                     130,           // healthPoints (rebalanced: 150→130 - less tanky)
                     60,            // manaPoints (lowest - skills cost mana)
-                    12,            // baseDamage (rebalanced: 10→12)
-                    16,            // maxDamage (rebalanced: 15→16, now 12-16 damage range)
+                    20,            // baseDamage (ramped up for faster gameplay)
+                    28,            // maxDamage (ramped up, now 20-28 damage range)
                     1.0f,          // attackSpeed (rebalanced: 1.2→1.0 - slightly slower)
                     9f,            // x
                     9f,            // y
@@ -1377,9 +1801,9 @@ public class Game implements Screen {
                 return new Quiboloy(
                     100,           // healthPoints (rebalanced: 90→100 - slightly less fragile)
                     120,           // manaPoints (highest - mage needs mana)
-                    1000,            // baseDamage (rebalanced: 12→10)
-                    1500,            // maxDamage (rebalanced: 18→15, now 10-15 damage range)
-                    1.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
+                    1800,            // baseDamage (ramped up for faster gameplay)
+                    2500,            // maxDamage (ramped up, now 18-25 damage range)
+                    10.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -1396,8 +1820,8 @@ public class Game implements Screen {
                 return new VicoSotto(
                     120,           // healthPoints (middle ground)
                     70,            // manaPoints (moderate)
-                    8,             // baseDamage (rebalanced: 6→8)
-                    12,            // maxDamage (rebalanced: 10→12, now 8-12 damage range)
+                    15,            // baseDamage (ramped up for faster gameplay)
+                    22,            // maxDamage (ramped up, now 15-22 damage range)
                     1.8f,          // attackSpeed (rebalanced: 2.0→1.8 - slightly slower but stronger)
                     9f,            // x
                     9f,            // y

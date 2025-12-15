@@ -34,42 +34,48 @@ public class MeteorFist extends Skill {
     public void activate() {
         if (!canUse()) return;
 
-        float damage = MathUtils.random(MIN_DAMAGE, MAX_DAMAGE);
         Vector2 playerPos = player.getPosition();
 
-        // Find the closest enemy in range
-        AbstractEnemy closestEnemy = null;
-        float closestDist = Float.MAX_VALUE;
-
+        // Multi-hit: line cleave forward, up to 3 targets
+        // Build forward direction from player's current facing using getWeaponAimingRad if available
+        float angle = player.getWeaponAimingRad();
+        com.badlogic.gdx.math.Vector2 dir = new com.badlogic.gdx.math.Vector2((float)Math.cos(angle), (float)Math.sin(angle));
+        float length = RANGE;
+        float halfWidth = 0.5f;
+        int hits = 0;
+        float totalDamage = 0f;
+        java.util.List<com.badlogic.gdx.math.Rectangle> walls = capstone.main.Managers.WallRegistry.getWalls();
         for (AbstractEnemy enemy : enemies) {
             if (enemy.isDead()) continue;
-
-            Vector2 enemyPos = enemy.getBody().getPosition();
-            float dist = playerPos.dst(enemyPos);
-
-            if (dist <= RANGE && dist < closestDist) {
-                closestDist = dist;
-                closestEnemy = enemy;
+            com.badlogic.gdx.math.Vector2 p = enemy.getBody().getPosition();
+            com.badlogic.gdx.math.Vector2 toP = new com.badlogic.gdx.math.Vector2(p).sub(playerPos);
+            float proj = toP.dot(dir);
+            if (proj < 0f || proj > length) continue;
+            float perp = Math.abs(toP.crs(dir)) / dir.len();
+            if (perp > halfWidth) continue;
+            // Blocked by wall? Skip target if any wall intersects segment
+            boolean blocked = false;
+            if (walls != null) {
+                for (com.badlogic.gdx.math.Rectangle r : walls) {
+                    if (com.badlogic.gdx.math.Intersector.intersectSegmentRectangle(playerPos, p, r)) { blocked = true; break; }
+                }
             }
+            if (blocked) continue;
+            // Calculate unique damage per enemy
+            float damage = MathUtils.random(MIN_DAMAGE, MAX_DAMAGE);
+            enemy.takeHit(damage);
+            damageNumbers.add(new DamageNumber(String.format("%.0f", damage), p.x, p.y, damageFont, com.badlogic.gdx.graphics.Color.YELLOW));
+            totalDamage += damage;
+            hits++;
+            if (hits >= 3) break;
         }
-
-        if (closestEnemy != null) {
-            closestEnemy.takeHit(damage);
-
-            // Create damage number
-            Vector2 enemyPos = closestEnemy.getBody().getPosition();
-            damageNumbers.add(new DamageNumber(
-                String.format("%.0f", damage),
-                enemyPos.x,
-                enemyPos.y,
-                damageFont,
-                com.badlogic.gdx.graphics.Color.YELLOW // Special color for skill damage
-            ));
-            startCooldown();
+        
+        // Always consume cooldown when activated
+        startCooldown();
+        
+        if (hits > 0) {
             SoundManager.getInstance().playSound("manny_skill1");
-            com.badlogic.gdx.Gdx.app.log("MeteorFist", "Hit enemy for " + damage + " damage!");
-        } else {
-            com.badlogic.gdx.Gdx.app.log("MeteorFist", "No enemy in range!");
+            com.badlogic.gdx.Gdx.app.log("MeteorFist", "Hit " + hits + " enemies for total ~" + String.format("%.1f", totalDamage) + " damage!");
         }
     }
 

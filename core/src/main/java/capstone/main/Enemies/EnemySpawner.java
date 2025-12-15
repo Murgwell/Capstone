@@ -28,6 +28,16 @@ public class EnemySpawner {
         this.scheduledBossRadius = radius;
         Gdx.app.log("EnemySpawner", "Scheduled boss spawn: " + type.getSimpleName() + " at (" + x + "," + y + ") radius=" + radius);
     }
+    
+    /**
+     * Spawn a boss immediately at the specified location (no deferred trigger).
+     */
+    public void spawnBossImmediately(Class<? extends AbstractEnemy> type, float x, float y) {
+        Gdx.app.log("EnemySpawner", "Spawning boss immediately: " + type.getSimpleName() + " at (" + x + "," + y + ")");
+        spawnSpecific(type, x, y);
+        Gdx.app.log("EnemySpawner", "Boss spawned successfully: " + type.getSimpleName());
+        Gdx.app.log("EnemySpawner", "Enemies list size after spawn: " + enemies.size());
+    }
 
     public boolean hasScheduledBoss() { return scheduledBossType != null; }
     public float getScheduledBossX() { return scheduledBossX; }
@@ -78,8 +88,8 @@ public class EnemySpawner {
     private ArrayList<AbstractEnemy> enemies;
     private ArrayList<Rectangle> collisionRectangles; // Collision rectangles to avoid
     private float spawnTimer = 0f;
-    private final float spawnInterval = 1f;
-    private final int maxEnemies = 20; // MEMORY FIX: Limit total enemies
+    private float spawnInterval = 0.6f; // Balanced density default
+    private int maxEnemies = 50; // Lower cap to reduce CPU load
     private float worldWidth;
     private float worldHeight;
     private Random random;
@@ -87,7 +97,16 @@ public class EnemySpawner {
     private final Vector2 tmpVec = new Vector2();
 
     public void setNavMesh(NavMesh navMesh) { this.navMesh = navMesh; }
-    public void clearEnemies() { if (enemies != null) enemies.clear(); }
+    public void clearEnemies() {
+        if (enemies == null) return;
+        for (int i = enemies.size() - 1; i >= 0; i--) {
+            try {
+                AbstractEnemy e = enemies.get(i);
+                if (e != null) e.dispose();
+            } catch (Exception ignored) {}
+        }
+        enemies.clear();
+    }
     public void setWorldSize(float width, float height) { this.worldWidth = width; this.worldHeight = height; }
     public float getWorldWidth() { return worldWidth; }
     public float getWorldHeight() { return worldHeight; }
@@ -103,7 +122,7 @@ public class EnemySpawner {
             else if (type == Security.class) e = new Security(x, y, screenShake, physics, navMesh);
             else if (type == Discaya.class) e = new Discaya(x, y, screenShake, physics, navMesh);
             else if (type == Follower.class) e = new Follower(x, y, screenShake, physics, navMesh);
-            else if (type == QuiboloyBoss.class) e = new QuiboloyBoss(x, y, screenShake, physics, navMesh);
+            else if (type == QuiboloyBoss.class) e = new QuiboloyBoss(x, y, screenShake, physics, navMesh, this);
             if (e != null) enemies.add(e);
         } catch (Exception ex) {
             System.err.println("Failed to spawn entity: " + type + " " + ex.getMessage());
@@ -111,7 +130,7 @@ public class EnemySpawner {
     }
 
     private float enemySpawnRadius = 2.0f; // Increase radius to avoid spawning near walls
-    private float enemySpacingRadius = 5.0f; // Wider spacing for better scattering
+    private float enemySpacingRadius = 3.0f; // Less spacing to allow denser packs
 
 
     private String currentWorld = "World1"; // Default to World1
@@ -130,13 +149,25 @@ public class EnemySpawner {
     }
 
     public void spawnInitial(int count) {
-        for (int i = 0; i < count; i++) {
+        int safe = Math.max(0, maxEnemies - enemies.size());
+        int toSpawn = Math.min(count, safe);
+        for (int i = 0; i < toSpawn; i++) {
             spawnRandomEnemy();
         }
     }
 
     public void update(float delta) {
         if (!periodicEnabled) return;
+        // Balanced FPS guard: throttle spawns when FPS drops below 50
+        float fps = Gdx.graphics.getFramesPerSecond();
+        if (fps > 0 && fps < 58f) {
+            // Increase interval and cap down to ease pressure aggressively
+            spawnInterval = 0.9f;
+            maxEnemies = Math.min(maxEnemies, 50);
+        } else {
+            // Restore target interval when FPS is healthy
+            spawnInterval = 0.6f;
+        }
         spawnTimer += delta;
         if (spawnTimer >= spawnInterval) {
             // MEMORY FIX: Only spawn if under limit
@@ -261,6 +292,19 @@ public class EnemySpawner {
 
         // SECOND: Check NavMesh walkability
         if (navMesh == null) return false;
+        // Slightly relax walkability: allow nodes that are near-walkable
+        // by checking nearest of 5 candidates and accepting if any walkable
+        NavNode primary = navMesh.getNearestNode(tmpVec);
+        if ((primary == null || !primary.walkable)) {
+            boolean nearOk = false;
+            float[] offsets = {-0.2f, 0f, 0.2f};
+            for (float ox : offsets) for (float oy : offsets) {
+                tmpVec.set(x + ox, y + oy);
+                NavNode nn = navMesh.getNearestNode(tmpVec);
+                if (nn != null && nn.walkable) { nearOk = true; break; }
+            }
+            if (!nearOk) return false;
+        }
 
         tmpVec.set(x, y);
         NavNode spawnNode = navMesh.getNearestNode(tmpVec);
@@ -389,28 +433,13 @@ public class EnemySpawner {
                 break;
 
             case "World2":
-                // World2 enemies: Security and Discaya
-                int world2EnemyType = random.nextInt(2);
-                switch (world2EnemyType) {
-                    case 0:
-                        enemies.add(new Security(x, y, screenShake, physics, navMesh));
-                        break;
-                    case 1:
-                        enemies.add(new Discaya(x, y, screenShake, physics, navMesh));
-                        break;
-                }
+                // World2 enemies: Security only (remove Discaya)
+                enemies.add(new Security(x, y, screenShake, physics, navMesh));
                 break;
 
             case "World3":
-                // World3 enemies: Follower and QuiboloyBoss (rare)
-                int world3EnemyType = random.nextInt(10); // 0-9
-                if (world3EnemyType < 8) {
-                    // 80% chance for Followers
-                    enemies.add(new Follower(x, y, screenShake, physics, navMesh));
-                } else {
-                    // 20% chance for QuiboloyBoss
-                    enemies.add(new QuiboloyBoss(x, y, screenShake, physics, navMesh));
-                }
+                // World3 enemies: Only Followers (QuiboloyBoss is only spawned as boss)
+                enemies.add(new Follower(x, y, screenShake, physics, navMesh));
                 break;
 
             default:
@@ -420,100 +449,72 @@ public class EnemySpawner {
         }
     }
 
+    /**
+     * Finds a valid walkable spawn position using collision detection.
+     * 
+     * @return A Vector2 with valid x,y coordinates
+     */
+    private Vector2 findValidSpawnPosition() {
+        float x, y;
+        int attempts = 0;
+        int maxAttempts = 20;
+
+        // Try to find walkable position
+        do {
+            x = 2f + (float) Math.random() * (worldWidth - 4f);
+            y = 2f + (float) Math.random() * (worldHeight - 4f);
+            attempts++;
+        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
+
+        // Fallback to center area if no position found
+        if (attempts >= maxAttempts) {
+            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
+            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
+        }
+
+        return new Vector2(x, y);
+    }
+
     // Spawn specific enemy types (useful for testing or special spawns)
+    
+    /**
+     * Spawns a Survivor enemy at a valid position.
+     */
     public void spawnSurvivor() {
-        float x, y;
-        int attempts = 0;
-        int maxAttempts = 20;
-
-        do {
-            x = 2f + (float) Math.random() * (worldWidth - 4f);
-            y = 2f + (float) Math.random() * (worldHeight - 4f);
-            attempts++;
-        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
-
-        if (attempts >= maxAttempts) {
-            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
-            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
-        }
-
-        enemies.add(new Survivor(x, y, screenShake, physics, navMesh));
+        Vector2 pos = findValidSpawnPosition();
+        enemies.add(new Survivor(pos.x, pos.y, screenShake, physics, navMesh));
     }
 
+    /**
+     * Spawns a Security enemy at a valid position.
+     */
     public void spawnSecurity() {
-        float x, y;
-        int attempts = 0;
-        int maxAttempts = 20;
-
-        do {
-            x = 2f + (float) Math.random() * (worldWidth - 4f);
-            y = 2f + (float) Math.random() * (worldHeight - 4f);
-            attempts++;
-        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
-
-        if (attempts >= maxAttempts) {
-            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
-            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
-        }
-
-        enemies.add(new Security(x, y, screenShake, physics, navMesh));
+        Vector2 pos = findValidSpawnPosition();
+        enemies.add(new Security(pos.x, pos.y, screenShake, physics, navMesh));
     }
 
+    /**
+     * Spawns a Discaya enemy at a valid position.
+     */
     public void spawnDiscaya() {
-        float x, y;
-        int attempts = 0;
-        int maxAttempts = 20;
-
-        do {
-            x = 2f + (float) Math.random() * (worldWidth - 4f);
-            y = 2f + (float) Math.random() * (worldHeight - 4f);
-            attempts++;
-        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
-
-        if (attempts >= maxAttempts) {
-            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
-            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
-        }
-
-        enemies.add(new Discaya(x, y, screenShake, physics, navMesh));
+        Vector2 pos = findValidSpawnPosition();
+        enemies.add(new Discaya(pos.x, pos.y, screenShake, physics, navMesh));
     }
 
+    /**
+     * Spawns a Follower enemy at a valid position.
+     */
     public void spawnFollower() {
-        float x, y;
-        int attempts = 0;
-        int maxAttempts = 20;
-
-        do {
-            x = 2f + (float) Math.random() * (worldWidth - 4f);
-            y = 2f + (float) Math.random() * (worldHeight - 4f);
-            attempts++;
-        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
-
-        if (attempts >= maxAttempts) {
-            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
-            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
-        }
-
-        enemies.add(new Follower(x, y, screenShake, physics, navMesh));
+        Vector2 pos = findValidSpawnPosition();
+        enemies.add(new Follower(pos.x, pos.y, screenShake, physics, navMesh));
     }
 
+    /**
+     * Spawns the QuiboloyBoss at a valid position.
+     */
     public void spawnQuiboloyBoss() {
-        float x, y;
-        int attempts = 0;
-        int maxAttempts = 20;
-
-        do {
-            x = 2f + (float) Math.random() * (worldWidth - 4f);
-            y = 2f + (float) Math.random() * (worldHeight - 4f);
-            attempts++;
-        } while (attempts < maxAttempts && !isWalkablePosition(x, y));
-
-        if (attempts >= maxAttempts) {
-            x = worldWidth * 0.25f + (float) Math.random() * (worldWidth * 0.5f);
-            y = worldHeight * 0.25f + (float) Math.random() * (worldHeight * 0.5f);
-        }
-
-        enemies.add(new QuiboloyBoss(x, y, screenShake, physics, navMesh));
+        Vector2 pos = findValidSpawnPosition();
+        enemies.add(new QuiboloyBoss(pos.x, pos.y, screenShake, physics, navMesh, this));
     }
 
     public ArrayList<AbstractEnemy> getEnemies() {

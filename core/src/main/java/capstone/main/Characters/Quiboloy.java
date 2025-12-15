@@ -11,6 +11,27 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 
 import java.util.ArrayList;
 
+/**
+ * Quiboloy character class - A magic ranged fighter who attacks with fireballs.
+ * 
+ * <p>Character Stats:
+ * <ul>
+ *   <li>Type: Magic Ranged</li>
+ *   <li>Range: Medium-distance</li>
+ *   <li>Damage: 18-25 per fireball</li>
+ *   <li>Mana: 120 (highest mana pool)</li>
+ * </ul>
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Fireball-based magic attacks</li>
+ *   <li>High mana capacity for sustained combat</li>
+ *   <li>Magical projectile management</li>
+ * </ul>
+ * 
+ * @author Capstone Team
+ * @version 1.0
+ */
 public class Quiboloy extends AbstractPlayer implements MagicRanged {
 
     private final ArrayList<Fireball> fireballs;

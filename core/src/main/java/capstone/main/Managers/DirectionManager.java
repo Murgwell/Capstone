@@ -17,9 +17,12 @@ public class DirectionManager {
     }
 
     public void setFacingLeft(boolean facingLeft) {
-        this.facingLeft = facingLeft;
-        // Flip sprite horizontally if necessary
-        sprite.setFlip(facingLeft, false);
+        // Only flip if direction actually changed to avoid unnecessary sprite updates
+        if (this.facingLeft != facingLeft) {
+            this.facingLeft = facingLeft;
+            // Flip sprite horizontally if necessary
+            sprite.setFlip(facingLeft, false);
+        }
     }
 
     /**

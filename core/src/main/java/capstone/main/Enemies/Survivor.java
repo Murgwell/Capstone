@@ -65,6 +65,8 @@ public class Survivor extends AbstractEnemy {
         if (initial != null) {
             sprite.setRegion(initial);
             sprite.setSize(spriteWidth, spriteHeight);
+            // Set origin to center for consistent positioning
+            sprite.setOrigin(spriteWidth / 2f, spriteHeight / 2f);
         }
 
         this.speed = 1.5f;
@@ -99,12 +101,9 @@ public class Survivor extends AbstractEnemy {
 
         if (frame != null) {
             sprite.setRegion(frame);
-
-            float aspectRatio = (float) frame.getRegionWidth() / frame.getRegionHeight();
-            float height = 1.0f;
-            float width = height * aspectRatio;
-
-            sprite.setSize(width, height);
+            // Force consistent size and origin after region change to prevent blinking
+            sprite.setSize(spriteWidth, spriteHeight);
+            sprite.setOrigin(spriteWidth / 2f, spriteHeight / 2f);
         }
 
     }

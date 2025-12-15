@@ -48,50 +48,62 @@ public class PunchLogic {
      * Execute the punch — range check, damage, hit sound, shake, knockback.
      */
     public void performPunch(float weaponRotationRad) {
+        final java.util.List<com.badlogic.gdx.math.Rectangle> walls = capstone.main.Managers.WallRegistry.getWalls();
         // Compute player center from sprite (provided by AbstractPlayer)
         Vector2 playerCenter = new Vector2(
             playerBase.getSprite().getX() + playerBase.getSprite().getWidth() / 2f,
             playerBase.getSprite().getY() + playerBase.getSprite().getHeight() / 2f
         );
 
-        float range = melee.getMeleeRange();
+        // Cleave: short line in facing direction; hit up to 3 targets
+        float length = melee.getMeleeRange() + 1.2f; // extend slightly beyond melee range
+        float halfWidth = 0.4f; // cleave strip half-width
         Vector2 dir = new Vector2((float) Math.cos(weaponRotationRad), (float) Math.sin(weaponRotationRad));
-        Vector2 punchCenter = playerCenter.cpy().add(dir.scl(range));
 
-        // Check enemies in range and apply effects
+        int hits = 0;
         for (AbstractEnemy enemy : enemies) {
             if (enemy.isDead()) continue;
+            Vector2 p = enemy.getBody().getPosition();
+            // Vector from player to enemy
+            Vector2 toP = new Vector2(p).sub(playerCenter);
+            float proj = toP.dot(dir); // along the cleave
+            if (proj < 0f || proj > length) continue; // outside segment
+            // perpendicular distance to cleave centerline
+            float perp = Math.abs(toP.crs(dir)) / dir.len();
+            if (perp > halfWidth) continue;
 
-            Vector2 enemyPos = enemy.getBody().getPosition();
-            if (punchCenter.dst(enemyPos) <= range) {
-                float damage = melee.getMeleeDamage();
+            // Blocked by wall? Skip if any wall intersects line of sight
+            if (segmentHitsAnyWall(playerCenter, p, walls)) continue;
 
-                // Apply damage on enemy
-                enemy.takeHit(damage);
-
-                // Play hit sound (only when a punch connects)
-                SoundManager.getInstance().playSound("manny_punch");
-
-                // Damage number
-                damageNumbers.add(new DamageNumber(
-                    String.format("%.0f", damage),
-                    enemyPos.x,
-                    enemyPos.y,
-                    damageFont,
-                    Color.WHITE
-                ));
-
-                // Impact feedback
-                screenShake.shake(0.15f, 0.05f);
-
-                // Box2D knockback
-                if (enemy.getBody() != null) {
-                    Vector2 knockback = new Vector2(dir).scl(KNOCKBACK_FORCE);
-                    enemy.getBody().applyLinearImpulse(knockback, enemy.getBody().getWorldCenter(), true);
-                }
-                // Hit only one target per punch
-                break;
+            float damage = melee.getMeleeDamage();
+            enemy.takeHit(damage);
+            SoundManager.getInstance().playSound("manny_punch");
+            damageNumbers.add(new DamageNumber(
+                String.format("%.0f", damage),
+                p.x,
+                p.y,
+                damageFont,
+                Color.WHITE
+            ));
+            screenShake.shake(0.15f, 0.05f);
+            if (enemy.getBody() != null) {
+                Vector2 knockback = new Vector2(dir).scl(KNOCKBACK_FORCE);
+                enemy.getBody().applyLinearImpulse(knockback, enemy.getBody().getWorldCenter(), true);
             }
+            hits++;
+            if (hits >= 3) break; // cap at 3 targets
         }
+
+       }
+
+private boolean segmentHitsAnyWall(Vector2 a, Vector2 b, java.util.List<com.badlogic.gdx.math.Rectangle> walls) {
+           if (walls == null || walls.isEmpty()) return false;
+           float minX = Math.min(a.x, b.x), minY = Math.min(a.y, b.y);
+           float maxX = Math.max(a.x, b.x), maxY = Math.max(a.y, b.y);
+           for (com.badlogic.gdx.math.Rectangle r : walls) {
+               if (r.x > maxX || r.x + r.width < minX || r.y > maxY || r.y + r.height < minY) continue;
+               if (com.badlogic.gdx.math.Intersector.intersectSegmentRectangle(a, b, r)) return true;
+           }
+           return false;
     }
 }

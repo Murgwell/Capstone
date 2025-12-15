@@ -4,6 +4,28 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 
+/**
+ * A visual health bar that appears above entities when they take damage.
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Automatic fade-in/fade-out animation</li>
+ *   <li>Color-coded by health percentage (green > yellow > red)</li>
+ *   <li>Follows target sprite position</li>
+ *   <li>Timed visibility (3 seconds, then fades)</li>
+ * </ul>
+ * 
+ * <p>Usage:
+ * <pre>{@code
+ * HealthBar bar = new HealthBar(sprite, 100f, 2f, 0.2f, 0.5f);
+ * bar.setHealth(currentHealth); // Shows bar and updates
+ * bar.update(delta);
+ * bar.draw(shapeRenderer);
+ * }</pre>
+ * 
+ * @author Capstone Team
+ * @version 1.0
+ */
 public class HealthBar {
     private final Sprite target;
     private float maxHealth;

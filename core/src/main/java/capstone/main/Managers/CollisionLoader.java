@@ -14,6 +14,10 @@ import java.util.ArrayList;
 public class CollisionLoader {
 
     public static void buildCollision(World world, TiledMap map, String layerName, float ppm) {
+        buildCollision(world, map, layerName, ppm, true);
+    }
+
+    public static void buildCollision(World world, TiledMap map, String layerName, float ppm, boolean blockMovement) {
 
         MapLayer layer = map.getLayers().get(layerName);
         if (layer == null) return;
@@ -43,8 +47,15 @@ public class CollisionLoader {
             fix.shape = shape;
             fix.friction = 0.2f;
             fix.filter.categoryBits = CollisionBits.WALL;
-            // Let bullets pass through walls: do NOT include BULLET in maskBits
-            fix.filter.maskBits = (short)(CollisionBits.PLAYER | CollisionBits.ENEMY);
+            
+            if (blockMovement) {
+                // collisionLayer: Block ONLY players and enemies (NOT bullets)
+                fix.filter.maskBits = (short)(CollisionBits.PLAYER | CollisionBits.ENEMY);
+            } else {
+                // wallLayer: Block ONLY bullets (not player/enemy movement)
+                fix.filter.maskBits = CollisionBits.BULLET;
+            }
+            
             body.createFixture(fix).setUserData("solid");
             shape.dispose();
         }

@@ -60,6 +60,9 @@ public class BossHudActor extends Actor {
         // Reset color for text
         batch.setColor(Color.WHITE);
 
+        // Save original font scale
+        float originalScale = font.getData().scaleX;
+
         // Title and HP text
         String title = boss.getClass().getSimpleName().toUpperCase();
         font.setColor(Color.WHITE);
@@ -76,6 +79,9 @@ public class BossHudActor extends Actor {
             font.getData().setScale(1.0f);
             font.draw(batch, warn, 0, screenHeight - 80f, screenWidth, Align.center, false);
         }
+        
+        // CRITICAL: Restore original font scale for damage numbers!
+        font.getData().setScale(originalScale);
     }
 
     public void dispose() {

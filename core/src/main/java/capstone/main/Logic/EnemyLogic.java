@@ -10,11 +10,17 @@ public class EnemyLogic {
     private final EnemySpawner spawner;
     private final ArrayList<AbstractEnemy> enemies;
     private final AbstractPlayer player;
+    private final capstone.main.Managers.ObjectiveManager objectiveManager;
 
     public EnemyLogic(EnemySpawner spawner, ArrayList<AbstractEnemy> enemies, AbstractPlayer player) {
+        this(spawner, enemies, player, null);
+    }
+
+    public EnemyLogic(EnemySpawner spawner, ArrayList<AbstractEnemy> enemies, AbstractPlayer player, capstone.main.Managers.ObjectiveManager objectiveManager) {
         this.spawner = spawner;
         this.enemies = enemies;
         this.player = player;
+        this.objectiveManager = objectiveManager;
     }
 
     public void update(float delta) {
@@ -35,7 +41,13 @@ public class EnemyLogic {
         }
 
         // Update enemies and check for melee attacks
-        for (AbstractEnemy e : enemies) {
+        // Use indexed loop to avoid ConcurrentModificationException when enemies spawn during update
+        int enemyCount = enemies.size();
+        for (int i = 0; i < enemyCount; i++) {
+            // Check bounds in case list was modified
+            if (i >= enemies.size()) break;
+            
+            AbstractEnemy e = enemies.get(i);
             if (!e.isDead()) {
                 e.update(delta, player);
 
@@ -51,6 +63,10 @@ public class EnemyLogic {
         for (int i = enemies.size() - 1; i >= 0; i--) {
             AbstractEnemy e = enemies.get(i);
             if (e.isPendingRemoval()) {
+                // Notify objective manager before removal
+                if (objectiveManager != null) {
+                    try { objectiveManager.onEnemyKilled(e); } catch (Exception ignored) {}
+                }
                 // MEMORY FIX: Call dispose() before removing enemy
                 System.out.println("DISPOSING ENEMY - Remaining: " + (enemies.size() - 1) + " (Memory Debug)");
                 e.dispose();

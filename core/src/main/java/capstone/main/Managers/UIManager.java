@@ -2,15 +2,34 @@ package capstone.main.Managers;
 
 import capstone.main.Enemies.BossEntity;
 import capstone.main.UI.BossHudActor;
+import capstone.main.UI.VictoryOverlay;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+/**
+ * Manages all UI elements including boss HUD, toast notifications, and victory overlay.
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Boss health bar and telegraph cast bar</li>
+ *   <li>Toast notification system</li>
+ *   <li>Victory overlay management</li>
+ *   <li>Scene2D stage coordination</li>
+ * </ul>
+ * 
+ * <p>This class centralizes UI rendering and state management,
+ * providing a clean interface for game logic to display information to the player.
+ * 
+ * @author Capstone Team
+ * @version 1.0
+ */
 public class UIManager {
     private final BossManager bossManager = new BossManager();
     private final Stage uiStage;
     private final BossHudActor bossActor;
+    private VictoryOverlay victoryOverlay;
     public BossManager getBossManager() { return bossManager; }
 
     // Show a short toast message
@@ -32,10 +51,13 @@ public class UIManager {
     private final com.badlogic.gdx.scenes.scene2d.Group toastGroup;
     private final com.badlogic.gdx.scenes.scene2d.ui.Image toastBg;
 
-    public UIManager(Viewport uiViewport, SpriteBatch batch, BitmapFont font) {
+    public UIManager(Viewport uiViewport, SpriteBatch batch, BitmapFont font, VictoryOverlay.VictoryCallback victoryCallback) {
         this.uiStage = new Stage(uiViewport, batch);
         this.bossActor = new BossHudActor(font);
         this.uiStage.addActor(bossActor);
+        
+        // Create victory overlay
+        this.victoryOverlay = new VictoryOverlay(uiStage, font, victoryCallback);
 
         // Simple cast bar centered under boss HP
         com.badlogic.gdx.scenes.scene2d.ui.Skin skin = new com.badlogic.gdx.scenes.scene2d.ui.Skin();
@@ -111,10 +133,27 @@ public class UIManager {
         boolean showCast = false;
         float progress = 0f;
         if (boss instanceof capstone.main.Enemies.TelegraphProvider) {
-            capstone.main.Enemies.Greed greed = (boss instanceof capstone.main.Enemies.Greed) ? (capstone.main.Enemies.Greed) boss : null;
-            if (greed != null && greed.isTelegraphing() && "CONE BARRAGE".equals(greed.getTelegraphSkill())) {
-                showCast = true;
-                progress = greed.getCastProgress();
+            capstone.main.Enemies.TelegraphProvider telegraph = (capstone.main.Enemies.TelegraphProvider) boss;
+            
+            // Check if any boss is telegraphing
+            if (telegraph.isTelegraphing()) {
+                String skill = telegraph.getTelegraphSkill();
+                
+                // Show cast bar for specific skills
+                if (boss instanceof capstone.main.Enemies.Greed) {
+                    capstone.main.Enemies.Greed greed = (capstone.main.Enemies.Greed) boss;
+                    if ("CONE BARRAGE".equals(skill)) {
+                        showCast = true;
+                        progress = greed.getCastProgress();
+                    }
+                } else if (boss instanceof capstone.main.Enemies.Discaya) {
+                    capstone.main.Enemies.Discaya discaya = (capstone.main.Enemies.Discaya) boss;
+                    // Show cast bar for all Discaya skills
+                    if ("SHADOW DASH".equals(skill) || "POISON CLOUD".equals(skill) || "CORRUPTION PULSE".equals(skill)) {
+                        showCast = true;
+                        progress = discaya.getCastProgress();
+                    }
+                }
             }
         }
         castBar.setVisible(showCast);
@@ -138,8 +177,25 @@ public class UIManager {
 
     public Stage getStage() { return uiStage; }
 
+    public void showVictoryOverlay() {
+        if (victoryOverlay != null) {
+            victoryOverlay.show();
+        }
+    }
+    
+    public void hideVictoryOverlay() {
+        if (victoryOverlay != null) {
+            victoryOverlay.hide();
+        }
+    }
+    
+    public boolean isVictoryOverlayVisible() {
+        return victoryOverlay != null && victoryOverlay.isVisible();
+    }
+    
     public void dispose() {
         if (uiStage != null) uiStage.dispose();
         if (bossActor != null) bossActor.dispose();
+        if (victoryOverlay != null) victoryOverlay.dispose();
     }
 }

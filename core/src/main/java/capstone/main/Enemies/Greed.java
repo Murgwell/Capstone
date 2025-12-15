@@ -126,6 +126,8 @@ public class Greed extends AbstractEnemy implements BossEntity, TelegraphProvide
         if (initial != null) {
             sprite.setRegion(initial);
             sprite.setSize(spriteWidth, spriteHeight);
+            // Set origin to center for consistent positioning
+            sprite.setOrigin(spriteWidth / 2f, spriteHeight / 2f);
         }
 
         this.speed = 1.5f;
@@ -220,13 +222,9 @@ public class Greed extends AbstractEnemy implements BossEntity, TelegraphProvide
 
         if (frame != null) {
             sprite.setRegion(frame);
-           // Slight size pulse when telegraphing
-           if (telegraphing) {
-               float s = 1f + 0.03f * MathUtils.sin(stateTime * 8f);
-               sprite.setSize(spriteWidth * s, spriteHeight * s);
-           } else {
-               sprite.setSize(spriteWidth, spriteHeight);
-           }
+            // Force consistent size and origin after region change to prevent blinking
+            sprite.setSize(spriteWidth, spriteHeight);
+            sprite.setOrigin(spriteWidth / 2f, spriteHeight / 2f);
         }
 
     }

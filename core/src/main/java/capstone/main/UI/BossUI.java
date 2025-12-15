@@ -47,6 +47,10 @@ public class BossUI {
 
         // Draw boss name and HP text
         batch.begin();
+        
+        // Save original font scale
+        float originalScale = font.getData().scaleX;
+        
         String title = boss != null ? boss.getClass().getSimpleName().toUpperCase() : "BOSS";
         font.setColor(Color.WHITE);
         font.getData().setScale(1.2f);
@@ -62,6 +66,10 @@ public class BossUI {
             font.getData().setScale(1.0f);
             font.draw(batch, warn, 0, screenHeight - 80f, screenWidth, Align.center, false);
         }
+        
+        // CRITICAL: Restore original font scale for damage numbers!
+        font.getData().setScale(originalScale);
+        
         batch.end();
     }
 }

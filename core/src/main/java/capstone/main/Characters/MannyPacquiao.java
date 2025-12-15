@@ -14,6 +14,28 @@ import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
 
+/**
+ * Manny Pacquiao character class - A melee fighter with powerful punch-based attacks.
+ * 
+ * <p>Character Stats:
+ * <ul>
+ *   <li>Type: Melee Fighter</li>
+ *   <li>Range: 1.5 units</li>
+ *   <li>Damage: 20-28 per punch</li>
+ *   <li>Special: 3 active skills (Meteor Fist, Barrage Combo, Champions Knockout)</li>
+ * </ul>
+ * 
+ * <p>Features:
+ * <ul>
+ *   <li>Animated punch attacks with sound effects</li>
+ *   <li>Screen shake on damage taken</li>
+ *   <li>External punch logic for clean separation</li>
+ *   <li>Skill-based combat system</li>
+ * </ul>
+ * 
+ * @author Capstone Team
+ * @version 1.0
+ */
 public class MannyPacquiao extends AbstractPlayer implements Melee {
     private final ScreenShake screenShake;
 
@@ -176,7 +198,7 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
 
     @Override
     public float getMeleeDamage() {
-        return com.badlogic.gdx.math.MathUtils.random(8f, 12f);
+        return com.badlogic.gdx.math.MathUtils.random(20f, 28f);
     }
 
     // Method to check if melee range should be shown

@@ -36,10 +36,11 @@ public class MapManager {
             // Step 2: Dispose old resources
             if (renderer != null) {
                 try {
-                    renderer.dispose();
-                    Gdx.app.log("MapManager", "✓ Old renderer disposed");
+                    // Don't dispose the renderer's batch - it may be shared
+                    // Just null out the reference
+                    Gdx.app.log("MapManager", "✓ Old renderer reference cleared (batch preserved)");
                 } catch (Exception e) {
-                    Gdx.app.error("MapManager", "Warning: renderer disposal failed", e);
+                    Gdx.app.log("MapManager", "Warning: renderer cleanup failed: " + e.getMessage());
                 }
                 renderer = null;
             }
@@ -76,8 +77,12 @@ public class MapManager {
 
             // Step 6: Build collision for new map
             Gdx.app.log("MapManager", "Building collision...");
-            CollisionLoader.buildCollision(physics.getWorld(), tiledMap, "collisionLayer", 32f);
-            Gdx.app.log("MapManager", "✓ Collision built");
+            CollisionLoader.buildCollision(physics.getWorld(), tiledMap, "collisionLayer", 32f, true);
+            Gdx.app.log("MapManager", "✓ Collision layer built (blocks movement ONLY)");
+            
+            // Build wall collision (for blocking bullets/fireballs/punches ONLY, not movement)
+            CollisionLoader.buildCollision(physics.getWorld(), tiledMap, "wallLayer", 32f, false);
+            Gdx.app.log("MapManager", "✓ Wall layer built (blocks projectiles ONLY)");
 
             this.currentMapPath = mapPath;
 
