@@ -13,8 +13,8 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 
 public class ChampionsKnockout extends Skill {
-    private static final float BASE_DAMAGE_MIN = 20f;
-    private static final float BASE_DAMAGE_MAX = 40f;
+    private static final float BASE_DAMAGE_MIN = 80f; // Significantly increased
+    private static final float BASE_DAMAGE_MAX = 120f; // Significantly increased
     private static final float HP_PERCENT = 0.20f; // 20% of enemy's base HP
     private static final float RANGE = 3f;
     private static final int MAX_TARGETS = 5; // Maximum enemies hit
@@ -50,7 +50,7 @@ public class ChampionsKnockout extends Skill {
         AbstractEnemy primary = null;
         float bestProj = -1f;
         java.util.List<com.badlogic.gdx.math.Rectangle> walls = capstone.main.Managers.WallRegistry.getWalls();
-        
+
         for (AbstractEnemy enemy : enemies) {
             if (enemy.isDead()) continue;
             Vector2 p = enemy.getBody().getPosition();
@@ -59,19 +59,19 @@ public class ChampionsKnockout extends Skill {
             if (proj < 0f || proj > length) continue;
             float perp = Math.abs(toP.crs(dir)) / dir.len();
             if (perp > halfWidth) continue;
-            
+
             // Blocked by wall? Skip target if any wall intersects segment
             boolean blocked = false;
             if (walls != null) {
                 for (com.badlogic.gdx.math.Rectangle r : walls) {
-                    if (com.badlogic.gdx.math.Intersector.intersectSegmentRectangle(playerPos, p, r)) { 
-                        blocked = true; 
-                        break; 
+                    if (com.badlogic.gdx.math.Intersector.intersectSegmentRectangle(playerPos, p, r)) {
+                        blocked = true;
+                        break;
                     }
                 }
             }
             if (blocked) continue;
-            
+
             float enemyMaxHP = enemy.getMaxHealth();
             float percentDamage = enemyMaxHP * HP_PERCENT;
             float baseDamage = MathUtils.random(BASE_DAMAGE_MIN, BASE_DAMAGE_MAX);
@@ -80,14 +80,14 @@ public class ChampionsKnockout extends Skill {
             damageNumbers.add(new DamageNumber(String.format("%.0f!", totalDamage), p.x, p.y, damageFont, Color.RED));
             if (proj > bestProj) { bestProj = proj; primary = enemy; }
             hits++;
-            
+
             // Limit number of targets hit
             if (hits >= MAX_TARGETS) break;
         }
-        
+
         // Always consume cooldown when activated
         startCooldown();
-        
+
         if (hits > 0) {
             if (primary != null) {
                 primary.applySlowEffect(SLOW_DURATION, SLOW_AMOUNT);

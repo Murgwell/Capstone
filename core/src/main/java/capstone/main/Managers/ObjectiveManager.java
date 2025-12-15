@@ -8,9 +8,7 @@ import capstone.main.Enemies.AbstractEnemy;
  */
 public class ObjectiveManager {
     public interface Objective {
-        String getDisplayName();
         String getIconPath();
-        int getRequired();
         int getProgress();
         boolean isComplete();
         /**
@@ -38,9 +36,7 @@ public class ObjectiveManager {
             this.required = required;
         }
 
-        @Override public String getDisplayName() { return displayName; }
         @Override public String getIconPath() { return iconPath; }
-        @Override public int getRequired() { return required; }
         @Override public int getProgress() { return progress; }
         @Override public boolean isComplete() { return complete; }
 
@@ -77,25 +73,20 @@ public class ObjectiveManager {
             this.subObjectives = subObjectives;
         }
 
-        @Override public String getDisplayName() { return displayName; }
         @Override public String getIconPath() { return iconPath; }
-        
-        @Override 
-        public int getRequired() { 
-            return subObjectives.size(); 
-        }
-        
-        @Override 
-        public int getProgress() { 
+
+
+        @Override
+        public int getProgress() {
             int completed = 0;
             for (Objective obj : subObjectives) {
                 if (obj.isComplete()) completed++;
             }
             return completed;
         }
-        
-        @Override 
-        public boolean isComplete() { 
+
+        @Override
+        public boolean isComplete() {
             for (Objective obj : subObjectives) {
                 if (!obj.isComplete()) return false;
             }
@@ -128,10 +119,7 @@ public class ObjectiveManager {
             }
             return sb.toString();
         }
-        
-        public java.util.List<Objective> getSubObjectives() {
-            return subObjectives;
-        }
+
     }
 
     private Objective currentObjective;
@@ -143,8 +131,6 @@ public class ObjectiveManager {
     }
 
     public Objective getObjective() { return currentObjective; }
-
-    public boolean hasObjective() { return currentObjective != null; }
 
     public void onEnemyKilled(AbstractEnemy enemy) {
         if (currentObjective == null) return;

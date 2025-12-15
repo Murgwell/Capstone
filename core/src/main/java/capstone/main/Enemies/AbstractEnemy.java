@@ -32,8 +32,8 @@ public abstract class AbstractEnemy {
 
     protected boolean isAggro = false;
     protected boolean enteredClose = false;
-    protected float defaultChaseDistance = 5f;
-    protected float aggroChaseDistance = 10f;
+    protected float defaultChaseDistance = 12f; // Increased from 5f - enemies detect player earlier
+    protected float aggroChaseDistance = 20f; // Increased from 10f - enemies chase much further
 
     protected float speed = 1.5f;
     protected float baseSpeed = 1.5f;

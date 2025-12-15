@@ -193,12 +193,12 @@ public class MannyPacquiao extends AbstractPlayer implements Melee {
     // Manny's melee stats used by PunchLogic
     @Override
     public float getMeleeRange() {
-        return 1.5f;
+        return 2.5f; // Increased from 1.5f for easier hit registration
     }
 
     @Override
     public float getMeleeDamage() {
-        return com.badlogic.gdx.math.MathUtils.random(20f, 28f);
+        return com.badlogic.gdx.math.MathUtils.random(35f, 50f); // Significantly increased for faster gameplay
     }
 
     // Method to check if melee range should be shown

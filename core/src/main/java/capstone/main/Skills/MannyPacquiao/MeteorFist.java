@@ -12,8 +12,8 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 
 public class MeteorFist extends Skill {
-    private static final float MIN_DAMAGE = 10f;
-    private static final float MAX_DAMAGE = 13f;
+    private static final float MIN_DAMAGE = 40f; // Significantly increased
+    private static final float MAX_DAMAGE = 60f; // Significantly increased
     private static final float RANGE = 3f; // Attack range
 
     private final AbstractPlayer player;

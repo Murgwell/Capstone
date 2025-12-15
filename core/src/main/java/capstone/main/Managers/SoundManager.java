@@ -10,7 +10,7 @@ import java.util.HashMap;
  */
 public class SoundManager {
     private static SoundManager instance;
-    private HashMap<String, Sound> sounds;
+    private final HashMap<String, Sound> sounds;
     private boolean isSoundEnabled = true;
     private float volume = 0.5f;
 
@@ -32,7 +32,7 @@ public class SoundManager {
                     Gdx.app.error("SoundManager", "Sound file not found: " + path);
                     return;
                 }
-                
+
                 Sound sound = Gdx.audio.newSound(Gdx.files.internal(path));
                 sounds.put(key, sound);
                 Gdx.app.log("SoundManager", "Successfully loaded sound: " + key + " from " + path);

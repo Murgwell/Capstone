@@ -8,6 +8,7 @@ import com.badlogic.gdx.maps.objects.RectangleMapObject;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.World;
 
 import java.util.ArrayList;
@@ -145,8 +146,8 @@ public class ItemSpawner {
     }
     
     /**
-     * Spawn items near objects in a specific tile layer
-     * @param layerName The name of the object layer (e.g., "props", "smallProps", "Decos")
+     * Spawn items near tiles in a specific tile layer
+     * @param layerName The name of the tile layer (e.g., "props", "smallProps", "Decos")
      * @param count Number of items to spawn
      */
     public void spawnNearTileLayer(String layerName, int count) {
@@ -163,31 +164,38 @@ public class ItemSpawner {
             return;
         }
         
-        // Collect all object positions from the layer
-        ArrayList<Rectangle> objectPositions = new ArrayList<>();
-        for (MapObject object : layer.getObjects()) {
-            if (object instanceof RectangleMapObject) {
-                Rectangle rect = ((RectangleMapObject) object).getRectangle();
-                // Convert from pixel coordinates to world coordinates
-                Rectangle worldRect = new Rectangle(
-                    rect.x / 32f,
-                    rect.y / 32f,
-                    rect.width / 32f,
-                    rect.height / 32f
-                );
-                objectPositions.add(worldRect);
-            }
-        }
-        
-        if (objectPositions.isEmpty()) {
-            Gdx.app.log("ItemSpawner", "Warning: No objects found in layer '" + layerName + "', using random spawn");
+        // Check if it's a TiledMapTileLayer
+        if (!(layer instanceof com.badlogic.gdx.maps.tiled.TiledMapTileLayer)) {
+            Gdx.app.log("ItemSpawner", "Warning: Layer '" + layerName + "' is not a tile layer, using random spawn");
             spawnRandomHealingItems(count);
             return;
         }
         
-        Gdx.app.log("ItemSpawner", "Found " + objectPositions.size() + " objects in layer '" + layerName + "'");
+        com.badlogic.gdx.maps.tiled.TiledMapTileLayer tileLayer = (com.badlogic.gdx.maps.tiled.TiledMapTileLayer) layer;
         
-        // Spawn items near random objects
+        // Collect all tile positions from the layer
+        ArrayList<Vector2> tilePositions = new ArrayList<>();
+        for (int x = 0; x < tileLayer.getWidth(); x++) {
+            for (int y = 0; y < tileLayer.getHeight(); y++) {
+                com.badlogic.gdx.maps.tiled.TiledMapTileLayer.Cell cell = tileLayer.getCell(x, y);
+                if (cell != null && cell.getTile() != null) {
+                    // Convert tile coordinates to world coordinates
+                    float worldX = x + 0.5f; // Center of tile
+                    float worldY = y + 0.5f;
+                    tilePositions.add(new Vector2(worldX, worldY));
+                }
+            }
+        }
+        
+        if (tilePositions.isEmpty()) {
+            Gdx.app.log("ItemSpawner", "Warning: No tiles found in layer '" + layerName + "', using random spawn");
+            spawnRandomHealingItems(count);
+            return;
+        }
+        
+        Gdx.app.log("ItemSpawner", "Found " + tilePositions.size() + " tiles in layer '" + layerName + "'");
+        
+        // Spawn items near random tiles
         int spawnAttempts = 0;
         int maxAttempts = count * 10; // Allow multiple attempts to find valid positions
         int itemsSpawned = 0;
@@ -195,14 +203,14 @@ public class ItemSpawner {
         while (itemsSpawned < count && spawnAttempts < maxAttempts) {
             spawnAttempts++;
             
-            // Pick a random object
-            Rectangle obj = objectPositions.get(MathUtils.random(0, objectPositions.size() - 1));
+            // Pick a random tile position
+            Vector2 tilePos = tilePositions.get(MathUtils.random(0, tilePositions.size() - 1));
             
-            // Spawn near the object (offset by 1-2 units)
-            float offsetX = MathUtils.random(-2f, 2f);
-            float offsetY = MathUtils.random(-2f, 2f);
-            float x = obj.x + obj.width / 2f + offsetX;
-            float y = obj.y + obj.height / 2f + offsetY;
+            // Spawn near the tile (offset by 0.5-1.5 units to stay close)
+            float offsetX = MathUtils.random(-1.5f, 1.5f);
+            float offsetY = MathUtils.random(-1.5f, 1.5f);
+            float x = tilePos.x + offsetX;
+            float y = tilePos.y + offsetY;
             
             // Clamp to world bounds
             x = Math.max(2f, Math.min(x, worldWidth - 2f));
@@ -228,7 +236,7 @@ public class ItemSpawner {
                     break;
             }
             
-            Gdx.app.log("ItemSpawner", "Spawned item near object at (" + x + ", " + y + ")");
+            Gdx.app.log("ItemSpawner", "Spawned item near tile at (" + x + ", " + y + ")");
             itemsSpawned++;
         }
         

@@ -12,11 +12,11 @@ public class DamageNumber {
     private String text;
     private float x;
     private float y;
-    private BitmapFont font;
+    private final BitmapFont font;
     private Color color;
 
     private float lifetime;
-    private float maxLifetime = 1.5f; // How long the number stays visible (seconds)
+    private final float maxLifetime = 1.5f; // How long the number stays visible (seconds)
     private float velocityY = 0.5f;   // How fast it floats upward
     private float alpha = 1f;         // Opacity
 
@@ -58,7 +58,7 @@ public class DamageNumber {
     public boolean isExpired() {
         return lifetime >= maxLifetime;
     }
-    
+
     /**
      * Reset the damage number for reuse in object pooling
      * @param newText The text to display

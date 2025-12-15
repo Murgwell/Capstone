@@ -12,8 +12,8 @@ import com.badlogic.gdx.math.Vector2;
 import java.util.ArrayList;
 
 public class BarrageCombo extends Skill {
-    private static final float MIN_DAMAGE = 5f;
-    private static final float MAX_DAMAGE = 9f;
+    private static final float MIN_DAMAGE = 25f; // Significantly increased (5 hits total)
+    private static final float MAX_DAMAGE = 35f; // Significantly increased (5 hits total)
     private static final float RANGE = 2.5f;
     private static final int HIT_COUNT = 5; // Number of rapid hits
     private static final float HIT_INTERVAL = 0.1f; // Time between hits

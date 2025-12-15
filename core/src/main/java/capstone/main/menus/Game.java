@@ -1780,8 +1780,8 @@ public class Game implements Screen {
                 return new MannyPacquiao(
                     130,           // healthPoints (rebalanced: 150→130 - less tanky)
                     60,            // manaPoints (lowest - skills cost mana)
-                    20,            // baseDamage (ramped up for faster gameplay)
-                    28,            // maxDamage (ramped up, now 20-28 damage range)
+                    35,            // baseDamage (significantly increased for faster gameplay)
+                    50,            // maxDamage (significantly increased, now 35-50 damage range)
                     1.0f,          // attackSpeed (rebalanced: 1.2→1.0 - slightly slower)
                     9f,            // x
                     9f,            // y
@@ -1801,9 +1801,9 @@ public class Game implements Screen {
                 return new Quiboloy(
                     100,           // healthPoints (rebalanced: 90→100 - slightly less fragile)
                     120,           // manaPoints (highest - mage needs mana)
-                    1800,            // baseDamage (ramped up for faster gameplay)
-                    2500,            // maxDamage (ramped up, now 18-25 damage range)
-                    10.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
+                    30,            // baseDamage (significantly increased for faster gameplay)
+                    45,            // maxDamage (significantly increased, now 30-45 damage range)
+                    1.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -1820,8 +1820,8 @@ public class Game implements Screen {
                 return new VicoSotto(
                     120,           // healthPoints (middle ground)
                     70,            // manaPoints (moderate)
-                    15,            // baseDamage (ramped up for faster gameplay)
-                    22,            // maxDamage (ramped up, now 15-22 damage range)
+                    28,            // baseDamage (significantly increased for faster gameplay)
+                    40,            // maxDamage (significantly increased, now 28-40 damage range)
                     1.8f,          // attackSpeed (rebalanced: 2.0→1.8 - slightly slower but stronger)
                     9f,            // x
                     9f,            // y

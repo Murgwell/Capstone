@@ -57,7 +57,7 @@ public class PunchLogic {
 
         // Cleave: short line in facing direction; hit up to 3 targets
         float length = melee.getMeleeRange() + 1.2f; // extend slightly beyond melee range
-        float halfWidth = 0.4f; // cleave strip half-width
+        float halfWidth = 1.2f; // cleave strip half-width (increased from 0.4f for easier hits)
         Vector2 dir = new Vector2((float) Math.cos(weaponRotationRad), (float) Math.sin(weaponRotationRad));
 
         int hits = 0;

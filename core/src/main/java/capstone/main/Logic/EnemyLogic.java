@@ -12,10 +12,6 @@ public class EnemyLogic {
     private final AbstractPlayer player;
     private final capstone.main.Managers.ObjectiveManager objectiveManager;
 
-    public EnemyLogic(EnemySpawner spawner, ArrayList<AbstractEnemy> enemies, AbstractPlayer player) {
-        this(spawner, enemies, player, null);
-    }
-
     public EnemyLogic(EnemySpawner spawner, ArrayList<AbstractEnemy> enemies, AbstractPlayer player, capstone.main.Managers.ObjectiveManager objectiveManager) {
         this.spawner = spawner;
         this.enemies = enemies;
@@ -46,7 +42,7 @@ public class EnemyLogic {
         for (int i = 0; i < enemyCount; i++) {
             // Check bounds in case list was modified
             if (i >= enemies.size()) break;
-            
+
             AbstractEnemy e = enemies.get(i);
             if (!e.isDead()) {
                 e.update(delta, player);
