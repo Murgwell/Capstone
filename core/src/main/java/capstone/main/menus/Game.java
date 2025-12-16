@@ -324,34 +324,7 @@ public class Game implements Screen {
                         return true;
                     }
                 }
-                if (keycode == com.badlogic.gdx.Input.Keys.F9) {
-                    // Debug: log player position for choosing spawn points
-                    float sx = player.getSprite().getX();
-                    float sy = player.getSprite().getY();
-                    float cx = player.getBody().getPosition().x;
-                    float cy = player.getBody().getPosition().y;
-                    int px = Math.round(sx * 32f);
-                    int py = Math.round(sy * 32f);
-                    Gdx.app.log("SpawnDebug", String.format("sprite=(%.2f,%.2f) center=(%.2f,%.2f) pixels=(%d,%d)", sx, sy, cx, cy, px, py));
-                    return true;
-                }
-                if (keycode == com.badlogic.gdx.Input.Keys.F7) {
-                        // Toggle portal debug overlay
-                        debugPortals = !debugPortals;
-                        Gdx.app.log("Portals", "debugPortals=" + debugPortals);
-                        return true;
-                    }
-                    if (keycode == com.badlogic.gdx.Input.Keys.F8) {
-                    if (!isPaused && !isGameOver) {
-                        // Trigger portal-like FX and jump to World1_Boss immediately
-                        teleportFxActive = true;
-                        teleportFxTimer = 0f;
-                        teleportFxUseBlack = true; // use black transition on F8
-                        teleportFxParticles.clear();
-                        transitionToMap(WorldMapManager.WorldMap.WORLD_3_BOSS.getFilePath(), null, null);
-                        return true;
-                    }
-                }
+
                 if (keycode == com.badlogic.gdx.Input.Keys.F11) {
                     boolean newFs = !VideoSettings.isFullscreen();
                     VideoSettings.setFullscreen(newFs);
