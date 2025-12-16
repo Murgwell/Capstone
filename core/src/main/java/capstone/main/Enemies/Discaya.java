@@ -453,4 +453,30 @@ public class Discaya extends AbstractEnemy implements BossEntity, TelegraphProvi
         if (frames.size == 0) return null;
         return new Animation<>(frameDuration, frames, Animation.PlayMode.LOOP);
     }
+    
+    @Override
+    protected void disposeTextures() {
+        // CRITICAL MEMORY LEAK FIX: Dispose all owned textures and atlases
+        for (Texture tex : ownedTextures) {
+            if (tex != null) {
+                try {
+                    tex.dispose();
+                } catch (Exception e) {
+                    Gdx.app.error("Discaya", "Failed to dispose texture: " + e.getMessage());
+                }
+            }
+        }
+        ownedTextures.clear();
+        
+        for (TextureAtlas atlas : ownedAtlases) {
+            if (atlas != null) {
+                try {
+                    atlas.dispose();
+                } catch (Exception e) {
+                    Gdx.app.error("Discaya", "Failed to dispose atlas: " + e.getMessage());
+                }
+            }
+        }
+        ownedAtlases.clear();
+    }
 }

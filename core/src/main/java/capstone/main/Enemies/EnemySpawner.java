@@ -88,8 +88,8 @@ public class EnemySpawner {
     private ArrayList<AbstractEnemy> enemies;
     private ArrayList<Rectangle> collisionRectangles; // Collision rectangles to avoid
     private float spawnTimer = 0f;
-    private float spawnInterval = 0.6f; // Balanced density default
-    private int maxEnemies = 50; // Lower cap to reduce CPU load
+    private float spawnInterval = 0.8f; // OPTIMIZED: Increased from 0.6f for better performance
+    private int maxEnemies = 35; // OPTIMIZED: Reduced from 50 to 35 for better FPS
     private float worldWidth;
     private float worldHeight;
     private Random random;
@@ -99,13 +99,24 @@ public class EnemySpawner {
     public void setNavMesh(NavMesh navMesh) { this.navMesh = navMesh; }
     public void clearEnemies() {
         if (enemies == null) return;
+        System.out.println("MEMORY CLEANUP: Clearing " + enemies.size() + " enemies");
         for (int i = enemies.size() - 1; i >= 0; i--) {
             try {
                 AbstractEnemy e = enemies.get(i);
-                if (e != null) e.dispose();
-            } catch (Exception ignored) {}
+                if (e != null) {
+                    e.dispose(); // Dispose enemy resources
+                }
+            } catch (Exception ex) {
+                System.err.println("Error disposing enemy: " + ex.getMessage());
+            }
         }
         enemies.clear();
+        
+        // MEMORY LEAK FIX: Suggest garbage collection after clearing enemies
+        System.gc();
+        Runtime runtime = Runtime.getRuntime();
+        long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+        System.out.println("MEMORY CLEANUP: After clearing enemies, memory usage: " + usedMemory + " MB");
     }
     public void setWorldSize(float width, float height) { this.worldWidth = width; this.worldHeight = height; }
     public float getWorldWidth() { return worldWidth; }
@@ -158,37 +169,36 @@ public class EnemySpawner {
 
     public void update(float delta) {
         if (!periodicEnabled) return;
-        // Balanced FPS guard: throttle spawns when FPS drops below 50
+        // OPTIMIZED: More aggressive FPS-based throttling
         float fps = Gdx.graphics.getFramesPerSecond();
-        if (fps > 0 && fps < 58f) {
+        if (fps > 0 && fps < 55f) {
             // Increase interval and cap down to ease pressure aggressively
-            spawnInterval = 0.9f;
-            maxEnemies = Math.min(maxEnemies, 50);
+            spawnInterval = 1.2f;
+            maxEnemies = Math.min(maxEnemies, 30);
+        } else if (fps < 45f) {
+            // Emergency throttle for very low FPS
+            spawnInterval = 2.0f;
+            maxEnemies = Math.min(maxEnemies, 25);
         } else {
             // Restore target interval when FPS is healthy
-            spawnInterval = 0.6f;
+            spawnInterval = 0.8f;
         }
         spawnTimer += delta;
         if (spawnTimer >= spawnInterval) {
             // MEMORY FIX: Only spawn if under limit
             if (enemies.size() < maxEnemies) {
-                // TRY 20 SPAWN ATTEMPTS to find valid positions
+                // OPTIMIZED: Reduced from 20 to 5 attempts to reduce CPU spikes
                 boolean spawnSuccessful = false;
-                for (int attempt = 1; attempt <= 20; attempt++) {
-                    // Debug disabled: spawn attempt header removed
-
+                for (int attempt = 1; attempt <= 5; attempt++) {
                     if (attemptSpawnRandomEnemy()) {
-                        // Debug disabled: spawn success log removed
                         spawnSuccessful = true;
                         break;
                     }
                 }
 
                 if (!spawnSuccessful) {
-                    System.out.println("ALL 20 SPAWN ATTEMPTS FAILED - No valid positions found");
+                    System.out.println("ALL 5 SPAWN ATTEMPTS FAILED - No valid positions found");
                 }
-            } else {
-                System.out.println("SPAWN BLOCKED - Max enemies reached: " + enemies.size());
             }
             spawnTimer = 0f;
         }

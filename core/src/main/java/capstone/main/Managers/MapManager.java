@@ -45,6 +45,7 @@ public class MapManager {
             if (tiledMap != null) {
                 try {
                     tiledMap.dispose();
+                    System.out.println("MEMORY CLEANUP: Old TiledMap disposed (switching maps)");
                     Gdx.app.log("MapManager", "✓ Old map disposed");
                 } catch (Exception e) {
                     Gdx.app.error("MapManager", "Warning: map disposal failed", e);
@@ -157,18 +158,27 @@ public class MapManager {
     }
 
     public void dispose() {
+        System.out.println("MEMORY CLEANUP: MapManager disposing resources");
         try {
             if (renderer != null) {
                 renderer.dispose();
                 renderer = null;
+                System.out.println("MEMORY CLEANUP: Renderer disposed");
             }
 
             if (tiledMap != null) {
                 tiledMap.dispose();
                 tiledMap = null;
+                System.out.println("MEMORY CLEANUP: TiledMap disposed");
             }
 
             Gdx.app.log("MapManager", "MapManager disposed successfully");
+            
+            // CRITICAL: Suggest garbage collection after disposal
+            System.gc();
+            Runtime runtime = Runtime.getRuntime();
+            long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+            System.out.println("MEMORY CLEANUP: After MapManager disposal, memory usage: " + usedMemory + " MB");
         } catch (Exception e) {
             Gdx.app.error("MapManager", "Error disposing MapManager: " + e.getMessage());
         }

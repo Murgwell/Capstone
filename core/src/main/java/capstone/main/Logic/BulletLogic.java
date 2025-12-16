@@ -29,9 +29,15 @@ public class BulletLogic {
 
             // Remove bullets that expired naturally or via collision
             if (b.getLifetime() <= 0) {
-                // Also destroy the Box2D body if you created one
+                // MEMORY LEAK FIX: Properly destroy Box2D body and nullify reference
                 if (b.getBody() != null) {
-                    b.getBody().getWorld().destroyBody(b.getBody());
+                    try {
+                        b.getBody().getWorld().destroyBody(b.getBody());
+                        b.body = null; // Nullify to prevent double-disposal
+                    } catch (Exception e) {
+                        // Body may have already been destroyed by physics world
+                        System.err.println("Failed to destroy bullet body: " + e.getMessage());
+                    }
                 }
                 bullets.remove(i);
             }

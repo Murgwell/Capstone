@@ -11,7 +11,19 @@ import com.badlogic.gdx.physics.box2d.*;
 import java.util.HashSet;
 
 public class Bullet {
-    private static final Texture DEFAULT_TEXTURE = new Texture("Textures/UI/Bullet Indicators/Pistol-Bullet.png");
+    // MEMORY LEAK FIX: Make texture non-final so it can be disposed
+    private static Texture DEFAULT_TEXTURE = null;
+    private static boolean textureLoaded = false;
+    
+    // Static method to dispose shared texture (call when game ends)
+    public static void disposeStaticResources() {
+        if (DEFAULT_TEXTURE != null) {
+            DEFAULT_TEXTURE.dispose();
+            DEFAULT_TEXTURE = null;
+            textureLoaded = false;
+        }
+    }
+    
     private final AbstractPlayer owner;
     public Sprite sprite;
     public Body body;
@@ -31,6 +43,12 @@ public class Bullet {
 
     public Bullet(float x, float y, Vector2 direction, AbstractPlayer owner, World world) {
         this.owner = owner;
+
+        // MEMORY LEAK FIX: Lazy load texture on first use
+        if (DEFAULT_TEXTURE == null || !textureLoaded) {
+            DEFAULT_TEXTURE = new Texture("Textures/UI/Bullet Indicators/Pistol-Bullet.png");
+            textureLoaded = true;
+        }
 
         // --- Sprite ---
         sprite = new Sprite(DEFAULT_TEXTURE);

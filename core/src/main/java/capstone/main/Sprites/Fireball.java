@@ -10,8 +10,18 @@ import com.badlogic.gdx.physics.box2d.*;
 
 public class Fireball {
 
-    private static final Texture FIREBALL_TEXTURE =
-        new Texture("Textures/UI/Fireball/Fireball.png");
+    // MEMORY LEAK FIX: Make texture non-final so it can be disposed
+    private static Texture FIREBALL_TEXTURE = null;
+    private static boolean textureLoaded = false;
+    
+    // Static method to dispose shared texture (call when game ends)
+    public static void disposeStaticResources() {
+        if (FIREBALL_TEXTURE != null) {
+            FIREBALL_TEXTURE.dispose();
+            FIREBALL_TEXTURE = null;
+            textureLoaded = false;
+        }
+    }
 
     private final AbstractPlayer owner;
 
@@ -34,6 +44,12 @@ public class Fireball {
     public Fireball(float x, float y, Vector2 direction, AbstractPlayer owner, float damage, World world) {
         this.owner = owner;
         this.damage = damage;
+
+        // MEMORY LEAK FIX: Lazy load texture on first use
+        if (FIREBALL_TEXTURE == null || !textureLoaded) {
+            FIREBALL_TEXTURE = new Texture("Textures/UI/Fireball/Fireball.png");
+            textureLoaded = true;
+        }
 
         // --- Sprite ---
         sprite = new Sprite(FIREBALL_TEXTURE);

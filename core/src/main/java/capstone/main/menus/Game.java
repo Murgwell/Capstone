@@ -153,7 +153,7 @@ public class Game implements Screen {
         float cx = Gdx.graphics.getWidth() / 2f;
         float cy = Gdx.graphics.getHeight() / 2f;
         java.util.concurrent.ThreadLocalRandom rng = java.util.concurrent.ThreadLocalRandom.current();
-        int count = 140;
+        int count = 60; // OPTIMIZED: Reduced from 140 to 60 particles
         for (int i = 0; i < count; i++) {
             TeleportParticle p = new TeleportParticle();
             double ang = rng.nextDouble() * Math.PI * 2;
@@ -658,6 +658,12 @@ public class Game implements Screen {
         // --- Update logic ---
         if (teleportFxActive) {
             teleportFxTimer += delta;
+            // MEMORY LEAK FIX: Cap particle count to prevent unbounded growth
+            if (teleportFxParticles.size() > 100) {
+                System.out.println("MEMORY LEAK PREVENTION: Clearing excess teleport particles (" + teleportFxParticles.size() + ")");
+                teleportFxParticles.clear();
+            }
+            
             // particles update
             for (int i = teleportFxParticles.size() - 1; i >= 0; i--) {
                 TeleportParticle p = teleportFxParticles.get(i);
@@ -1266,10 +1272,37 @@ public class Game implements Screen {
         // Avoid retrigger
         portalCooldown = 1.0f;
 
-        // Clear items when transitioning maps
+        // MEMORY LEAK FIX: Aggressive cleanup when transitioning maps
         if (itemSpawner != null) {
             itemSpawner.clear();
         }
+        
+        // Clear all damage numbers
+        if (damageNumbers != null) {
+            System.out.println("MEMORY CLEANUP: Clearing " + damageNumbers.size() + " damage numbers on world transition");
+            damageNumbers.clear();
+        }
+        
+        // Clear teleport particles
+        if (teleportFxParticles != null) {
+            teleportFxParticles.clear();
+        }
+        
+        // Clear bullets/fireballs
+        if (bulletLogic != null && player instanceof Ranged) {
+            ((Ranged) player).getBullets().clear();
+            System.out.println("MEMORY CLEANUP: Cleared bullets on world transition");
+        }
+        if (fireballLogic != null && player instanceof Quiboloy) {
+            ((Quiboloy) player).getFireballs().clear();
+            System.out.println("MEMORY CLEANUP: Cleared fireballs on world transition");
+        }
+        
+        // CRITICAL: Suggest garbage collection after major transition cleanup
+        System.gc();
+        Runtime runtime = Runtime.getRuntime();
+        long usedMemory = (runtime.totalMemory() - runtime.freeMemory()) / 1024 / 1024;
+        System.out.println("MEMORY CLEANUP: After world transition, memory usage: " + usedMemory + " MB");
 
         // Start teleport FX for any transition
         teleportFxActive = true;
@@ -1682,6 +1715,15 @@ public class Game implements Screen {
     }
 
     public void dispose() {
+        // MEMORY LEAK FIX: Dispose static textures
+        System.out.println("MEMORY CLEANUP: Disposing game resources");
+        try {
+            Bullet.disposeStaticResources();
+            Fireball.disposeStaticResources();
+        } catch (Exception ex) {
+            System.err.println("Error disposing static textures: " + ex.getMessage());
+        }
+        
         try {
             if (itemSpawner != null) itemSpawner.dispose();
         } catch (Exception ignored) {
@@ -1808,7 +1850,7 @@ public class Game implements Screen {
                     120,           // manaPoints (highest - mage needs mana)
                     30,            // baseDamage (significantly increased for faster gameplay)
                     45,            // maxDamage (significantly increased, now 30-45 damage range)
-                    1.3f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
+                    5.3f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width

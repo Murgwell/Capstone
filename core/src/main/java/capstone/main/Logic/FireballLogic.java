@@ -31,8 +31,15 @@ public class FireballLogic {
             f.update(delta);
 
             if (f.getLifetime() <= 0) {
+                // MEMORY LEAK FIX: Properly destroy Box2D body and nullify reference
                 if (f.getBody() != null) {
-                    f.getBody().getWorld().destroyBody(f.getBody());
+                    try {
+                        f.getBody().getWorld().destroyBody(f.getBody());
+                        f.body = null; // Nullify to prevent double-disposal
+                    } catch (Exception e) {
+                        // Body may have already been destroyed by physics world
+                        System.err.println("Failed to destroy fireball body: " + e.getMessage());
+                    }
                 }
                 fireballs.remove(i);
             }

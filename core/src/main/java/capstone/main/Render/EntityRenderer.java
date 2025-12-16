@@ -308,20 +308,21 @@ public class EntityRenderer {
 
     // --- Helpers to draw telegraph shapes ---
     private void drawCircleTelegraph(float cx, float cy, float radius, Color fill, Color outline) {
+        // OPTIMIZED: Reduced segments from 60 to 32 for better performance
         // Filled circle
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(fill);
-        shapeRenderer.circle(cx, cy, radius, 60);
+        shapeRenderer.circle(cx, cy, radius, 32);
         shapeRenderer.end();
         // Outline
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(outline);
-        shapeRenderer.circle(cx, cy, radius, 60);
+        shapeRenderer.circle(cx, cy, radius, 32);
         shapeRenderer.end();
     }
 
     private void drawSectorTelegraph(float cx, float cy, float radius, float startDeg, float endDeg, Color fill, Color outline) {
-        int segments = 60;
+        int segments = 32; // OPTIMIZED: Reduced from 60 to 32 for better performance
         float start = (float) Math.toRadians(startDeg);
         float end = (float) Math.toRadians(endDeg);
         float step = (end - start) / segments;
@@ -404,7 +405,7 @@ public class EntityRenderer {
 
     // Draw a donut-shaped telegraph (ring between two circles)
     private void drawDonutTelegraph(float cx, float cy, float innerRadius, float outerRadius, Color fill, Color outline) {
-        int segments = 60;
+        int segments = 32; // OPTIMIZED: Reduced from 60 to 32 for better performance
 
         // Draw filled donut using triangles
         shapeRenderer.begin(com.badlogic.gdx.graphics.glutils.ShapeRenderer.ShapeType.Filled);
@@ -438,6 +439,16 @@ public class EntityRenderer {
     }
 
     public void update(float delta) {
+        // MEMORY LEAK FIX: Cap damage numbers to prevent unbounded growth
+        // This prevents memory exhaustion during long boss fights
+        if (damageNumbers.size() > 100) {
+            // Emergency cleanup - remove oldest 50 damage numbers
+            System.out.println("MEMORY LEAK PREVENTION: Clearing " + (damageNumbers.size() - 50) + " excess damage numbers");
+            while (damageNumbers.size() > 50) {
+                damageNumbers.remove(0); // Remove oldest
+            }
+        }
+        
         // Update damage numbers
         for (int i = damageNumbers.size() - 1; i >= 0; i--) {
             DamageNumber dn = damageNumbers.get(i);

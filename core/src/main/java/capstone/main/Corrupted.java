@@ -12,7 +12,8 @@ public class Corrupted extends Game {
 
     @Override
     public void create() {
-        spriteBatch = new SpriteBatch();
+        // OPTIMIZATION: Larger batch size reduces flush calls (default is 1000)
+        spriteBatch = new SpriteBatch(2000);
 
         // Load and apply saved video settings
         VideoSettings.load();

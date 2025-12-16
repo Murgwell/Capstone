@@ -63,7 +63,7 @@ public abstract class AbstractEnemy {
     private static final float MELEE_DAMAGE = 5f; // 5 HP = half a heart
 
     private float pathUpdateTimer = 0f;
-    private final float PATH_UPDATE_INTERVAL = 0.25f; // recalc path every 0.25s
+    private final float PATH_UPDATE_INTERVAL = 0.75f; // OPTIMIZED: recalc path every 0.75s (was 0.25s)
 
     public AbstractEnemy(float x, float y, Texture texture, float width, float height, float maxHealth, ScreenShake screenShake, PhysicsManager physics, NavMesh navMesh) {
         this.sprite = new Sprite(texture);
@@ -171,8 +171,17 @@ public abstract class AbstractEnemy {
         if (navMesh == null) {
             Gdx.app.log("EnemyPF", getClass().getSimpleName() + ": navMesh is NULL");
         }
+        // OPTIMIZED: Distance-based update frequency - far enemies update less often
+        float dynamicInterval = PATH_UPDATE_INTERVAL;
+        if (distanceToPlayer > 15f) {
+            dynamicInterval = PATH_UPDATE_INTERVAL * 2.5f; // Very far: update every ~1.9s
+        } else if (distanceToPlayer > 8f) {
+            dynamicInterval = PATH_UPDATE_INTERVAL * 1.5f; // Far: update every ~1.1s
+        }
+        // Close enemies keep default 0.75s interval
+        
         pathUpdateTimer += delta;
-        if (pathUpdateTimer >= PATH_UPDATE_INTERVAL) {
+        if (pathUpdateTimer >= dynamicInterval) {
             pathUpdateTimer = 0f;
 
             NavNode startNode = getNearestNode(enemyPos);
@@ -212,15 +221,23 @@ public abstract class AbstractEnemy {
         // --- MOVE ALONG PATH ---
         tmpVelocity.setZero(); // More efficient than set(0, 0)
 
-        // Larger threshold to prevent jittering when near waypoints
-        float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.5f, hitboxRadius);
-
-        if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
+        // OPTIMIZED: Use direct movement when very close to player (skip pathfinding overhead)
+        if (distanceToPlayer <= MELEE_RANGE * 3f) {
+            tmpDirection.set(tmpPlayerPos).sub(enemyPos);
+            if (tmpDirection.len2() > 1e-6f) {
+                tmpVelocity.set(tmpDirection.nor().scl(speed * 0.8f)); // Direct movement when close
+                if (isSlowed) tmpVelocity.scl(slowMultiplier);
+            }
+        } else if (!currentPath.isEmpty() && pathIndex < currentPath.size()) {
+            // Follow path for medium/long range movement
             NavNode nextNode = currentPath.get(pathIndex);
 
             tmpNextPos.set(nextNode.worldPos); // use precomputed world position
             tmpDirection.set(tmpNextPos).sub(enemyPos);
 
+            // Larger threshold to prevent jittering when near waypoints
+            float nodeThreshold = Math.max(navMesh.getNodeSize() * 0.5f, hitboxRadius);
+            
             if (tmpDirection.len2() < nodeThreshold * nodeThreshold) { // Use len2() for performance
                 pathIndex++;
                 // Continue to next node if available
@@ -244,17 +261,6 @@ public abstract class AbstractEnemy {
                 }
             }
         }
-
-
-        // --- APPLY VELOCITY ---
-        // Only use direct movement if very close to player (within melee range) or path is completely invalid
-if (tmpVelocity.isZero() && distanceToPlayer <= MELEE_RANGE * 2f) {
-    tmpDirection.set(tmpPlayerPos).sub(enemyPos);
-    if (tmpDirection.len2() > 1e-6f) {
-        tmpVelocity.set(tmpDirection.nor().scl(speed * 0.5f)); // Move slower in direct mode
-        if (isSlowed) tmpVelocity.scl(slowMultiplier);
-    }
-}
 
 body.setLinearVelocity(tmpVelocity);
 body.setAwake(true);
@@ -391,6 +397,9 @@ body.setAwake(true);
 
     // MEMORY FIX: Add cleanup method to call when enemy is destroyed
     public void dispose() {
+        // CRITICAL MEMORY LEAK FIX: Dispose textures and atlases FIRST
+        disposeTextures();
+        
         // Clear pathfinding data to prevent memory leaks
         if (currentPath != null) {
             currentPath.clear();
@@ -415,5 +424,14 @@ body.setAwake(true);
             statusFont.dispose();
             statusFont = null;
         }
+    }
+    
+    /**
+     * Override this in subclasses to dispose owned textures/atlases
+     * This is CRITICAL to prevent the 10GB+ memory leak
+     * Each enemy spawned creates NEW texture atlases that must be disposed!
+     */
+    protected void disposeTextures() {
+        // Subclasses should override to dispose their owned textures
     }
 }

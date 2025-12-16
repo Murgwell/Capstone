@@ -111,6 +111,17 @@ public class WorldRenderer {
      * Renders a tile layer with per-tile opacity based on distance to player.
      */
     private void renderLayerWithPerTileOpacity(TiledMapTileLayer layer, OrthographicCamera camera) {
+        // OPTIMIZED: Skip expensive per-tile opacity if player is far from any tiles
+        float dx = playerPosition.x - camera.position.x;
+        float dy = playerPosition.y - camera.position.y;
+        float distToCamera = (float) Math.sqrt(dx * dx + dy * dy);
+        
+        // If player is very far from camera center, render at full opacity (huge performance boost)
+        if (distToCamera > 15f) {
+            mapRenderer.render(new int[]{0}); // Just render the layer normally
+            return;
+        }
+        
         // Get the batch from the map renderer
         com.badlogic.gdx.graphics.g2d.Batch batch = mapRenderer.getBatch();
         
@@ -125,6 +136,10 @@ public class WorldRenderer {
         
         batch.begin();
         
+        // OPTIMIZED: Reuse color object instead of creating new one each time
+        com.badlogic.gdx.graphics.Color batchColor = batch.getColor();
+        float originalAlpha = batchColor.a;
+        
         for (int y = startY; y < endY; y++) {
             for (int x = startX; x < endX; x++) {
                 TiledMapTileLayer.Cell cell = layer.getCell(x, y);
@@ -134,19 +149,24 @@ public class WorldRenderer {
                     float tileCenterX = tileX + tileWidth / 2f;
                     float tileCenterY = tileY + tileHeight / 2f;
                     
-                    // Calculate opacity for this specific tile
+                    // Calculate opacity for this specific tile (optimized with early exits)
                     float opacity = calculateTileOpacity(tileCenterX, tileCenterY);
                     
-                    // Set batch color with opacity
-                    com.badlogic.gdx.graphics.Color oldColor = batch.getColor();
-                    batch.setColor(1f, 1f, 1f, opacity);
+                    // OPTIMIZED: Only change color if opacity is different from 1.0
+                    if (opacity < 0.99f) {
+                        batchColor.a = opacity;
+                        batch.setColor(batchColor);
+                    }
                     
                     // Draw the tile
                     com.badlogic.gdx.graphics.g2d.TextureRegion region = cell.getTile().getTextureRegion();
                     batch.draw(region, tileX, tileY, tileWidth, tileHeight);
                     
-                    // Restore color
-                    batch.setColor(oldColor);
+                    // Restore alpha if changed
+                    if (opacity < 0.99f) {
+                        batchColor.a = originalAlpha;
+                        batch.setColor(batchColor);
+                    }
                 }
             }
         }
