@@ -663,7 +663,7 @@ public class Game implements Screen {
                 System.out.println("MEMORY LEAK PREVENTION: Clearing excess teleport particles (" + teleportFxParticles.size() + ")");
                 teleportFxParticles.clear();
             }
-            
+
             // particles update
             for (int i = teleportFxParticles.size() - 1; i >= 0; i--) {
                 TeleportParticle p = teleportFxParticles.get(i);
@@ -1276,18 +1276,18 @@ public class Game implements Screen {
         if (itemSpawner != null) {
             itemSpawner.clear();
         }
-        
+
         // Clear all damage numbers
         if (damageNumbers != null) {
             System.out.println("MEMORY CLEANUP: Clearing " + damageNumbers.size() + " damage numbers on world transition");
             damageNumbers.clear();
         }
-        
+
         // Clear teleport particles
         if (teleportFxParticles != null) {
             teleportFxParticles.clear();
         }
-        
+
         // Clear bullets/fireballs
         if (bulletLogic != null && player instanceof Ranged) {
             ((Ranged) player).getBullets().clear();
@@ -1297,7 +1297,7 @@ public class Game implements Screen {
             ((Quiboloy) player).getFireballs().clear();
             System.out.println("MEMORY CLEANUP: Cleared fireballs on world transition");
         }
-        
+
         // CRITICAL: Suggest garbage collection after major transition cleanup
         System.gc();
         Runtime runtime = Runtime.getRuntime();
@@ -1723,7 +1723,7 @@ public class Game implements Screen {
         } catch (Exception ex) {
             System.err.println("Error disposing static textures: " + ex.getMessage());
         }
-        
+
         try {
             if (itemSpawner != null) itemSpawner.dispose();
         } catch (Exception ignored) {
@@ -1850,7 +1850,7 @@ public class Game implements Screen {
                     120,           // manaPoints (highest - mage needs mana)
                     30,            // baseDamage (significantly increased for faster gameplay)
                     45,            // maxDamage (significantly increased, now 30-45 damage range)
-                    5.3f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
+                    1.3f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width
