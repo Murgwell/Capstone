@@ -9,7 +9,7 @@ public final class QuiboloyConfig {
     private QuiboloyConfig() {}
 
     // Core stats - Highest HP boss as the final challenge
-    public static float MAX_HP = 2500f;
+    public static float MAX_HP = 2000f;
 
     // Global cadence - Slightly longer cooldowns for more powerful skills
     public static float COOLDOWN_MIN = 3.0f;

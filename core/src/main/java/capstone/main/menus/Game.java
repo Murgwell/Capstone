@@ -1787,7 +1787,7 @@ public class Game implements Screen {
                     60,            // manaPoints (lowest - skills cost mana)
                     35,            // baseDamage (significantly increased for faster gameplay)
                     50,            // maxDamage (significantly increased, now 35-50 damage range)
-                    1.0f,          // attackSpeed (rebalanced: 1.2→1.0 - slightly slower)
+                    1.5f,          // attackSpeed (rebalanced: 1.2→1.0 - slightly slower)
                     9f,            // x
                     9f,            // y
                     2f,            // width
@@ -1808,7 +1808,7 @@ public class Game implements Screen {
                     120,           // manaPoints (highest - mage needs mana)
                     30,            // baseDamage (significantly increased for faster gameplay)
                     45,            // maxDamage (significantly increased, now 30-45 damage range)
-                    1.0f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
+                    1.3f,          // attackSpeed (rebalanced: 0.8→1.0 - faster to compensate)
                     9f,            // x
                     9f,            // y
                     2f,            // width
